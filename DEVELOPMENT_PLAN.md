@@ -169,10 +169,15 @@ Test script: `scripts/spike_overlay.py --model "<model>"` (run on the player). I
 - [ ] Install on FPP from the repo and check the menu page, API proxy and autostart.
 
 ### Phase 2 — Countdown engine (1 day)
-- [ ] `resolve_target()` with Christmas, New Year and yearly-custom rollover after the target day ends.
-- [ ] `compute_display()` covering days / HMS / hours / minutes / blank, plus singular and plural.
-- [ ] `build_pieces()` for number-first and number-last.
-- [ ] pytest suite with an injected clock (all edge cases from Section 3).
+- [x] `resolve_target()` with Christmas, New Year and yearly-custom rollover after the target day ends (`countdown/timecalc.py`).
+- [x] `compute_display()` covering days / HMS / hours / minutes / blank, plus singular and plural.
+- [x] `build_message()` for number-first and number-last (`countdown/message.py`).
+- [x] Test suite with an injected clock, covering all edge cases from Section 3: 40 tests using stdlib `unittest`, so the player needs nothing extra. Run them with `python3 -m unittest discover -s tests -v`.
+- [x] The daemon's `status` reports the resolved target and the current message.
+
+Notes from building it:
+- Remaining time is subtracted in UTC. Python subtracts two datetimes that share a time zone by wall clock, which would count a 23-hour DST day as 24 hours.
+- With a midnight target (Christmas, New Year's), "1 Day" shows for only one second. The whole day before is under 24 h, so it shows HH:MM:SS or hours.
 
 ### Phase 3 — Renderer (1–2 days)
 - [ ] Load fonts with Pillow (`ImageFont.truetype`), scanning bundled fonts, `/usr/share/fonts`, and `media/fonts`.

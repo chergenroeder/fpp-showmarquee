@@ -26,6 +26,9 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
+from countdown.message import build_message
+from countdown.timecalc import compute_display, local_now, resolve_target
+
 # ── Paths ────────────────────────────────────────────────────────────────────
 # FPP exports MEDIADIR/LOGDIR to the processes it launches; fall back to the
 # default install paths when run by hand.
@@ -299,9 +302,23 @@ class CountdownDaemon:
         return get_fpp_models(self._global().get("fpp_host", "localhost"))
 
     def get_status(self) -> dict:
-        now = datetime.now().astimezone()
+        now = local_now()
         cfg = self.get_config()
         cd = cfg.get("countdown", {})
+        target = resolve_target(cd.get("target") or {}, now)
+        target_info, message = None, None
+        if target is not None:
+            layout = cd.get("layout") or {}
+            display = compute_display(target, now, layout)
+            msg = build_message(display, target, layout)
+            target_info = {
+                "when": target.when.isoformat(timespec="minutes"),
+                "name": target.name,
+                "repeats": target.repeats,
+                "display": display.kind,
+                "seconds_left": int(display.remaining.total_seconds()),
+            }
+            message = {"plain": msg.plain, "pieces": [list(p) for p in msg.pieces]}
         return {
             "running": True,
             "commit": GIT_COMMIT,
@@ -315,9 +332,8 @@ class CountdownDaemon:
             "model": cd.get("model", ""),
             "target_type": (cd.get("target") or {}).get("type"),
             "config_errors": validate_config(cfg),
-            # Filled in by Phases 2-4:
-            "target": None,
-            "message": None,
+            "target": target_info,
+            "message": message,   # what the matrix shows (drawing arrives in Phases 3-4)
         }
 
     def run(self):

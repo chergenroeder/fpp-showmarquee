@@ -46,7 +46,9 @@ async function mcRefresh() {
   badge.className = 'mc-badge ' + (online ? 'mc-on' : 'mc-off');
   if (!online) return;
   mcText('mc-time', s.local_time + ' (' + s.timezone + ')');
-  mcText('mc-target', s.target_type || '–');
+  mcText('mc-target', s.target
+    ? s.target.name + ' — ' + s.target.when + (s.message.plain ? '  ·  "' + s.message.plain + '"' : '  ·  (blank)')
+    : (s.target_type || '–') + ' (no valid date)');
   mcText('mc-model', s.model || '(none chosen)');
   mcText('mc-pillow', s.pillow || 'NOT installed');
   const err = document.getElementById('mc-errors');
