@@ -1,0 +1,66 @@
+<!-- Matrix Countdown Clock: Phase 1 placeholder page. The full settings UI arrives in Phase 5. -->
+<style>
+  #mc-root { max-width: 760px; font-family: inherit; }
+  #mc-root .mc-card { border: 1px solid rgba(127,127,127,.35); border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  #mc-root h3 { margin: 0 0 8px; }
+  #mc-root table td { padding: 2px 12px 2px 0; vertical-align: top; }
+  #mc-root .mc-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; color: #fff; font-size: .85em; }
+  #mc-root .mc-on { background: #2e7d32; } #mc-root .mc-off { background: #c62828; }
+  #mc-root button { margin-right: 6px; }
+  #mc-root .mc-err { color: #c62828; }
+</style>
+
+<div id="mc-root">
+  <div class="mc-card">
+    <h3>Matrix Countdown Clock <span id="mc-badge" class="mc-badge mc-off">Offline</span></h3>
+    <table>
+      <tr><td>FPP local time</td><td id="mc-time">–</td></tr>
+      <tr><td>Target</td><td id="mc-target">–</td></tr>
+      <tr><td>Model</td><td id="mc-model">–</td></tr>
+      <tr><td>Pillow</td><td id="mc-pillow">–</td></tr>
+      <tr><td>Config</td><td id="mc-errors">–</td></tr>
+    </table>
+  </div>
+  <div class="mc-card">
+    <h3>Daemon</h3>
+    <button class="buttons" onclick="mcDaemon('start')">Start</button>
+    <button class="buttons" onclick="mcDaemon('restart')">Restart</button>
+    <button class="buttons" onclick="mcDaemon('stop')">Stop</button>
+  </div>
+  <p>The settings page is still being built. Until then, settings can be changed through
+     <code>/api/plugin/fpp-matrixcountdown/config</code>.</p>
+  <small>Version <span id="mc-version">–</span></small>
+</div>
+
+<script>
+const MC_API = '/api/plugin/fpp-matrixcountdown/';
+
+function mcText(id, v) { document.getElementById(id).textContent = v; }
+
+async function mcRefresh() {
+  let s = null;
+  try { s = await (await fetch(MC_API + 'status')).json(); } catch (e) {}
+  const badge = document.getElementById('mc-badge');
+  const online = s && s.running;
+  badge.textContent = online ? 'Online' : 'Offline';
+  badge.className = 'mc-badge ' + (online ? 'mc-on' : 'mc-off');
+  if (!online) return;
+  mcText('mc-time', s.local_time + ' (' + s.timezone + ')');
+  mcText('mc-target', s.target_type || '–');
+  mcText('mc-model', s.model || '(none chosen)');
+  mcText('mc-pillow', s.pillow || 'NOT installed');
+  const err = document.getElementById('mc-errors');
+  err.textContent = s.config_errors.length ? s.config_errors.join('; ') : 'OK';
+  err.className = s.config_errors.length ? 'mc-err' : '';
+  mcText('mc-version', s.commit);
+}
+
+async function mcDaemon(action) {
+  const method = action === 'start' ? 'GET' : 'POST';
+  try { await fetch(MC_API + 'daemon/' + action, { method }); } catch (e) {}
+  setTimeout(mcRefresh, 1500);
+}
+
+mcRefresh();
+setInterval(mcRefresh, 2000);
+</script>

@@ -1,0 +1,53 @@
+{
+	"name": "Matrix Countdown Clock",
+	"repoName": "fpp-matrixcountdown",
+	"author": "Chuck Hergenroeder",
+	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours.",
+	"homeURL": "https://github.com/chergenroeder/fpp-matrixcountdown",
+	"srcURL": "https://github.com/chergenroeder/fpp-matrixcountdown.git",
+	"bugURL": "https://github.com/chergenroeder/fpp-matrixcountdown/issues",
+	"iconURL": "https://raw.githubusercontent.com/chergenroeder/fpp-matrixcountdown/master/icon.png",
+	"releaseNotesStyle": "gitHistory",
+
+	"privacy": {
+		"summary": "Draws a countdown on a matrix model on this player. It talks only to FPP on this device unless you point it at another player.",
+		"sends": [
+			{
+				"to": "http://the FPP player you set as FPP Host (this device by default)",
+				"what": "requests for the list of overlay models and to turn the chosen model on and off",
+				"why": "to draw the countdown on a matrix attached to that player",
+				"alwaysOn": false
+			}
+		],
+		"collects": [],
+		"sensors": [],
+		"remoteAccess": "none",
+		"systemChanges": [
+			{
+				"kind": "service",
+				"what": "runs a background program whenever FPP is running, which draws the countdown frames"
+			},
+			{
+				"kind": "network",
+				"what": "its background program listens on 127.0.0.1:32330, reachable only from this device; FPP's web server passes requests to it"
+			}
+		],
+		"closedCode": false,
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-matrixcountdown.log). Its settings (config/plugin.fpp-matrixcountdown.json) stay after uninstall."
+	},
+
+	"versions": [
+		{
+			"minFPPVersion": "9.0",
+			"maxFPPVersion": "9.99",
+			"branch": "master",
+			"sha": ""
+		},
+		{
+			"minFPPVersion": "10.0",
+			"maxFPPVersion": "0",
+			"branch": "master",
+			"sha": ""
+		}
+	]
+}

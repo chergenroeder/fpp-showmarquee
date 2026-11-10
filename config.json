@@ -1,0 +1,41 @@
+{
+    "global": {
+        "schema_version": 1,
+        "enable_output": true,
+        "fpp_host": "localhost",
+        "fps": 30
+    },
+    "countdown": {
+        "enabled": true,
+        "model": "",
+        "target": {
+            "type": "christmas",
+            "custom_date": "",
+            "custom_time": "00:00",
+            "custom_repeat_yearly": false,
+            "event_name": {
+                "custom": "My Event",
+                "christmas": "Christmas",
+                "newyear": "New Year's Day"
+            }
+        },
+        "layout": {
+            "number_position": "first",
+            "connector_first": "to",
+            "connector_last": "in",
+            "units": {
+                "day": "Day", "days": "Days",
+                "hour": "Hour", "hours": "Hours",
+                "minute": "Minute", "minutes": "Minutes"
+            },
+            "under_one_day": "hms"
+        },
+        "motion": {
+            "direction": "R2L",
+            "pixels_per_second": 15,
+            "repeat_delay": 0
+        },
+        "text_style":   { "font": "DejaVuSans-Bold", "size": 10, "color": "#ff0000", "antialias": false },
+        "number_style": { "font": "DejaVuSans-Bold", "size": 10, "color": "#00ff00", "antialias": false }
+    }
+}
