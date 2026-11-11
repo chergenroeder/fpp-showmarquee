@@ -1,6 +1,6 @@
 # fpp-matrixcountdown — Matrix Countdown Clock
 
-An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center. It can also show the **temperature and wind from your own WeatherFlow Tempest station**, taking turns with the countdown.
+An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center. It can also show the **temperature and wind**, taking turns with the countdown, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station.
 
 ```
 8 Days to Christmas          Christmas in 8 Days
@@ -18,7 +18,7 @@ Temp 37°F                    Wind 8 mph NW gusts 15
 - **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
 - **Five directions:** Right to Left, Left to Right, Bottom to Top, Top to Bottom, and Static (centered). Speed and a pause between passes. For vertical and static, a message wider than the panel goes on two lines.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
-- **Tempest weather** (optional): your station's temperature and wind (speed, direction, gusts), in °F and mph, read straight from the Tempest hub's broadcast on your network. No internet, account or token. The countdown, temperature and wind take turns, one pass each.
+- **Weather** (optional): temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source. The countdown, temperature and wind take turns, one pass each.
 - **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, or change the target.
 - **REST API** for Home Assistant and scripts ([API.md](API.md)).
 - **Settings download and upload** as a JSON file.
@@ -58,7 +58,7 @@ rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
 | Message | Number first / last, Countdown timer / Hours only, and (folded) the joining and unit words. Each choice shows an example in your own words. |
 | Motion | Direction, speed (pixels per second) and pause between passes; for Static, how long each message shows. |
 | Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
-| Weather | **Show weather**; Temperature and Wind on/off and their labels; wind direction and gusts. More options: calm-wind text, gust label and threshold, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which hub sent it. |
+| Weather | **Show weather**; where the weather comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off and their labels; wind direction and gusts. More options: calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and where it came from. |
 | Matrix | Overlay model, **Countdown on**, **Output enabled**; frame rate under Advanced. |
 | Preview | The message at the model's size, moving as it will on the matrix. With Show weather on, **Now** plays the countdown, temperature and wind in turn, as the matrix will. Preview as Now, 8 days out, Under a day, Temp or Wind (live weather, or a sample if none has arrived). |
 
@@ -66,7 +66,20 @@ Changes take effect when you click **Save**. The button shows `Save *` while the
 
 **Frame rate:** FPP shows overlay frames at its own output rate: 20 per second when idle, faster while some sequences play. The plugin follows that rate, so the default 20 is right for most setups.
 
-## Weather from a Tempest station
+## Weather
+
+Turn on **Show weather**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
+
+### Open-Meteo (internet, recommended)
+
+[Open-Meteo](https://open-meteo.com/) is a free weather service: no account or API key, and it covers the whole world. Its readings are model data for your area, updated every 15 minutes, not a station in your yard.
+
+- **Location:** FPP's own **Latitude** and **Longitude** (FPP **Settings → General**). To use somewhere else, turn on **Use a different location** and type a latitude and longitude. A location typed here is kept on the player in `plugindata/fpp-matrixcountdown/location.json` (readable by its owner only), not in FPP's settings backup.
+- **What is sent:** only the latitude and longitude, rounded to 2 decimals (about 1 km), to `api.open-meteo.com` over HTTPS, every 15 minutes (just after :00, :15, :30, :45) while Show weather is on with Open-Meteo chosen.
+- **Old readings:** a reading is skipped once 45 minutes old (three missed updates). A failed update is retried after 1, 2, 4 and 8 minutes, and the last reading stays up meanwhile.
+- Weather data by Open-Meteo.com, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+### Tempest station (local network)
 
 The Tempest hub broadcasts its readings on your network (UDP port 50222). Turn on **Show weather** and the plugin picks them up, as long as the FPP player is on the same network as the hub. To check, run this on the player and look for `heard from: ... hub(s): HB-...`:
 
@@ -77,7 +90,7 @@ python3 /home/fpp/media/plugins/fpp-matrixcountdown/scripts/tempest_listen.py
 - **Temperature:** `Temp 72°F`, in whole degrees, updated about once a minute.
 - **Wind:** `Wind 8 mph NW`, updated every 3 seconds. `gusts 15` is added when the gust is at least 5 mph above the wind, and under 1 mph shows `Wind Calm`. When Top/Bottom or Static needs two lines, the wind goes "Wind 8 mph NW" over "gusts 15".
 - **Styles:** readings use the Number style and words the Text style.
-- **Old readings:** a reading older than 5 minutes is skipped, so the countdown just shows more often.
+- **Old readings:** a Tempest reading older than 5 minutes is skipped, so the countdown just shows more often.
 - **Weather only:** turn **Countdown on** off and leave **Show weather** on.
 - **Several stations:** set **Only this sensor** to your Tempest's serial number (ST-...), shown on the live line.
 
@@ -103,6 +116,11 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 | `permission denied ... not running as root` | The plugin must run as root to draw. Click **Stop** then **Start**, or restart FPP. (**Restart** keeps the same user.) |
 | `overlay model '...' not found` | The model was renamed or deleted. Choose it again under **Matrix**. |
 | `drawing needs the plugin on the same player` | The FPP Host setting points at another player; the plugin can only draw on this one. |
+| Weather: `choose a weather source` | Show weather is on but no source is picked. Choose Open-Meteo or Tempest in the Weather card. |
+| Weather: `no location: set Latitude and Longitude in FPP …` | FPP has no location (Settings → General), or **Use a different location** is on with nothing typed in. |
+| Weather: `no internet: can't look up api.open-meteo.com` | The player has no internet or DNS. Check FPP **Settings → Network** (a show network often has no internet; use the Tempest then). |
+| Weather: `Open-Meteo's certificate couldn't be checked: check this player's date and time` | The player's clock is wrong, so the secure connection fails. Fix the time in FPP **Settings → Time**. |
+| Weather: `Open-Meteo didn't answer within 10 s` or `answered HTTP …` | Open-Meteo is slow or down; the plugin retries on its own and keeps the last reading for up to 45 minutes. |
 | Weather: `listening for the Tempest hub… no reading yet` | The player isn't hearing the hub. Run `scripts/tempest_listen.py` on the player: if it hears nothing, the player is on a different network (e.g. FPP's own Wi-Fi). |
 | Weather: `cannot listen on UDP port 50222` | Another program holds the port without sharing it. Stop it, or use a different port if your hub is set up to send there. |
 | `Pillow is not installed` | **Reinstall** the plugin so FPP installs its dependencies (needs internet), or `sudo apt-get install python3-pil`; then **Restart**. |
@@ -126,7 +144,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0
 | `countdown/render.py` | Pillow drawing and motion. |
 | `countdown/output.py` | Writing frames into the overlay model's buffer (`/dev/shm`). |
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
-| `countdown/weather.py` | Tempest UDP listener and the temperature/wind messages. |
+| `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener and the temperature/wind messages. |
 | `matrixcountdown.html` | The settings page. |
 | `commands/` | FPP commands. |
 | `scripts/` | Install, start/stop, and the dev tools. |

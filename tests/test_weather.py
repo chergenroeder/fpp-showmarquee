@@ -276,7 +276,7 @@ class TakingTurns(unittest.TestCase):
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "motion": {"direction": direction, "pixels_per_second": 400, **motion},
                           "text_style": {"font": "", "size": 6}, "number_style": {"font": "", "size": 6}},
-            "weather": {"enabled": weather, "port": self.port},
+            "weather": {"enabled": weather, "source": "tempest", "port": self.port},
         })
         self.assertEqual(errors, [])
 

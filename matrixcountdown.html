@@ -146,12 +146,37 @@
       <!-- Weather -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
-          <strong>Weather <span class="mc-example">Tempest station</span></strong>
+          <strong>Weather</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-w-on" data-path="weather.enabled">
             <label class="form-check-label" for="mc-w-on">Show weather</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
-          <div class="small text-muted mb-2">Takes turns with the countdown: one pass each (or the hold time when Static). Read from the Tempest hub's broadcast on this network; °F and mph.</div>
+          <div class="small text-muted mb-2">Takes turns with the countdown: one pass each (or the hold time when Static). °F and mph.</div>
+          <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
+            <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
+              <label class="form-check-label" for="mc-w-src-om">Internet: Open-Meteo <span class="badge bg-success">recommended</span>
+                <span class="mc-example">no account or key; worldwide</span></label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-tempest" value="tempest" data-path="weather.source">
+              <label class="form-check-label" for="mc-w-src-tempest">Tempest weather station on this network
+                <span class="mc-example">the hub's local broadcast; no internet</span></label></div>
+            <div class="small mc-warn mt-1 mc-hidden" id="mc-w-src-need">Choose where the weather comes from: nothing is shown or sent until you do.</div>
+
+            <div class="mt-2 mc-hidden" id="mc-w-om">
+              <div class="small text-muted mb-1">Sends this player's location, rounded to about 1 km, to <strong>api.open-meteo.com</strong> every 15 minutes while Show weather is on. Nothing else is sent.</div>
+              <div class="small mb-1">Location: <span id="mc-w-loc">–</span></div>
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="mc-w-loc-own" data-path="weather.open_meteo.use_fpp_location" data-invert="1">
+                <label class="form-check-label" for="mc-w-loc-own">Use a different location <span class="mc-example">instead of FPP's (Settings → General)</span></label></div>
+              <div class="row g-2 mt-0 mc-hidden" id="mc-w-loc-fields">
+                <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0" for="mc-w-lat">Latitude</label>
+                  <input type="number" class="form-control form-control-sm" id="mc-w-lat" min="-90" max="90" step="0.01" placeholder="e.g. 40.71" data-path="weather.open_meteo.latitude" data-type="number"></div>
+                <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0" for="mc-w-lon">Longitude</label>
+                  <input type="number" class="form-control form-control-sm" id="mc-w-lon" min="-180" max="180" step="0.01" placeholder="e.g. -74.01" data-path="weather.open_meteo.longitude" data-type="number"></div>
+                <div class="col-12 small text-muted">Kept on this player only (not in FPP's settings backup).</div>
+              </div>
+              <div class="small text-muted mt-1">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).</div>
+            </div>
+          </fieldset>
           <div class="row g-2 align-items-end">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
               <label class="form-check-label" for="mc-w-t-on">Temperature <span class="mc-example" id="mc-ex-temp"></span></label></div></div>
@@ -169,7 +194,7 @@
               <label class="form-check-label" for="mc-w-gust">Gusts</label></div></div>
           </div>
           <details class="mt-3">
-            <summary class="small">More wind and station options</summary>
+            <summary class="small">More wind and source options</summary>
             <div class="row g-2 mt-1">
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Calm wind (under 1 mph)</label>
                 <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.calm_text"></div>
@@ -177,12 +202,13 @@
                 <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.gust_label"></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Show gusts when above wind by (mph)</label>
                 <input type="number" class="form-control form-control-sm" min="0" max="100" step="1" data-path="weather.wind.gust_min_diff_mph" data-type="number"></div>
-              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Hide readings older than (min)</label>
+              <div class="col-6 col-md-3 mc-w-tempest"><label class="form-label form-label-sm mb-0">Hide Tempest readings older than (min)</label>
                 <input type="number" class="form-control form-control-sm" min="0.5" max="1440" step="0.5" data-path="weather.stale_minutes" data-type="number"></div>
-              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Only this sensor (ST-…)</label>
+              <div class="col-6 col-md-3 mc-w-tempest"><label class="form-label form-label-sm mb-0">Only this sensor (ST-…)</label>
                 <input type="text" class="form-control form-control-sm" maxlength="20" placeholder="any" data-path="weather.device"></div>
-              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">UDP port</label>
+              <div class="col-6 col-md-3 mc-w-tempest"><label class="form-label form-label-sm mb-0">UDP port</label>
                 <input type="number" class="form-control form-control-sm" min="1" max="65535" step="1" data-path="weather.port" data-type="number"></div>
+              <div class="col-12 small text-muted mc-w-om-only">Open-Meteo readings are hidden once 45 minutes old (three missed updates).</div>
             </div>
           </details>
           <div class="small mt-2" id="mc-w-live"></div>
@@ -350,8 +376,9 @@
     $$('[data-path]').forEach(el => {
       const v = getPath(cfg, el.dataset.path);
       if (el.type === 'radio') el.checked = (el.value === v);
-      else if (el.type === 'checkbox') el.checked = !!v;
+      else if (el.type === 'checkbox') el.checked = el.dataset.invert ? !v : !!v;
       else if (v !== undefined && v !== null) el.value = v;
+      else if (v === null) el.value = '';
     });
     const type = getPath(cfg, 'countdown.target.type');
     $('#mc-name').value = getPath(cfg, 'countdown.target.event_name.' + type) || '';
@@ -364,7 +391,7 @@
       setPath(cfg, 'countdown.target.event_name.' + getPath(cfg, 'countdown.target.type'), el.value);
     } else if (el.dataset.path) {
       let v;
-      if (el.type === 'checkbox') v = el.checked;
+      if (el.type === 'checkbox') v = el.dataset.invert ? !el.checked : el.checked;
       else if (el.type === 'radio') { if (!el.checked) return; v = el.value; }
       else if (el.dataset.type === 'number') { v = el.value === '' ? '' : Number(el.value); }
       else v = el.value;
@@ -391,6 +418,15 @@
     $$('.mc-static').forEach(el => el.classList.toggle('mc-hidden', dir !== 'static'));
     const W = cfg.weather || {}, WT = W.temperature || {}, WW = W.wind || {};
     $('#mc-weather-body').style.opacity = W.enabled ? '' : '.55';
+    const src = W.source || '', OM = W.open_meteo || {};
+    const needSrc = !!W.enabled && !src;
+    $('#mc-w-src-need').classList.toggle('mc-hidden', !needSrc);
+    $('#mc-w-src').classList.toggle('border-warning', needSrc);
+    $('#mc-w-om').classList.toggle('mc-hidden', src !== 'open-meteo');
+    $('#mc-w-loc-fields').classList.toggle('mc-hidden', OM.use_fpp_location !== false);
+    $$('.mc-w-tempest').forEach(el => el.classList.toggle('mc-hidden', src !== 'tempest'));
+    $$('.mc-w-om-only').forEach(el => el.classList.toggle('mc-hidden', src !== 'open-meteo'));
+    showLocation();
     $('#mc-ex-temp').textContent = join(WT.label, '72°F');
     $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
     $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
@@ -570,7 +606,8 @@
     }
     saved = JSON.stringify(cfg);
     refresh();
-    notify('Saved');
+    const W = cfg.weather || {};
+    notify(W.enabled && !W.source ? 'Saved. Choose where the weather comes from for it to show.' : 'Saved', W.enabled && !W.source);
     setTimeout(loadStatus, 600);
   };
 
@@ -607,6 +644,24 @@
     if (action !== 'stop') setTimeout(() => { if (!cfg) mcLoad(); }, 2000);
   };
 
+  // ── weather location ──
+  let lastWeather = {};
+  function showLocation() {
+    const el = $('#mc-w-loc'); if (!el || !cfg) return;
+    const OM = (cfg.weather || {}).open_meteo || {};
+    const fmt = (a, b) => `${Number(a).toFixed(2)}, ${Number(b).toFixed(2)}`;
+    const num = v => v !== '' && v !== null && v !== undefined && isFinite(Number(v));
+    if (OM.use_fpp_location === false) {
+      el.textContent = num(OM.latitude) && num(OM.longitude) ? fmt(OM.latitude, OM.longitude) + ' (set here)' : 'enter a latitude and longitude below';
+      el.className = num(OM.latitude) && num(OM.longitude) ? '' : 'mc-warn';
+      return;
+    }
+    const loc = lastWeather.location;
+    if (loc && loc.from === 'fpp') { el.textContent = fmt(loc.lat, loc.lon) + ' (FPP settings)'; el.className = ''; }
+    else if (lastWeather.source === 'open-meteo' && !loc) { el.textContent = 'FPP has no location: set it in Settings → General, or use a different location'; el.className = 'mc-warn'; }
+    else { el.textContent = "FPP's location (Settings → General)"; el.className = ''; }
+  }
+
   // ── status ──
   async function loadStatus() {
     let s = null;
@@ -619,20 +674,29 @@
     const showing = s.showing && s.showing.message ? s.showing.message : (s.message && s.message.plain) || '';
     $('#mc-s-message').textContent = showing ? '“' + showing + '”' + (s.showing && s.showing.slot && s.showing.slot !== 'countdown' ? ` (${s.showing.slot})` : '') : '(blank)';
     const w = s.weather || {};
+    lastWeather = w; showLocation();
+    const om = w.source === 'open-meteo';
+    const hasReading = w.temp_f != null || w.wind_mph != null;
     let wt;
     if (!w.enabled) wt = 'off';
-    else if (w.error) wt = w.error;
-    else if (w.temp_f == null && w.wind_mph == null) wt = w.listening ? 'listening for the Tempest hub… no reading yet' : 'starting';
+    else if (w.error && !hasReading) wt = w.error;
+    else if (!hasReading) wt = !w.listening ? 'starting' : om ? 'getting the weather from Open-Meteo…' : 'listening for the Tempest hub… no reading yet';
     else {
       const parts = [];
       if (w.temp_f != null) parts.push(`${Math.round(w.temp_f)}°F`);
       if (w.wind_mph != null) parts.push(`wind ${w.wind_mph < 1 ? 'calm' : Math.round(w.wind_mph) + ' mph ' + (w.wind_dir || '')}`.trim());
       if (w.gust_mph != null) parts.push(`gusts ${Math.round(w.gust_mph)} mph`);
-      const age = w.last_packet_age_s;
-      wt = parts.join(', ') + (age != null ? ` · heard ${age} s ago` : '') + (w.hub ? ` · ${w.hub}${w.device ? ' / ' + w.device : ''}` : '');
+      if (om) {
+        const age = w.last_fetch_age_s, mins = age == null ? null : Math.round(age / 60);
+        wt = 'Open-Meteo: ' + parts.join(', ') + (mins != null ? ` · updated ${mins < 1 ? 'just now' : mins + ' min ago'}` : '');
+      } else {
+        const age = w.last_packet_age_s;
+        wt = 'Tempest: ' + parts.join(', ') + (age != null ? ` · heard ${age} s ago` : '') + (w.hub ? ` · ${w.hub}${w.device ? ' / ' + w.device : ''}` : '');
+      }
+      if (w.error) wt += ' · last update failed: ' + w.error;
     }
     $('#mc-s-weather').textContent = wt;
-    $('#mc-s-weather').className = w.error ? 'mc-err' : '';
+    $('#mc-s-weather').className = w.error ? (hasReading ? 'mc-warn' : 'mc-err') : '';
     $('#mc-w-live').textContent = w.enabled ? 'Now: ' + wt : '';
     const o = s.output || {};
     const out = $('#mc-s-output');

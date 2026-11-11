@@ -32,7 +32,8 @@ from countdown.fonts import FontIndex
 from countdown.message import Message, build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
 from countdown.timecalc import compute_display, local_now, resolve_target
-from countdown.weather import Reading, TempestListener, compass, c_to_f, ms_to_mph, weather_messages
+from countdown.weather import (NO_LOCATION, Location, OpenMeteoPoller, Reading, TempestListener, compass,
+                               c_to_f, make_location, ms_to_mph, parse_coord, weather_messages)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 # FPP exports MEDIADIR/LOGDIR to the processes it launches; fall back to the
@@ -43,12 +44,16 @@ MEDIA_DIR    = os.environ.get("MEDIADIR", "/home/fpp/media")
 LOG_DIR      = os.environ.get("LOGDIR", os.path.join(MEDIA_DIR, "logs"))
 CONFIG_PATH  = os.path.join(MEDIA_DIR, "config", f"plugin.{PLUGIN_NAME}.json")
 DEFAULT_CFG  = os.path.join(PLUGIN_DIR, "config.json")
+# Personal data (a location typed in here) lives in plugindata/, not config/:
+# FPP's crash bundles and settings backups copy config/ (template guideline 14.11).
+DATA_DIR     = os.path.join(MEDIA_DIR, "plugindata", PLUGIN_NAME)
+LOCATION_PATH = os.path.join(DATA_DIR, "location.json")
 LOG_PATH     = os.path.join(LOG_DIR, f"plugin-{PLUGIN_NAME}.log")  # FPP rotates plugin-<repo>.log
 API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
 API_PREFIX   = "/api/plugin/matrixcountdown"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2   # 2: weather.source (Open-Meteo or Tempest)
 
 
 def _get_git_commit() -> str:
@@ -208,6 +213,18 @@ def _migrate_config(cfg: dict) -> bool:
     return migrated
 
 
+def _migrate_user(user: dict) -> bool:
+    """Migrations that need the saved file itself (before defaults fill gaps)."""
+    w = user.get("weather")
+    if isinstance(w, dict) and "source" not in w:
+        # Before 2.1 the Tempest was the only source. Keep a setup that had
+        # weather on with it, rather than start sending its location; one
+        # with weather off picks a source when it turns weather on.
+        w["source"] = "tempest" if w.get("enabled") else ""
+        return True
+    return False
+
+
 def load_config() -> dict:
     """User config laid over the bundled defaults, so new keys always exist."""
     defaults = load_defaults()
@@ -219,8 +236,9 @@ def load_config() -> dict:
             log.info("Loaded config from %s", CONFIG_PATH)
         except Exception as e:
             log.error("Failed to load %s (%s); using defaults", CONFIG_PATH, e)
+    migrated = _migrate_user(user) if isinstance(user, dict) else False
     cfg = _deep_merge(defaults, user)
-    if _migrate_config(cfg) and user:
+    if (_migrate_config(cfg) or migrated) and user:
         save_config(cfg)
     return cfg
 
@@ -232,6 +250,58 @@ def save_config(cfg: dict):
         json.dump(cfg, f, indent=4)
     os.replace(tmp, CONFIG_PATH)
     log.info("Config saved to %s", CONFIG_PATH)
+
+
+# ── Location (personal data, kept in plugindata/) ─────────────────────────────
+
+def load_location_override() -> dict:
+    """{"latitude": .., "longitude": ..} typed in this plugin, or {}."""
+    try:
+        with open(LOCATION_PATH) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_location_override(lat, lon):
+    """Write the typed-in location, readable by its owner only (0600).
+
+    Both None (the fields were cleared) removes the file.
+    """
+    if lat is None and lon is None:
+        try:
+            os.remove(LOCATION_PATH)
+            log.info("Weather location set in the plugin was cleared")
+        except FileNotFoundError:
+            pass
+        return
+    os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
+    tmp = LOCATION_PATH + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump({"latitude": lat, "longitude": lon}, f)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, LOCATION_PATH)
+    log.info("Weather location set in the plugin")    # never the coordinates (14.11)
+
+
+_fpp_loc_cache = {"at": -1e9, "value": None}
+
+
+def fpp_location() -> Optional[Location]:
+    """FPP's own Latitude/Longitude (Settings → General), cached for a minute."""
+    now = time.monotonic()
+    if now - _fpp_loc_cache["at"] < 60:
+        return _fpp_loc_cache["value"]
+    lat = (fpp_get("localhost", "/api/settings/Latitude") or {}).get("value")
+    lon = (fpp_get("localhost", "/api/settings/Longitude") or {}).get("value")
+    value = make_location(lat, lon, "fpp")
+    _fpp_loc_cache.update(at=now, value=value)
+    return value
+
+
+WEATHER_SOURCES = {"", "open-meteo", "tempest"}
 
 
 _VALID = {
@@ -283,6 +353,14 @@ def validate_config(cfg: dict) -> List[str]:
     except (TypeError, ValueError):
         errors.append("countdown.motion.static_hold must be from 1 to 600 seconds")
     w = cfg.get("weather") or {}
+    if w.get("source", "") not in WEATHER_SOURCES:
+        errors.append("weather.source must be \"open-meteo\", \"tempest\" or \"\" (not chosen)")
+    om = w.get("open_meteo") or {}
+    if not isinstance(om.get("use_fpp_location", True), bool):
+        errors.append("weather.open_meteo.use_fpp_location must be true or false")
+    for key, low, high in (("latitude", -90, 90), ("longitude", -180, 180)):
+        if om.get(key) not in (None, "") and parse_coord(om.get(key), low, high) is None:
+            errors.append(f"weather.open_meteo.{key} must be a number from {low} to {high}")
     try:
         if not 1 <= int(w.get("port", 50222)) <= 65535:
             raise ValueError
@@ -321,6 +399,7 @@ def _sample_reading() -> Reading:
 
 
 class CountdownDaemon:
+    OPEN_METEO_URL = os.environ.get("MC_OPEN_METEO_URL", "https://api.open-meteo.com/v1/forecast")
     RETRY_S = 5.0      # wait between attempts to open the output after an error
     CHECK_S = 5.0      # how often to check the buffer/model are still ours
     IDLE_S = 0.5       # loop pace while nothing is being drawn
@@ -340,7 +419,7 @@ class CountdownDaemon:
         self._out_error = ""
         self._fps = 0.0
         self._showing = {"slot": None, "message": ""}   # what the loop is drawing now
-        self._listener: Optional[TempestListener] = None
+        self._listener = None    # TempestListener | OpenMeteoPoller | None
         self._listener_lock = threading.Lock()
 
     def _global(self) -> dict:
@@ -356,18 +435,58 @@ class CountdownDaemon:
         A partial body changes only what it holds. Returns validation errors
         (nothing is saved if there are any).
         """
+        new_cfg = copy.deepcopy(new_cfg)
+        # The typed-in location never goes into config/ (see LOCATION_PATH)
+        om_new = ((new_cfg.get("weather") or {}).get("open_meteo") or {}) \
+            if isinstance(new_cfg.get("weather"), dict) else {}
+        coords = {k: om_new.pop(k) for k in ("latitude", "longitude") if k in om_new} \
+            if isinstance(om_new, dict) else {}
         merged = _deep_merge(_deep_merge(load_defaults(), self.get_config()), new_cfg)
         _migrate_config(merged)
-        errors = validate_config(merged)
+        check = copy.deepcopy(merged)
+        check.setdefault("weather", {}).setdefault("open_meteo", {}).update(coords)
+        errors = validate_config(check)
+        if not errors:
+            errors = self._location_errors(merged, coords)
         if errors:
             return errors
+        if coords:
+            have = load_location_override()
+            lat = parse_coord(coords.get("latitude", have.get("latitude")), -90, 90)
+            lon = parse_coord(coords.get("longitude", have.get("longitude")), -180, 180)
+            if (lat, lon) != (parse_coord(have.get("latitude"), -90, 90),
+                              parse_coord(have.get("longitude"), -180, 180)):
+                save_location_override(lat, lon)
         with self._lock:
             self.cfg = merged
             self._cfg_version += 1
             save_config(merged)
         self._wake.set()
+        with self._listener_lock:
+            if isinstance(self._listener, OpenMeteoPoller):
+                self._listener.wake()     # refetches only if the location changed
         log.info("Config updated")
         return []
+
+    @staticmethod
+    def _location_errors(cfg: dict, coords: dict) -> List[str]:
+        """A location of its own is switched on but none is given."""
+        om = (cfg.get("weather") or {}).get("open_meteo") or {}
+        if om.get("use_fpp_location", True):
+            return []
+        have = {**load_location_override(), **{k: v for k, v in coords.items()}}
+        if make_location(have.get("latitude"), have.get("longitude"), "plugin") is None:
+            return ["weather.open_meteo: enter a latitude and longitude, or use FPP's location"]
+        return []
+
+    def config_for_page(self) -> dict:
+        """The settings plus the typed-in location, for GET config."""
+        cfg = self.get_config()
+        have = load_location_override()
+        om = cfg.setdefault("weather", {}).setdefault("open_meteo", {})
+        om["latitude"] = parse_coord(have.get("latitude"), -90, 90)
+        om["longitude"] = parse_coord(have.get("longitude"), -180, 180)
+        return cfg
 
     def reload_config(self):
         with self._lock:
@@ -461,7 +580,9 @@ class CountdownDaemon:
             if reading is None or weather_messages(reading, shown_cfg)[mode].blank:
                 # A sample, so styles and layout can be tried before data arrives
                 reading = _sample_reading()
-                weather_note = "sample reading (no live weather" + ("" if wcfg.get("enabled") else ": Weather is off") + ")"
+                weather_note = "sample reading (no live weather" + (
+                    ": Weather is off" if not wcfg.get("enabled") else
+                    ": choose a weather source" if not self.weather_source(cfg) else "") + ")"
             message = weather_messages(reading, shown_cfg)[mode]
             display = None
         else:
@@ -487,7 +608,9 @@ class CountdownDaemon:
                 if not any(not m.blank for m in live.values()):
                     live = weather_messages(_sample_reading(), wcfg)
                     if any(not m.blank for m in live.values()):
-                        weather_note = "sample reading for the weather (none received yet)"
+                        weather_note = ("sample reading for the weather (choose a weather source)"
+                                        if not self.weather_source(cfg) else
+                                        "sample reading for the weather (none received yet)")
                 sequence += [(k, m) for k, m in live.items() if not m.blank]
             if not sequence:
                 sequence = [("countdown", message)]
@@ -580,25 +703,51 @@ class CountdownDaemon:
 
     # ── Weather ──
 
-    def _ensure_listener(self, cfg: dict) -> Optional[TempestListener]:
-        """Start, restart or stop the Tempest listener to match the settings."""
+    @staticmethod
+    def weather_source(cfg: dict) -> str:
+        """The weather source in use: "open-meteo", "tempest" or "" (off/not chosen)."""
         w = cfg.get("weather") or {}
-        want = bool(w.get("enabled"))
+        src = str(w.get("source") or "")
+        return src if w.get("enabled") and src in ("open-meteo", "tempest") else ""
+
+    def weather_location(self, cfg: Optional[dict] = None) -> Optional[Location]:
+        """Where Open-Meteo's weather is for: FPP's location or the one set here."""
+        cfg = self.get_config() if cfg is None else cfg
+        om = (cfg.get("weather") or {}).get("open_meteo") or {}
+        if om.get("use_fpp_location", True):
+            return fpp_location()
+        have = load_location_override()
+        return make_location(have.get("latitude"), have.get("longitude"), "plugin")
+
+    def _ensure_listener(self, cfg: dict):
+        """Start, restart or stop the weather source to match the settings."""
+        w = cfg.get("weather") or {}
+        src = self.weather_source(cfg)
         port = int(w.get("port", 50222) or 50222)
         device = str(w.get("device") or "").strip().upper()
         with self._listener_lock:
             cur = self._listener
-            if want and (cur is None or cur.port != port or cur.device != device):
-                if cur is not None:
-                    cur.stop()
+            if src == "tempest":
+                ok = isinstance(cur, TempestListener) and cur.port == port and cur.device == device
+            elif src == "open-meteo":
+                ok = isinstance(cur, OpenMeteoPoller)
+            else:
+                ok = cur is None
+            if ok:
+                return cur
+            if cur is not None:
+                cur.stop()
+                log.info("Stopped %s weather", "Open-Meteo" if isinstance(cur, OpenMeteoPoller) else "Tempest")
+            self._listener = None
+            if src == "tempest":
                 self._listener = TempestListener(port, device)
-                self._listener.start()
                 log.info("Listening for Tempest weather on UDP port %d%s", port,
                          f" (sensor {device})" if device else "")
-            elif not want and cur is not None:
-                cur.stop()
-                self._listener = None
-                log.info("Stopped listening for Tempest weather")
+            elif src == "open-meteo":
+                self._listener = OpenMeteoPoller(self.weather_location, url=self.OPEN_METEO_URL)
+                log.info("Getting weather from Open-Meteo every 15 minutes")
+            if self._listener is not None:
+                self._listener.start()
             return self._listener
 
     def weather_reading(self) -> Optional[Reading]:
@@ -609,16 +758,30 @@ class CountdownDaemon:
         w = cfg.get("weather") or {}
         with self._listener_lock:
             lst = self._listener
-        info = {"enabled": bool(w.get("enabled")), "listening": bool(lst and lst.running),
-                "error": lst.error if lst else ""}
+        src = self.weather_source(cfg)
+        info = {"enabled": bool(w.get("enabled")), "source": src,
+                "listening": bool(lst and lst.running), "error": lst.error if lst else ""}
+        if w.get("enabled") and not src:
+            info["error"] = "choose a weather source"
+        if src == "open-meteo":
+            loc = self.weather_location(cfg)
+            info["location"] = None if loc is None else {"lat": loc.lat, "lon": loc.lon, "from": loc.origin}
+            if loc is None and not info["error"]:
+                info["error"] = NO_LOCATION
         if lst is None:
             return info
+        if isinstance(lst, OpenMeteoPoller):
+            now_m = time.monotonic()
+            info["last_fetch_age_s"] = None if lst.last_fetch_at is None else round(now_m - lst.last_fetch_at)
+            info["next_fetch_s"] = None if lst.next_fetch_at is None else max(0, round(lst.next_fetch_at - now_m))
         r = lst.reading()
         now = time.monotonic()
         age = lambda at: None if at is None else round(now - at)  # noqa: E731
         msgs = weather_messages(r, w, now)
         info.update({
-            "hub": r.hub, "device": r.device, "source": r.source, "packets": r.packets,
+            "hub": r.hub, "device": r.device, "packets": r.packets,
+            "hub_ip": r.source if src == "tempest" else "",
+            "humidity": r.humidity,
             "last_packet_age_s": age(r.last_packet_at),
             "temp_f": None if r.temp_c is None else round(c_to_f(r.temp_c), 1),
             "temp_age_s": age(r.temp_at),
@@ -626,7 +789,6 @@ class CountdownDaemon:
             "wind_dir": None if r.wind_dir is None else compass(r.wind_dir),
             "wind_age_s": age(r.wind_at),
             "gust_mph": None if r.gust_ms is None else round(ms_to_mph(r.gust_ms), 1),
-            "humidity": r.humidity,
             "messages": {k: m.plain for k, m in msgs.items()},
         })
         return info
@@ -858,7 +1020,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if route == "status":
             self._send_json(200, _daemon.get_status())
         elif route == "config":
-            self._send_json(200, _daemon.get_config())
+            self._send_json(200, _daemon.config_for_page())
         elif route == "models":
             self._send_json(200, _daemon.get_models())
         elif route == "fonts":

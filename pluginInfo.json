@@ -2,7 +2,7 @@
 	"name": "Matrix Countdown Clock",
 	"repoName": "fpp-matrixcountdown",
 	"author": "Chuck Hergenroeder",
-	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show the temperature and wind from your own WeatherFlow Tempest station, taking turns with the countdown.",
+	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show the temperature and wind, taking turns with the countdown: from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
 	"homeURL": "https://github.com/chergenroeder/fpp-matrixcountdown",
 	"srcURL": "https://github.com/chergenroeder/fpp-matrixcountdown.git",
 	"bugURL": "https://github.com/chergenroeder/fpp-matrixcountdown/issues",
@@ -10,12 +10,18 @@
 	"releaseNotesStyle": "gitHistory",
 
 	"privacy": {
-		"summary": "Draws a countdown on a matrix here, talking only to FPP (this player unless you name another). With Weather on, it also hears your Tempest station's local broadcasts.",
+		"summary": "Draws a countdown on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
 		"sends": [
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",
 				"what": "requests for the list of overlay models and to turn the chosen model on and off",
 				"why": "to draw the countdown on a matrix attached to that player",
+				"alwaysOn": false
+			},
+			{
+				"to": "api.open-meteo.com",
+				"what": "this player's latitude and longitude, rounded to about 1 km, every 15 minutes",
+				"why": "to get the current temperature and wind, only with Weather on and Open-Meteo chosen",
 				"alwaysOn": false
 			}
 		],
@@ -37,7 +43,7 @@
 			}
 		],
 		"closedCode": false,
-		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-matrixcountdown.log). Its settings (config/plugin.fpp-matrixcountdown.json) stay after uninstall."
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-matrixcountdown.log). Its settings (config/plugin.fpp-matrixcountdown.json) and a weather location you type in (plugindata/fpp-matrixcountdown/location.json) stay after uninstall."
 	},
 
 	"dependencies": {

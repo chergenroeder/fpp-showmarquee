@@ -41,6 +41,8 @@
     },
     "weather": {
         "enabled": false,
+        "source": "",
+        "open_meteo": { "use_fpp_location": true },
         "port": 50222,
         "device": "",
         "stale_minutes": 5,

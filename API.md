@@ -45,8 +45,8 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
   "output": { "state": "drawing", "error": "", "fps": 19.8, "root": true },
   "showing": { "slot": "wind", "message": "Wind 2 mph NNE" },
   "weather": {
-    "enabled": true, "listening": true, "error": "",
-    "hub": "HB-00069444", "device": "ST-00084993", "source": "192.168.1.147",
+    "enabled": true, "source": "tempest", "listening": true, "error": "",
+    "hub": "HB-00069444", "device": "ST-00084993", "hub_ip": "192.168.1.147",
     "packets": { "obs_st": 12, "rapid_wind": 240, "hub_status": 70, "device_status": 12 },
     "last_packet_age_s": 1,
     "temp_f": 37.4, "temp_age_s": 31,
@@ -64,7 +64,7 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
 | `showing` | What the matrix is drawing now: `slot` is `countdown`, `temperature` or `wind`. `message` (above) is always the countdown. |
-| `weather` | Only `enabled`, `listening` and `error` until the listener starts. Values are `null` until a reading arrives; ages are in seconds. `messages` are empty strings when a reading is too old or switched off. |
+| `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `messages` are empty strings when a reading is too old or switched off. |
 
 ### `GET version`
 
@@ -104,6 +104,8 @@ The full settings:
   },
   "weather": {
     "enabled": false,
+    "source": "",
+    "open_meteo": { "use_fpp_location": true, "latitude": null, "longitude": null },
     "port": 50222,
     "device": "",
     "stale_minutes": 5,
@@ -124,9 +126,12 @@ The full settings:
 | `motion.pixels_per_second` | 1–500 |
 | `motion.repeat_delay` | seconds ≥ 0 |
 | `motion.static_hold` | 1–600 s: how long each message shows in Static when weather takes turns |
-| `weather.enabled` | listen for the Tempest hub and show weather |
+| `weather.enabled` | show weather (from the chosen source) |
+| `weather.source` | `open-meteo`, `tempest`, or `""` (not chosen: nothing is shown or sent). Settings saved before 2.1 with Weather on become `tempest`. |
+| `weather.open_meteo.use_fpp_location` | `true`: FPP's Latitude/Longitude (Settings → General); `false`: the location below |
+| `weather.open_meteo.latitude` / `longitude` | −90–90 / −180–180, or `null`. Kept in `plugindata/fpp-matrixcountdown/location.json` (mode 0600), never in the config file; `GET config` adds them and `POST config` stores them there. Required when `use_fpp_location` is `false`. |
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
-| `weather.stale_minutes` | 0.5–1440: skip readings older than this |
+| `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
 | `*_style.font` | a name from `GET fonts`; `""` = Pillow's built-in font. A missing font falls back to an installed bold sans font. |
 | `*_style.size` | 4–128 |
