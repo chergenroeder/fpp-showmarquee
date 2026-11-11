@@ -2,9 +2,11 @@
 """
 Phase 0 hardware test: can this plugin draw its own frames on an FPP overlay model?
 
-Run it ON the FPP player, against a pixel-overlay model you can see:
+Run it ON the FPP player, as root, against a pixel-overlay model you can see:
 
-    python3 spike_overlay.py --model "Matrix"
+    sudo python3 spike_overlay.py --model "Matrix"
+
+(fppd runs as root and creates the overlay buffer writable by root only.)
 
 It uses the same path the plugin will:
   1. PUT /api/overlays/model/<name>/mmap   -> fppd creates the overlay buffer
@@ -83,7 +85,12 @@ class Overlay:
         if not os.path.exists(path):
             found = sorted(n for n in os.listdir("/dev/shm") if "FPP" in n)
             sys.exit(f"{path} not found. FPP entries in /dev/shm:\n  " + "\n  ".join(found))
-        self.fd = os.open(path, os.O_RDWR)
+        try:
+            self.fd = os.open(path, os.O_RDWR)
+        except PermissionError:
+            st = os.stat(path)
+            sys.exit(f"Permission denied writing {path} (mode {oct(st.st_mode & 0o777)}, owner uid {st.st_uid}).\n"
+                     "fppd runs as root and creates it writable by root only: run this with sudo.")
         size = os.fstat(self.fd).st_size
         self.mm = mmap.mmap(self.fd, size)
         self.width, self.height, flags = HEADER.unpack_from(self.mm, 0)

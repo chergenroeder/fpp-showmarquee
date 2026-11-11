@@ -191,6 +191,7 @@ Notes from building it:
 - [ ] `output.py`: map the buffer, write frames, turn the model on at start and off on stop or disable.
 - [ ] Reconnect if FPP restarts or the model is renamed or removed (re-open the buffer, log once).
 - [ ] Honor `enable_output` and the repeat delay.
+- [ ] **The daemon must run as root.** fppd (root) creates the buffer with mode 0644, so only root can write to it. This was found on FPP 10.3, where the test failed as the `fpp` user. postStart/install already run as root. The web UI's Start button runs as `fpp`, so it must launch the daemon with `sudo` (FPP gives `fpp` passwordless sudo; check this on the player). If the buffer still can't be opened, report "permission denied: daemon is not root" in `status` and on the page instead of failing silently.
 
 ### Phase 5 — Web UI (2 days)
 - [ ] Target: radio buttons **Custom / Christmas / New Year's**. The date and time pickers and the **Repeat every year** checkbox show only for Custom. Event name field. Next-target readout ("Counting down to Fri Dec 25 2026, 00:00 local").
