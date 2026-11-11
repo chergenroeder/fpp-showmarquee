@@ -180,13 +180,14 @@ Notes from building it:
 - Remaining time is subtracted in UTC. Python subtracts two datetimes that share a time zone by wall clock, which would count a 23-hour DST day as 24 hours.
 - With a midnight target (Christmas, New Year's), "1 Day" shows for only one second. The whole day before is under 24 h, so it shows HH:MM:SS or hours.
 
-### Phase 3 — Renderer (1–2 days)
-- [ ] Load fonts with Pillow (`ImageFont.truetype`), scanning bundled fonts, `/usr/share/fonts`, and `media/fonts`.
-- [ ] Draw the two pieces on one baseline with mixed sizes. Keep the HH:MM:SS width fixed (monospaced digits, or each digit centered in a fixed box) so the text doesn't jitter as it ticks.
-- [ ] Movement for all four directions, entering and leaving the edge fully.
-- [ ] Top→Bottom / Bottom→Top: if one line is wider than the panel, stack the two pieces on two lines (each centered) and scroll them as a block; if a piece is still too wide, shrink its font until it fits.
-- [ ] Static: center the message (one line, or two lines by the same rule) and redraw in place as the number changes.
-- [ ] Snapshot tests that save PNGs for each direction (including Static) and order.
+### Phase 3 — Renderer ✅ done 2026-11-10 (`countdown/render.py`)
+- [x] Load fonts with Pillow (`ImageFont.truetype`), with Pillow's built-in font when a font can't be loaded. The daemon already lists bundled fonts, `media/fonts` and the system fonts.
+- [x] Draw the two pieces on one baseline with mixed sizes. Digits sit in fixed-width boxes, so HH:MM:SS keeps one width as it ticks. Antialiasing is off by default (crisp single-colour pixels) and can be switched on per style.
+- [x] Movement for all four directions, entering and leaving the edge fully. Position comes from elapsed time × px/s, so speed doesn't depend on frame rate. A changing number doesn't restart the pass, and the repeat delay blanks the panel between passes.
+- [x] Top→Bottom / Bottom→Top / Static: two centered lines when one line is wider than the panel, then each line is shrunk until it fits.
+- [x] Static: centered, redrawn in place.
+- [x] 25 renderer tests (65 in total; they skip cleanly where Pillow isn't installed). Checked by eye with `scripts/render_preview.py`, which writes an LED-style contact sheet and one GIF per direction. Golden PNGs weren't used because font rendering differs between machines.
+- [ ] Bundle a few pixel fonts that suit small matrices (optional; the system fonts work).
 
 ### Phase 4 — FPP output (1 day)
 - [ ] `output.py`: map the buffer, write frames, turn the model on at start and off on stop or disable.
