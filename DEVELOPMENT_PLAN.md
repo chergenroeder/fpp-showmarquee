@@ -290,9 +290,18 @@ Add messages showing the user's WeatherFlow Tempest **temperature** and **wind s
 - A sample reading: 38.2°F, wind 0 mph, pressure 837 mb, humidity 0.0% (suspicious; the sensor may report 0 when it fails), battery 2.68 V.
 - [x] Run it on the FPP player: **fpp-matrix.local hears the hub** (2026-11-10). 75 s gave obs_st=2, rapid_wind=25, hub_status=7, device_status=2, **no duplicates** (so the Mac's doubles were its own two interfaces). Reading: 38.0°F, wind 0–1 mph SW/SSW, gust 1 mph. Keep dropping duplicates anyway, since other players may see them.
 
-**Open questions (before building)**
-1. How weather and the countdown share the matrix: take turns every pass, every N passes, or on a timer? Or a weather-only mode?
-2. Which readings: temperature, wind average, and also gust and direction ("Wind 8 mph NW, gusts 12")?
-3. Message wording and order, e.g. "72°F" / "Wind 8 mph"; the same number/text styles or their own?
-4. What to show when no reading has arrived for a few minutes: skip weather silently (proposed), or show "--"?
-5. Calm wind: "Calm", or "Wind 0 mph"?
+**Design decisions (2026-11-10)**
+
+| # | Question | Decision |
+|---|----------|----------|
+| 1 | Sharing the matrix | **Take turns each pass**: countdown, then temperature, then wind, then the countdown again. In Static mode each message holds for a set number of seconds. |
+| 2 | Readings | **Temperature, wind speed, wind direction and gusts** |
+| 3 | Calm wind (< 1 mph) | **"Calm"**, e.g. "Wind Calm" |
+| 4 | Styles | **Reuse the countdown styles**: the reading ("72°F", "8 mph NW") uses the Number style and the words ("Temp", "Wind", "gusts") the Text style. No new style settings. |
+
+**Proposed defaults** (editable in settings; to confirm while building)
+- Temperature message: `Temp 72°F` (label editable, may be empty for just `72°F`). Whole degrees.
+- Wind message: `Wind 8 mph NW`, with `gusts 15` added when the gust is at least 5 mph above the average. Wind uses the latest `rapid_wind` (3 s) for speed and direction, and the gust from `obs_st`.
+- Stale data: a reading older than **5 minutes** is skipped silently, so the countdown just shows more often. The page's status shows the last reading and its age.
+- Each weather message can be switched on/off; a master "Weather" switch; the countdown can also be turned off for weather-only.
+
