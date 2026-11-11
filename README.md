@@ -60,7 +60,7 @@ rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
 | Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
 | Weather | **Show weather**; Temperature and Wind on/off and their labels; wind direction and gusts. More options: calm-wind text, gust label and threshold, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which hub sent it. |
 | Matrix | Overlay model, **Countdown on**, **Output enabled**; frame rate under Advanced. |
-| Preview | The message at the model's size, moving as it will on the matrix. Preview as Now, 8 days out, Under a day, Temp or Wind (live weather, or a sample if none has arrived). |
+| Preview | The message at the model's size, moving as it will on the matrix. With Show weather on, **Now** plays the countdown, temperature and wind in turn, as the matrix will. Preview as Now, 8 days out, Under a day, Temp or Wind (live weather, or a sample if none has arrived). |
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 

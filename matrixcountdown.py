@@ -291,6 +291,13 @@ def validate_config(cfg: dict) -> List[str]:
 
 # ── Daemon ────────────────────────────────────────────────────────────────────
 
+def _sample_reading() -> Reading:
+    """72°F, wind 8 mph NW gusting 15: for previews before live weather arrives."""
+    now_m = time.monotonic()
+    return Reading(temp_c=(72 - 32) * 5 / 9, temp_at=now_m, wind_ms=8 / 2.2369363,
+                   wind_dir=315, wind_at=now_m, gust_ms=15 / 2.2369363, gust_at=now_m)
+
+
 class CountdownDaemon:
     RETRY_S = 5.0      # wait between attempts to open the output after an error
     CHECK_S = 5.0      # how often to check the buffer/model are still ours
@@ -431,9 +438,7 @@ class CountdownDaemon:
             reading = self.weather_reading()
             if reading is None or weather_messages(reading, shown_cfg)[mode].blank:
                 # A sample, so styles and layout can be tried before data arrives
-                now_m = time.monotonic()
-                reading = Reading(temp_c=(72 - 32) * 5 / 9, temp_at=now_m, wind_ms=8 / 2.2369363,
-                                  wind_dir=315, wind_at=now_m, gust_ms=15 / 2.2369363, gust_at=now_m)
+                reading = _sample_reading()
                 weather_note = "sample reading (no live weather" + ("" if wcfg.get("enabled") else ": Weather is off") + ")"
             message = weather_messages(reading, shown_cfg)[mode]
             display = None
@@ -447,6 +452,23 @@ class CountdownDaemon:
             layout = cd.get("layout") or {}
             display = compute_display(target, at, layout)
             message = build_message(display, target, layout)
+
+        # The messages that take turns on the matrix. "Now" shows them all, the
+        # way the daemon cycles them; the other modes show one.
+        sequence = [("countdown" if display is not None else mode, message)]
+        if mode == "now":
+            wcfg = cfg.get("weather") or {}
+            sequence = [("countdown", message)] if cd.get("enabled", True) else []
+            if wcfg.get("enabled"):
+                reading = self.weather_reading()
+                live = weather_messages(reading, wcfg) if reading is not None else {}
+                if not any(not m.blank for m in live.values()):
+                    live = weather_messages(_sample_reading(), wcfg)
+                    if any(not m.blank for m in live.values()):
+                        weather_note = "sample reading for the weather (none received yet)"
+                sequence += [(k, m) for k, m in live.items() if not m.blank]
+            if not sequence:
+                sequence = [("countdown", message)]
         motion = cd.get("motion") or {}
         result = {
             "width": w, "height": h,
@@ -458,15 +480,25 @@ class CountdownDaemon:
             "direction": motion.get("direction", "R2L"),
             "pixels_per_second": float(motion.get("pixels_per_second", 15)),
             "repeat_delay": float(motion.get("repeat_delay", 0)),
+            "static_hold": float(motion.get("static_hold", 5)),
             "strip": None,
+            "strips": [],
         }
-        strip = layout_strip(message, Style.from_cfg(cd.get("text_style") or {}, font_path),
-                             Style.from_cfg(cd.get("number_style") or {}, font_path), w, result["direction"])
-        if strip is not None:
+        text_style = Style.from_cfg(cd.get("text_style") or {}, font_path)
+        number_style = Style.from_cfg(cd.get("number_style") or {}, font_path)
+        for slot, msg in sequence:
+            strip = layout_strip(msg, text_style, number_style, w, result["direction"])
+            if strip is None:
+                continue
             buf = io.BytesIO()
             strip.save(buf, format="PNG")
-            result["strip"] = base64.b64encode(buf.getvalue()).decode()
-            result["strip_width"], result["strip_height"] = strip.size
+            result["strips"].append({"slot": slot, "message": msg.plain,
+                                     "strip": base64.b64encode(buf.getvalue()).decode(),
+                                     "strip_width": strip.width, "strip_height": strip.height})
+        if result["strips"]:   # the first one also at the top level, as before
+            first = result["strips"][0]
+            result.update(strip=first["strip"], strip_width=first["strip_width"],
+                          strip_height=first["strip_height"])
         notes = []
         for which in ("number_style", "text_style"):
             want = str(cd[which].get("font") or "")

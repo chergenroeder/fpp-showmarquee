@@ -287,7 +287,9 @@
   let fonts = [];
   let models = [];
   let preview = null;      // last preview response
-  let stripImg = null;     // Image of the drawn strip
+  let strips = [];         // [{slot, message, img}] that take turns, as on the matrix
+  let slotIdx = 0;         // which one is up
+  let slotPasses = 0, slotStarted = 0;
   let previewSeq = 0;
 
   // ── helpers ──
@@ -443,7 +445,10 @@
                     preview.pixels_per_second !== r.pixels_per_second || preview.width !== r.width;
     preview = r;
     if (restart) mover.reset();
-    $('#mc-preview-text').textContent = r.message ? '“' + r.message + '”' : '(blank: the target has been reached)';
+    const list = (r.strips || []).map(x => x.message);
+    $('#mc-preview-text').textContent = list.length
+      ? list.map(m => '“' + m + '”').join(list.length > 1 ? '  →  ' : '') + (list.length > 1 ? '  (taking turns)' : '')
+      : '(blank: the target has been reached)';
     warnEl.textContent = r.warning || '';
     const info = `Counting down to ${r.target.name || 'the target'}: ${r.target.when_text} (FPP local time)` + (r.target.repeats ? ', every year' : '');
     $('#mc-target-info').textContent = info;
@@ -451,18 +456,26 @@
     const t = cfg.countdown.target;
     $('#mc-target-warn').textContent = (as === 'now' && r.display === 'blank' && t.type === 'custom' && !t.custom_repeat_yearly)
       ? 'This date has passed: the matrix stays blank. Pick a later date or turn on Repeat every year.' : '';
-    if (r.strip) {
+    // Decode every strip, then swap them in together, keeping the message that's up
+    const items = r.strips || [];
+    Promise.all(items.map(x => new Promise(res => {
       const img = new Image();
-      img.onload = () => { if (seq === previewSeq) stripImg = img; };
-      img.src = 'data:image/png;base64,' + r.strip;
-    } else {
-      stripImg = null;
-    }
+      img.onload = () => res({ slot: x.slot, message: x.message, img });
+      img.onerror = () => res(null);
+      img.src = 'data:image/png;base64,' + x.strip;
+    }))).then(loaded => {
+      if (seq !== previewSeq) return;
+      const current = strips[slotIdx] && strips[slotIdx].slot;
+      strips = loaded.filter(Boolean);
+      const keep = strips.findIndex(x => x.slot === current);
+      if (keep >= 0) slotIdx = keep;
+      else { slotIdx = 0; slotPasses = mover.passes; slotStarted = performance.now() / 1000; }
+    });
   }
 
   // Same motion as countdown/render.py Mover
   const mover = {
-    start: null, doneAt: null,
+    start: null, doneAt: null, passes: 0,
     reset() { this.start = null; this.doneAt = null; },
     position(t, W, H, sw, sh, dir, pps, delay) {
       const cx = Math.floor((W - sw) / 2), cy = Math.floor((H - sh) / 2);
@@ -476,6 +489,7 @@
       const horiz = dir === 'L2R' || dir === 'R2L';
       const span = horiz ? W + sw : H + sh;
       if (travel >= span) {
+        this.passes++;
         if (delay > 0) { this.doneAt = t; return null; }
         this.start = t - (travel - span) / pps; travel -= span;
       }
@@ -496,10 +510,24 @@
     if (panel.width !== W || panel.height !== H) { panel.width = W; panel.height = H; }
     const pctx = panel.getContext('2d');
     pctx.fillStyle = '#000'; pctx.fillRect(0, 0, W, H);
-    if (stripImg) {
-      const p = mover.position(performance.now() / 1000, W, H, stripImg.width, stripImg.height,
-                               preview.direction, preview.pixels_per_second, preview.repeat_delay);
-      if (p) pctx.drawImage(stripImg, p[0], p[1]);
+    if (strips.length) {
+      const t = performance.now() / 1000;
+      if (slotIdx >= strips.length) slotIdx = 0;
+      let cur = strips[slotIdx].img;
+      const at = img => mover.position(t, W, H, img.width, img.height,
+                                       preview.direction, preview.pixels_per_second, preview.repeat_delay);
+      let p = at(cur);
+      // Take turns like the matrix: after each pass, or after the hold time when static
+      if (strips.length > 1) {
+        const static_ = preview.direction === 'static';
+        if ((static_ && t - slotStarted >= (preview.static_hold || 5)) || (!static_ && mover.passes !== slotPasses)) {
+          slotIdx = (slotIdx + 1) % strips.length;
+          slotPasses = mover.passes; slotStarted = t;
+          cur = strips[slotIdx].img;
+          p = at(cur);
+        }
+      }
+      if (p) pctx.drawImage(cur, p[0], p[1]);
     }
     const avail = canvas.parentElement.clientWidth - 16;
     const scale = Math.max(1, Math.min(6, Math.floor(avail / W)));

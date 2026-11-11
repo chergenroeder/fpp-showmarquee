@@ -176,6 +176,52 @@ class Layout(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_PIL, "Pillow not installed")
+class PreviewSequence(unittest.TestCase):
+    """POST preview "now" returns every message that takes turns."""
+
+    def setUp(self):
+        from daemon_env import clear_config, daemon_module
+        self.mc = daemon_module()
+        clear_config()
+        self.d = self.mc.CountdownDaemon()
+
+    def slots(self, cfg, **body):
+        r = self.d.preview({"config": cfg, "width": 192, "height": 96, **body})
+        self.assertNotIn("error", r)
+        return r, [x["slot"] for x in r["strips"]]
+
+    def test_weather_off_shows_only_the_countdown(self):
+        r, slots = self.slots({})
+        self.assertEqual(slots, ["countdown"])
+        self.assertEqual(r["strip"], r["strips"][0]["strip"])
+
+    def test_weather_on_without_data_uses_a_sample(self):
+        r, slots = self.slots({"weather": {"enabled": True}})
+        self.assertEqual(slots, ["countdown", "temperature", "wind"])
+        self.assertEqual([x["message"] for x in r["strips"]][1:], ["Temp 72\u00b0F", "Wind 8 mph NW gusts 15"])
+        self.assertIn("sample", r["note"])
+
+    def test_live_reading_and_switched_off_messages(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 37.4, 2, 3, 20), now=time.monotonic())
+        lst.handle(rapid(101, 2, 20), now=time.monotonic())
+        self.d._listener = lst
+        r, slots = self.slots({"weather": {"enabled": True, "temperature": {"enabled": False}}})
+        self.assertEqual(slots, ["countdown", "wind"])
+        self.assertEqual(r["strips"][1]["message"], "Wind 2 mph NNE")
+        self.assertNotIn("note", r)
+
+    def test_weather_only(self):
+        _, slots = self.slots({"countdown": {"enabled": False}, "weather": {"enabled": True}})
+        self.assertEqual(slots, ["temperature", "wind"])
+
+    def test_other_modes_show_one_message(self):
+        for mode in ("days", "under_day", "temperature", "wind"):
+            r, slots = self.slots({"weather": {"enabled": True}}, **{"as": mode})
+            self.assertEqual(len(slots), 1, mode)
+
+
+@unittest.skipUnless(HAVE_PIL, "Pillow not installed")
 class TakingTurns(unittest.TestCase):
     """The real drawing loop with a fake fppd and real UDP weather packets."""
 

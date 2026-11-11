@@ -187,12 +187,17 @@ Draws a message the way the matrix would, from settings that don't have to be sa
   "display": "days",
   "message": "Christmas in 45 Days",
   "direction": "R2L", "pixels_per_second": 15.0, "repeat_delay": 0.0,
+  "static_hold": 5.0,
   "strip": "<base64 PNG of the drawn message>", "strip_width": 120, "strip_height": 13,
+  "strips": [
+    { "slot": "countdown", "message": "Christmas in 45 Days", "strip": "<base64 PNG>", "strip_width": 120, "strip_height": 13 },
+    { "slot": "temperature", "message": "Temp 37°F", "strip": "<base64 PNG>", "strip_width": 52, "strip_height": 13 }
+  ],
   "warning": "Number font “X” isn't on this player; using “DejaVuSans-Bold” instead."
 }
 ```
 
-`strip` is `null` when the message is blank. `warning` appears only when a font was replaced.
+`strips` lists the messages that take turns, in order: with `as: "now"` and Weather on, `countdown`, `temperature` and `wind` (live, or a sample with a `note` if none has arrived; switched-off or stale ones are left out). The other modes return one. Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`; the top-level `strip` is the first. `static_hold` is how long each shows in Static. `strip` is `null` when the message is blank. `warning` appears only when a font was replaced.
 
 ---
 

@@ -314,4 +314,5 @@ Add messages showing the user's WeatherFlow Tempest **temperature** and **wind s
 - [x] Settings page: a Weather card (switch, temperature/wind toggles and labels, direction, gusts; more options folded), a live weather line in the status box, Temp and Wind preview modes, "Show each message (s)" for Static.
 - [x] 19 tests (packets, duplicates, sensor filter, a real UDP socket, messages, two-line layout, taking turns with a fake fppd and live UDP packets). 120 tests in total.
 - [x] Live check on the dev server against this network's real hub: `Temp 37°F` and `Wind 2 mph NNE` took turns with the countdown.
+- [x] Preview "Now" plays every message in turn when Show weather is on, the same way the matrix does (one pass each, or the hold time when Static), using live weather or a sample. Checked live: "Wind 2 mph NNE" → "45 Days to Christmas" → "Temp 38°F". 5 tests.
 - [ ] On fpp-matrix.local: turn on Show weather and watch the countdown, temperature and wind take turns on the P5 Panel.
