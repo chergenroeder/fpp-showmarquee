@@ -200,7 +200,7 @@ Notes from building it:
 - [x] Checked on the player (FPP 10.3, "P5 Panel" 192×96): the Christmas countdown scrolled, Stop then Start from the page worked (the sudo path), and it recovered by itself after an fppd restart.
 - [ ] Not done: drawing to a matrix on *another* player. The buffer is local, so FPP Host must be this player. If that's ever wanted, it needs a different output path.
 
-### Phase 5 — Web UI ✅ built 2026-11-10, waiting for a check on the player (`matrixcountdown.html`)
+### Phase 5 — Web UI ✅ done and checked on the player 2026-11-10 (`matrixcountdown.html`)
 - [x] Target: radio buttons **Christmas / New Year's / Custom**. The date and time pickers and **Repeat every year** show only for Custom. The event name field edits the name of the chosen target. A readout shows the next target in FPP local time.
 - [x] Layout: number-first / number-last radios with live examples built from your event name, joining words and units. The joining words and unit words sit under a fold.
 - [x] Under 1 day: radios **Countdown timer** / **Hours only**, with examples, and a note on minutes in the last hour and going blank at zero.
@@ -210,9 +210,9 @@ Notes from building it:
 - [x] Daemon Start/Restart/Stop, a status box (now showing, output state and fps, FPP local time), version footer, Bootstrap variables so FPP's dark mode applies.
 - [x] Validation: a past custom date (repeat off) gets a warning and a blank preview. No model gets a warning. A model also used by Matrix Scroller gets a warning (read from the scroller's config if it's installed). The server rejects bad values on Save and says which field. Unsaved changes are marked, and leaving the page asks first.
 - [x] `scripts/dev_server.py`: fake fppd + real daemon + an FPP-like page wrapper, for working on the page without a player. Used to check the page at desktop and phone widths, in light and dark mode.
-- [ ] Check inside FPP on the player (real fonts, FPP's own page chrome and dark mode).
+- [x] Checked inside FPP on the player (after the font fallback fix).
 
-### Phase 6 — API and FPP commands ✅ built 2026-11-10, waiting for a check on the player
+### Phase 6 — API and FPP commands ✅ done and checked on the player 2026-11-10
 - [x] REST (`/api/plugin/fpp-matrixcountdown/...`): `status`, `config` GET/POST, `reload`, `preview`, `models`, `fonts`, `version`, daemon start/stop/restart, plus:
   - `POST state` `{"enabled": true|false|"toggle"}`: countdown on/off, saved.
   - `POST target` `{"type": "christmas"|"newyear"|"custom", "date", "time", "name", "repeat"}`: only `type` is required; a custom target keeps its saved date, time and name when they're left out. It is saved, and invalid values save nothing.
@@ -222,7 +222,7 @@ Notes from building it:
   - Both talk to the daemon on 127.0.0.1 with a 2 s limit, so a stopped daemon can't hold up fppd's scheduler, and they report its errors.
 - [x] Settings **Download / Upload** (JSON) on the page, instead of the scroller's named snapshots: there is only one countdown. An upload is laid over the current settings and must be reviewed and saved.
 - [x] 12 tests run the real API handler and the real command scripts (quoting, blank optional args, errors, daemon down). 100 tests in total.
-- [ ] On the player: both commands show up under FPP's command list (e.g. a playlist's FPP Command entry) and work from there and from the scheduler.
+- [x] On the player: both commands appear in FPP's command list and work.
 
 ### Phase 7 — Hardening and release (1 day)
 - [ ] Test on hardware: all five directions × both orders × both under-1-day modes. Use a temporary custom target a few minutes away to test the 1h and zero boundaries, and check the matrix goes blank.
