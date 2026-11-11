@@ -83,6 +83,12 @@ class Endpoints(CommandsBase):
         self.assertEqual(self.cd["motion"]["direction"], "static")
         self.assertEqual(self.cd["motion"]["pixels_per_second"], 15)   # default kept
 
+    def test_bad_model_name_is_rejected_on_save(self):
+        code, body = self.post("config", {"countdown": {"model": "../../etc/passwd"}})
+        self.assertEqual(code, 400)
+        self.assertIn("countdown.model", " ".join(body["details"]))
+        self.assertEqual(self.cd["model"], "")
+
     def test_target_switch_keeps_custom_date(self):
         self.post("target", {"type": "custom", "date": "2027-03-14", "time": "18:30", "name": "Opening Night"})
         self.post("target", {"type": "christmas"})
@@ -152,6 +158,23 @@ class Scripts(CommandsBase):
                            capture_output=True, text=True, timeout=10)
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("daemon not running", r.stderr)
+
+    def test_daemon_lib_loads_fpp_common_under_set_eu(self):
+        import tempfile
+        fpp = tempfile.mkdtemp()
+        os.makedirs(os.path.join(fpp, "scripts"))
+        with open(os.path.join(fpp, "scripts", "common"), "w") as f:
+            # like FPP's: reads unset variables and runs a failing command
+            f.write('X="$NOT_SET_ANYWHERE"\nfalse\nMEDIADIR=/srv/media\nLOGDIR=/srv/media/logs\n')
+        lib = os.path.join(HERE, "..", "scripts", "daemon_lib.sh")
+        r = subprocess.run(["bash", "-c", f'set -euo pipefail; . "{lib}"; echo "$MC_MEDIADIR|$MC_LOGDIR|$-"'],
+                           env=dict(os.environ, FPPDIR=fpp), capture_output=True, text=True, timeout=10)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        media, logs, flags = r.stdout.strip().split("|")
+        self.assertEqual((media, logs), ("/srv/media", "/srv/media/logs"))
+        self.assertIn("e", flags)
+        self.assertIn("u", flags)
+        shutil.rmtree(fpp)
 
     def test_descriptions_match_scripts(self):
         with open(os.path.join(COMMANDS, "descriptions.json")) as f:

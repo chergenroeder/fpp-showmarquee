@@ -30,7 +30,7 @@ from typing import Dict, List, Optional
 
 from countdown.fonts import FontIndex
 from countdown.message import Message, build_message
-from countdown.output import OutputError, OverlayOutput
+from countdown.output import OutputError, OverlayOutput, model_name_problem
 from countdown.timecalc import compute_display, local_now, resolve_target
 from countdown.weather import Reading, TempestListener, compass, c_to_f, ms_to_mph, weather_messages
 
@@ -73,6 +73,25 @@ logging.basicConfig(
     handlers=[logging.handlers.WatchedFileHandler(LOG_PATH)],
 )
 log = logging.getLogger("matrixcountdown")
+
+
+# Crashes go to the same log. The start scripts send stdout/stderr nowhere
+# (a redirect would keep writing to the log's rotated copy), so log them here.
+def _log_uncaught(exc_type, exc, tb):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc, tb)
+        return
+    log.critical("Uncaught exception", exc_info=(exc_type, exc, tb))
+
+
+def _log_uncaught_thread(args):
+    if args.exc_type is not SystemExit:
+        log.critical("Uncaught exception in thread %s", getattr(args.thread, "name", "?"),
+                     exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+
+
+sys.excepthook = _log_uncaught
+threading.excepthook = _log_uncaught_thread
 
 
 # ── FPP API helpers ───────────────────────────────────────────────────────────
@@ -229,6 +248,9 @@ def validate_config(cfg: dict) -> List[str]:
     cd = cfg.get("countdown")
     if not isinstance(cd, dict):
         return ["'countdown' section missing"]
+    model = str(cd.get("model") or "")
+    if model and model_name_problem(model):
+        errors.append(f"countdown.model: {model_name_problem(model)}")
     for (section, key), allowed in _VALID.items():
         val = (cd.get(section) or {}).get(key)
         if val not in allowed:
@@ -685,8 +707,8 @@ class CountdownDaemon:
                 if now_m < next_open:
                     self._wait(min(self.IDLE_S, next_open - now_m))
                     continue
-                candidate = OverlayOutput(host, model)
                 try:
+                    candidate = OverlayOutput(host, model)
                     candidate.open()
                 except OutputError as e:
                     self._set_state("error", str(e))

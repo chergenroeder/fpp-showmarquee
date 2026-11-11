@@ -25,10 +25,10 @@ Temp 37°F                    Wind 8 mph NW gusts 15
 
 ## Requirements
 
-- FPP 9 or 10 (tested on FPP 10.3), with Python 3 (included in FPP).
+- FPP 10 or later (tested on FPP 10.3), with Python 3 (included in FPP).
 - A **Pixel Overlay model** for the matrix (FPP **Input/Output Setup → Pixel Overlay Models**). Use a model that no other plugin draws on. If Matrix Scroller uses the same model, the page warns you.
 - The matrix must be on the same player as the plugin.
-- Pillow and the DejaVu fonts. The installer adds the `python3-pil` and `fonts-dejavu-core` packages if they're missing, which needs internet access the first time.
+- Pillow and the DejaVu fonts. The plugin declares the `python3-pil` and `fonts-dejavu-core` packages as dependencies, so FPP installs them with it (internet access needed the first time) and removes them on uninstall if nothing else uses them.
 
 ## Installation
 
@@ -105,7 +105,7 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 | `drawing needs the plugin on the same player` | The FPP Host setting points at another player; the plugin can only draw on this one. |
 | Weather: `listening for the Tempest hub… no reading yet` | The player isn't hearing the hub. Run `scripts/tempest_listen.py` on the player: if it hears nothing, the player is on a different network (e.g. FPP's own Wi-Fi). |
 | Weather: `cannot listen on UDP port 50222` | Another program holds the port without sharing it. Stop it, or use a different port if your hub is set up to send there. |
-| `Pillow is not installed` | `sudo apt-get install python3-pil`, then **Restart**. |
+| `Pillow is not installed` | **Reinstall** the plugin so FPP installs its dependencies (needs internet), or `sudo apt-get install python3-pil`; then **Restart**. |
 | Preview: `font ... isn't on this player; using ... instead` | Pick a font from the list, or reinstall to get DejaVu. |
 | Countdown is off by hours or days | Check the time shown on the status line. If it says **NOT synced to internet time**, fix the player's clock or network (FPP **Settings → Time**). |
 

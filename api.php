@@ -22,7 +22,7 @@ function getEndpointsfppmatrixcountdown() {
         array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppmatrixcountdownModels'),
         array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppmatrixcountdownFonts'),
         array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppmatrixcountdownVersion'),
-        array('method' => 'GET',  'endpoint' => 'daemon/start',   'callback' => 'fppmatrixcountdownDaemonStart'),
+        array('method' => 'POST', 'endpoint' => 'daemon/start',   'callback' => 'fppmatrixcountdownDaemonStart'),
         array('method' => 'POST', 'endpoint' => 'daemon/stop',    'callback' => 'fppmatrixcountdownDaemonStop'),
         array('method' => 'POST', 'endpoint' => 'daemon/restart', 'callback' => 'fppmatrixcountdownDaemonRestart'),
     );
@@ -72,7 +72,6 @@ function fppmatrixcountdownDaemonStart() {
     global $settings;
     $plugin_dir = $settings['pluginDirectory'] . '/fpp-matrixcountdown';
     $daemon     = $plugin_dir . '/matrixcountdown.py';
-    $logfile    = $settings['logDirectory'] . '/plugin-fpp-matrixcountdown.log';
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');
     if ($alive !== false) {
         return json(array('status' => 'already_running'));
@@ -80,12 +79,13 @@ function fppmatrixcountdownDaemonStart() {
     // The daemon must run as root to write the overlay buffer fppd (root)
     // creates with mode 0644. The web server runs as fpp, which FPP gives
     // passwordless sudo; -n fails instead of prompting if that's not so.
-    // The redirect runs inside the root shell too: the log file is root's.
+    // Its output goes nowhere: the daemon writes its own log (and logs its own
+    // crashes) through a handler that follows FPP's log rotation.
     $sudo  = (function_exists('posix_geteuid') && posix_geteuid() === 0) ? '' : 'sudo -n ';
     $inner = 'MEDIADIR=' . escapeshellarg($settings['mediaDirectory']) .
              ' LOGDIR=' . escapeshellarg($settings['logDirectory']) .
              ' exec python3 ' . escapeshellarg($daemon) .
-             ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null';
+             ' >/dev/null 2>&1 </dev/null';
     shell_exec('nohup ' . $sudo . 'sh -c ' . escapeshellarg($inner) . ' >/dev/null 2>&1 &');
     usleep(1200000); // 1.2 s startup grace
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');

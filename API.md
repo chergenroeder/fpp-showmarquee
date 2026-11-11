@@ -217,7 +217,7 @@ Font names the plugin can draw with: `["C059-Bold", "DejaVuSans", "DejaVuSans-Bo
 
 | Endpoint | |
 |---|---|
-| `GET daemon/start` | Start the daemon (as root, via sudo) if it isn't running. `{"status": "running" \| "starting" \| "already_running"}` |
+| `POST daemon/start` | Start the daemon (as root, via sudo) if it isn't running. `{"status": "running" \| "starting" \| "already_running"}` |
 | `POST daemon/restart` | Restart in place (same user). `{"status": "restarting"}` |
 | `POST daemon/stop` | Stop; the model is blanked and turned off. `{"status": "stopping"}` |
 

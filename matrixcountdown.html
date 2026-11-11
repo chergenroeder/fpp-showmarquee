@@ -7,7 +7,7 @@
   #mc-root .mc-example { font-family: var(--bs-font-monospace, monospace); font-size: .85em; color: var(--bs-secondary-color, #6c757d); }
   #mc-root .form-check-label .mc-example { margin-left: .4em; }
   #mc-root .mc-hidden { display: none !important; }
-  #mc-root .mc-preview-wrap { background: #111; border-radius: 6px; padding: 8px; overflow: hidden; }
+  #mc-root .mc-preview-wrap { border-radius: 6px; padding: 8px; overflow: hidden; }
   #mc-root canvas { display: block; margin: 0 auto; image-rendering: pixelated; max-width: 100%; }
   #mc-root .mc-color { width: 3.2rem; padding: .15rem; }
   #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color, #dee2e6); }
@@ -235,7 +235,7 @@
           </div>
         </div>
         <div class="card-body">
-          <div class="mc-preview-wrap"><canvas id="mc-canvas" width="192" height="96"></canvas></div>
+          <div class="mc-preview-wrap bg-black"><canvas id="mc-canvas" width="192" height="96"></canvas></div>
           <div class="small mt-2" id="mc-preview-text">–</div>
           <div class="small mc-warn" id="mc-preview-warn"></div>
           <div class="small text-muted" id="mc-preview-size"></div>
@@ -602,7 +602,7 @@
   }
 
   window.mcDaemon = async function (action) {
-    try { await api('daemon/' + action, { method: action === 'start' ? 'GET' : 'POST' }); } catch (e) {}
+    try { await api('daemon/' + action, { method: 'POST' }); } catch (e) {}
     setTimeout(loadStatus, 1500);
     if (action !== 'stop') setTimeout(() => { if (!cfg) mcLoad(); }, 2000);
   };

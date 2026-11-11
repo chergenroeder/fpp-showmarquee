@@ -8,10 +8,22 @@
 
 MC_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 MC_DAEMON="$MC_PLUGIN_DIR/matrixcountdown.py"
-# FPP provides MEDIADIR/LOGDIR; fall back to the default install paths
+
+# FPP's scripts/common sets MEDIADIR, LOGDIR and the rest, so a relocated
+# media folder works. It isn't written for `set -eu`, which our install
+# script uses, so relax those while it loads. (Off an FPP box, e.g. on a
+# development machine, there is no common: fall back to the default paths.)
+: "${FPPDIR:=/opt/fpp}"
+if [ -f "${FPPDIR}/scripts/common" ]; then
+    _mc_flags=$-
+    set +eu
+    . "${FPPDIR}/scripts/common"
+    case $_mc_flags in *e*) set -e ;; esac
+    case $_mc_flags in *u*) set -u ;; esac
+    unset _mc_flags
+fi
 MC_MEDIADIR="${MEDIADIR:-/home/fpp/media}"
 MC_LOGDIR="${LOGDIR:-$MC_MEDIADIR/logs}"
-MC_LOGFILE="$MC_LOGDIR/plugin-fpp-matrixcountdown.log"
 
 # PIDs of running daemons (anchored so a shell whose command line merely
 # mentions the path doesn't match)
@@ -55,7 +67,9 @@ mc_start_daemon() {
     local commit
     commit=$(git -C "$MC_PLUGIN_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
     echo "Starting matrixcountdown daemon @ $commit..."
-    # The daemon writes its own log; this only catches a crash traceback
-    MEDIADIR="$MC_MEDIADIR" LOGDIR="$MC_LOGDIR" python3 "$MC_DAEMON" >> "$MC_LOGFILE" 2>&1 &
+    # The daemon writes its own log, crashes included, through a handler that
+    # follows FPP's log rotation; a redirect here would hold the file open and
+    # keep writing to the rotated copy.
+    MEDIADIR="$MC_MEDIADIR" LOGDIR="$MC_LOGDIR" python3 "$MC_DAEMON" >/dev/null 2>&1 </dev/null &
     echo "matrixcountdown started (PID $!)"
 }

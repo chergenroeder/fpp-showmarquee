@@ -116,6 +116,15 @@ class Output(OutputBase):
         out.on()
         self.assertEqual(self.fpp.state["P5 Panel"], 1)
 
+    def test_model_names_that_would_leave_the_buffer_folder_are_refused(self):
+        from countdown.output import model_name_problem
+        for bad in ("../../etc/passwd", "a/b", "..", "x\\y", "bad\nname", "", "  "):
+            self.assertTrue(model_name_problem(bad), repr(bad))
+            with self.assertRaises(OutputError):
+                OverlayOutput(self.fpp.host, bad)
+        for good in ("P5 Panel", "Tree-Matrix_2", "Matrix (front)", "Mega Tree 16x50"):
+            self.assertEqual(model_name_problem(good), "", good)
+
     def test_wrong_frame_size(self):
         out = OverlayOutput(self.fpp.host, "P5 Panel")
         out.open()

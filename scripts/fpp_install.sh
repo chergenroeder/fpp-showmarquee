@@ -11,21 +11,12 @@ chmod +x "$PLUGIN_DIR"/scripts/*.sh "$PLUGIN_DIR"/scripts/*.py
 # fppd runs these directly (FPP commands and the callbacks script)
 chmod +x "$PLUGIN_DIR/callbacks.sh" "$PLUGIN_DIR"/commands/*.sh
 
-mkdir -p "$MC_LOGDIR"
-mkdir -p "$MC_MEDIADIR/config"
-
-# The renderer draws frames with Pillow, and the default style uses DejaVu
-# Sans Bold. Install whichever is missing (needs network access the first
-# time). Without DejaVu the countdown still draws, with another installed font.
-PKGS=""
-python3 -c "import PIL" 2>/dev/null || PKGS="$PKGS python3-pil"
-[ -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf ] || PKGS="$PKGS fonts-dejavu-core"
-if [ -n "$PKGS" ]; then
-    echo "Installing:$PKGS"
-    if ! (apt-get update -qq && apt-get install -y -qq $PKGS); then
-        echo "WARNING: could not install$PKGS" >&2
-    fi
-fi
+# python3-pil (to draw) and fonts-dejavu-core (the default font) are declared
+# in pluginInfo.json "dependencies"; FPP installs them before this script runs
+# and removes them on uninstall when nothing else needs them. Only report it
+# if they're somehow missing; the settings page says the same.
+python3 -c "import PIL" 2>/dev/null \
+    || echo "WARNING: python3-pil is missing; the countdown can't draw until it is installed" >&2
 
 # Restart the daemon so it picks up the new code. If the old one can't be
 # stopped (run by hand as a user other than root), fail rather than start a

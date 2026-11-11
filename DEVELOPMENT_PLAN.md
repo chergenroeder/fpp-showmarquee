@@ -316,3 +316,68 @@ Add messages showing the user's WeatherFlow Tempest **temperature** and **wind s
 - [x] Live check on the dev server against this network's real hub: `Temp 37°F` and `Wind 2 mph NNE` took turns with the countdown.
 - [x] Preview "Now" plays every message in turn when Show weather is on, the same way the matrix does (one pass each, or the hold time when Static), using live weather or a sample. Checked live: "Wind 2 mph NNE" → "45 Days to Christmas" → "Temp 38°F". 5 tests.
 - [ ] On fpp-matrix.local: turn on Show weather and watch the countdown, temperature and wind take turns on the P5 Panel.
+
+---
+
+## Review against FPP's plugin template (2026-11-11)
+
+Checked against [FalconChristmas/fpp-plugin-Template](https://github.com/FalconChristmas/fpp-plugin-Template) (`PLUGIN_GUIDELINES.md`, `PLUGIN_SELF_REVIEW.md`, `PLUGININFO_FORMAT.md`, `pluginInfo.schema.json` at f2b3dc2). Fixed:
+
+1. `pluginInfo.json` failed the schema (`systemChanges` kind `packages`). Packages are now declared in `dependencies.packages` (`python3-pil`, `fonts-dejavu-core`): FPP 10+ installs them before `fpp_install.sh`, reference-counts them, and removes them on uninstall. The file passes the schema; privacy texts are within the listing check's length limits (summary ≤ 200, `what` ≤ 150).
+2. The overlay model name is checked (`model_name_problem()`: no `/`, `\`, `..` or control characters) both when settings are saved and before the `/dev/shm` path is built, since a root process opens that path.
+3. `daemon/start` is a POST, in `api.php`, the page and API.md (no state change on GET).
+4. `fpp_install.sh` no longer runs `apt-get update`/`install`; it only warns if Pillow is missing.
+5. `versions[]` is FPP 10.0+ only; FPP 9 was never tested.
+6. `daemon_lib.sh` sources `${FPPDIR}/scripts/common` for MEDIADIR/LOGDIR (relaxing `set -eu` while it loads), falling back to defaults off-box.
+7. The start scripts send the daemon's stdout/stderr to `/dev/null`; the daemon logs uncaught exceptions (main and threads) itself through the rotation-aware `WatchedFileHandler`.
+8. The preview's panel background uses Bootstrap's `bg-black` instead of a hex colour.
+
+Tests: 128 (model names, bad model on save, `daemon_lib.sh` loading a `common` stand-in under `set -eu`).
+
+Not changed (optional): deleting settings on a real uninstall with `FPP_PLUGIN_REINSTALL` (FPP 10.4+); settings are kept, as the README says.
+
+- [ ] On fpp-matrix.local: Reinstall through the Plugin Manager (FPP installs the declared packages); check `media/logs/fpp_plugin_manager.log` and that `apache2-error.log` has no `fpp-matrixcountdown` lines; Stop then Start on the page (now a POST).
+- [ ] Before submitting to fpp-data: run `pluginInfo.json` through the template's Plugin preview and Privacy disclosure builder.
+
+---
+
+## Version 2.1 — Internet weather from Open-Meteo (planned 2026-11-11)
+
+Let the user pick where the weather comes from: the **local Tempest** (as now) or an **internet service**, for players with no Tempest or one on another network.
+
+**Why Open-Meteo** (compared 2026-11-11 with NWS, MET Norway, OpenWeatherMap, Pirate Weather, Tempest cloud)
+- No account or API key, so it works with no setup. It covers the whole world.
+- Free for non-commercial use (a free, open-source FPP plugin counts), about 10,000 calls/day. Polling every 10 min uses 144.
+- It returns the same values the Tempest gives, so the existing `Reading`, `temperature_message()` and `wind_message()` work unchanged.
+- Others were set aside for now: NWS is US only and needs two calls; OpenWeatherMap and Pirate Weather need a key; the Tempest cloud API needs a token (a possible third source later).
+
+**API** (checked with a live call, 2026-11-11)
+`GET https://api.open-meteo.com/v1/forecast?latitude=..&longitude=..&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=ms&timeformat=unixtime`
+- Returns `current = {time (epoch), interval: 900, temperature_2m °C, relative_humidity_2m %, wind_speed_10m m/s, wind_direction_10m °, wind_gusts_10m m/s}`. Asking for °C and m/s keeps the units the Tempest code already converts from.
+- Values are model data, updated every 15 min (`interval`), not station readings. Wind is a 10 m estimate, so it can differ from a Tempest on a roof.
+
+**Proposed decisions** (to confirm)
+
+| # | Question | Proposal |
+|---|----------|----------|
+| 1 | Choosing the source | A new `weather.source`: `"tempest"` (default, so existing setups don't change) or `"open-meteo"`. One source at a time; no automatic fallback between them in this version. |
+| 2 | Location | Use FPP's own **Latitude/Longitude** settings by default (`/api/settings/Latitude`, `/Longitude`; **to verify on fpp-matrix.local**, which didn't answer on 2026-11-11). The user can type their own lat/lon instead. A "Find" box that looks up a city or ZIP code with Open-Meteo's geocoding API can come later. |
+| 3 | How often | Every **10 minutes** (setting `weather.open_meteo.refresh_minutes`, 5–60). The data only changes every 15 min. |
+| 4 | Stale data | The 5-minute stale limit is for the Tempest and would hide Open-Meteo readings between fetches. For Open-Meteo, a reading is stale once it is older than **3 × refresh_minutes** (30 min by default). After a failed fetch it keeps the last good reading until then, retrying sooner (1, 2, 4… min, up to the refresh time). |
+| 5 | Gusts | Use `wind_gusts_10m` with the same "gust at least N mph above the average" rule. |
+| 6 | Privacy | The lat/lon go only to api.open-meteo.com, and only when the user picks that source. The settings page says so next to the choice. |
+
+**Build steps**
+- [ ] `countdown/weather.py`: `OpenMeteoPoller`, a background thread with the same interface as `TempestListener` (`start`, `stop`, `reading()`, `running`, `error`). It fetches with `urllib.request` (no new package), with a 10 s timeout and a `User-Agent` naming the plugin. It fills a `Reading` with `source = "open-meteo"` and `*_at` times based on the `current.time` the server returns, not the fetch time.
+- [ ] `_ensure_listener()`: start whichever source the settings ask for; restart when the source, location or refresh time changes.
+- [ ] Settings in `config.json`: `weather.source`, `weather.open_meteo = { latitude, longitude, use_fpp_location: true, refresh_minutes: 10 }`, plus validation (lat −90 to 90, lon −180 to 180, refresh 5–60, and a clear error if FPP has no location set and none is typed in).
+- [ ] `weather_status()`: show the source, the last fetch time and the error. The status line reads e.g. "Open-Meteo: 38°F, wind 7 mph W (updated 4 min ago)".
+- [ ] Settings page: a "Weather source" choice (Tempest on this network / Internet: Open-Meteo). Show the Tempest options (port, sensor) or the Open-Meteo options (use FPP's location or type lat/lon, refresh time) to match. Add the privacy note and an Open-Meteo credit, which their terms ask for.
+- [ ] Tests: decode a saved Open-Meteo reply, handle missing or null fields, a failed fetch keeps the last reading until it goes stale, retry backoff, switching source restarts the right thread, validation. Tests use a fake HTTP server, never the real API.
+- [ ] Live checks: on the dev server against the real API, then on fpp-matrix.local using its FPP location, with the countdown, temperature and wind taking turns on the P5 Panel.
+
+**Later ideas (not in 2.1)**
+- Tempest cloud REST API as a third source (personal token).
+- Fall back to Open-Meteo when the Tempest goes quiet.
+- City/ZIP lookup with Open-Meteo geocoding.
+- More messages from the same reply: humidity, today's high/low, a short "Rain" or "Snow" word.

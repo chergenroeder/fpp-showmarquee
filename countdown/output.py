@@ -33,6 +33,24 @@ class OutputError(Exception):
     """Drawing on the model isn't possible right now; the message says why."""
 
 
+def model_name_problem(model: str) -> str:
+    """Why a model name can't be used in the buffer's file path, or "" if it's fine.
+
+    The name becomes part of a /dev/shm path that this root process opens for
+    writing, so it must stay one plain file name: no "/", no "..", no control
+    characters.
+    """
+    if not model or not model.strip():
+        return "no model name"
+    if "/" in model or "\\" in model or model in (".", "..") or ".." in model:
+        return "a model name can't contain '/', '\\' or '..'"
+    if any(ord(c) < 32 or ord(c) == 127 for c in model):
+        return "a model name can't contain control characters"
+    if len(model.encode()) > 200:
+        return "the model name is too long"
+    return ""
+
+
 def _http(host: str, method: str, path: str, body=None, timeout: float = 2.0):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(f"http://{host}{path}", data=data, method=method)
@@ -53,6 +71,9 @@ def _http(host: str, method: str, path: str, body=None, timeout: float = 2.0):
 
 class OverlayOutput:
     def __init__(self, host: str, model: str):
+        problem = model_name_problem(model)
+        if problem:
+            raise OutputError(f"invalid overlay model name: {problem}")
         self.host = host
         self.model = model
         self.enc = quote(model, safe="")
