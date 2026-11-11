@@ -288,7 +288,7 @@ Add messages showing the user's WeatherFlow Tempest **temperature** and **wind s
 - 75 s gave obs_st=4, rapid_wind=49, hub_status=14, device_status=3.
 - **Every packet arrived twice** (probably two network interfaces), so the reader must drop duplicates by timestamp.
 - A sample reading: 38.2°F, wind 0 mph, pressure 837 mb, humidity 0.0% (suspicious; the sensor may report 0 when it fails), battery 2.68 V.
-- [ ] Run it on the FPP player: the player must be on the same network segment as the hub.
+- [x] Run it on the FPP player: **fpp-matrix.local hears the hub** (2026-11-10). 75 s gave obs_st=2, rapid_wind=25, hub_status=7, device_status=2, **no duplicates** (so the Mac's doubles were its own two interfaces). Reading: 38.0°F, wind 0–1 mph SW/SSW, gust 1 mph. Keep dropping duplicates anyway, since other players may see them.
 
 **Open questions (before building)**
 1. How weather and the countdown share the matrix: take turns every pass, every N passes, or on a timer? Or a weather-only mode?
