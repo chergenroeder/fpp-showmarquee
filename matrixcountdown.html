@@ -13,6 +13,9 @@
   #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color, #dee2e6); }
   #mc-root .mc-warn { color: var(--bs-warning-text-emphasis, #997404); }
   #mc-root .mc-err { color: var(--bs-danger, #dc3545); }
+  #mc-root .mc-section { font-size: .8em; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+                         color: var(--bs-secondary-color, #6c757d); margin: 4px 0 8px; }
+  #mc-root .mc-logo { width: 24px; height: 24px; image-rendering: auto; }
   #mc-root td.mc-k { color: var(--bs-secondary-color, #6c757d); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
@@ -36,6 +39,7 @@
         <tr><td class="mc-k">Now showing</td><td id="mc-s-message">–</td></tr>
         <tr><td class="mc-k">Output</td><td id="mc-s-output">–</td></tr>
         <tr><td class="mc-k">Weather</td><td id="mc-s-weather">–</td></tr>
+        <tr><td class="mc-k">Social media</td><td id="mc-s-social">–</td></tr>
         <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
       </table>
     </div>
@@ -44,9 +48,15 @@
   <div class="row g-3">
     <div class="col-lg-7">
 
+      <div class="mc-section">1 · Countdown</div>
+
       <!-- Target -->
       <div class="card mb-3">
-        <div class="card-header"><strong>Count down to</strong></div>
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Count down to</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-enabled" data-path="countdown.enabled">
+            <label class="form-check-label" for="mc-enabled">Countdown on</label></div>
+        </div>
         <div class="card-body">
           <div class="d-flex flex-wrap gap-3 mb-2">
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-type" id="mc-type-christmas" value="christmas" data-path="countdown.target.type">
@@ -113,35 +123,7 @@
         </div>
       </div>
 
-      <!-- Motion -->
-      <div class="card mb-3">
-        <div class="card-header"><strong>Motion</strong></div>
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-dir">Direction</label>
-              <select class="form-select form-select-sm" id="mc-dir" data-path="countdown.motion.direction">
-                <option value="R2L">Right to Left</option>
-                <option value="L2R">Left to Right</option>
-                <option value="B2T">Bottom to Top</option>
-                <option value="T2B">Top to Bottom</option>
-                <option value="static">Static (centered)</option>
-              </select></div>
-            <div class="col-6 col-sm-3 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-pps">Speed (px/s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
-            <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
-            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show each message (s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-hold" min="1" max="600" step="1" data-path="countdown.motion.static_hold" data-type="number"></div>
-          </div>
-          <div class="small text-muted mt-2" id="mc-dir-note"></div>
-        </div>
-      </div>
-
-      <!-- Styles -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-6" data-style="number_style"></div>
-        <div class="col-md-6" data-style="text_style"></div>
-      </div>
+      <div class="mc-section">2 · Weather</div>
 
       <!-- Weather -->
       <div class="card mb-3">
@@ -155,11 +137,11 @@
           <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
             <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
-              <label class="form-check-label" for="mc-w-src-om">Internet: Open-Meteo <span class="badge bg-success">recommended</span>
+              <label class="form-check-label" for="mc-w-src-om">Internet: Open-Meteo
                 <span class="mc-example">no account or key; worldwide</span></label></div>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-tempest" value="tempest" data-path="weather.source">
-              <label class="form-check-label" for="mc-w-src-tempest">Tempest weather station on this network
-                <span class="mc-example">the hub's local broadcast; no internet</span></label></div>
+              <label class="form-check-label" for="mc-w-src-tempest">Tempest weather station
+                <span class="mc-example">for Tempest owners whose Tempest hub is on the same network as this player (Pi); no internet needed</span></label></div>
             <div class="small mc-warn mt-1 mc-hidden" id="mc-w-src-need">Choose where the weather comes from: nothing is shown or sent until you do.</div>
 
             <div class="mt-2 mc-hidden" id="mc-w-om">
@@ -215,6 +197,60 @@
         </div>
       </div>
 
+      <div class="mc-section">3 · Social Media</div>
+
+      <!-- Social media -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Social Media</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-so-on" data-path="social.enabled">
+            <label class="form-check-label" for="mc-so-on">Show social media</label></div>
+        </div>
+        <div class="card-body" id="mc-social-body">
+          <div class="small text-muted mb-2">Logos on top, <code>@handle</code> below, held still (never scrolled). Sites with the same handle share one screen; different handles get a screen each, shown one after another. Takes turns with the countdown and weather.</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-so-secs">Seconds per screen</label>
+              <input type="number" class="form-control form-control-sm" id="mc-so-secs" min="1" max="600" step="1" data-path="social.screen_seconds" data-type="number"></div>
+          </div>
+          <div id="mc-so-sites"></div>
+          <div class="small mt-2" id="mc-so-plan"></div>
+          <div class="small mc-warn" id="mc-so-warn"></div>
+          <div class="small text-muted mt-1">The handle uses the Text style's font and colour, shrinking if it's too wide. Logos are trademarks of their owners.</div>
+        </div>
+      </div>
+
+      <div class="mc-section">Shared by all three</div>
+
+      <!-- Motion -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Motion</strong></div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-dir">Direction</label>
+              <select class="form-select form-select-sm" id="mc-dir" data-path="countdown.motion.direction">
+                <option value="R2L">Right to Left</option>
+                <option value="L2R">Left to Right</option>
+                <option value="B2T">Bottom to Top</option>
+                <option value="T2B">Top to Bottom</option>
+                <option value="static">Static (centered)</option>
+              </select></div>
+            <div class="col-6 col-sm-3 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-pps">Speed (px/s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
+            <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
+            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show each message (s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-hold" min="1" max="600" step="1" data-path="countdown.motion.static_hold" data-type="number"></div>
+          </div>
+          <div class="small text-muted mt-2" id="mc-dir-note"></div>
+        </div>
+      </div>
+
+      <!-- Styles -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6" data-style="number_style"></div>
+        <div class="col-md-6" data-style="text_style"></div>
+      </div>
+
       <!-- Display -->
       <div class="card mb-3">
         <div class="card-header"><strong>Matrix</strong></div>
@@ -223,8 +259,6 @@
             <div class="col-sm-7"><label class="form-label form-label-sm mb-0" for="mc-model">Overlay model</label>
               <select class="form-select form-select-sm" id="mc-model" data-path="countdown.model"></select></div>
             <div class="col-sm-5 d-flex flex-column justify-content-end">
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="mc-enabled" data-path="countdown.enabled">
-                <label class="form-check-label" for="mc-enabled">Countdown on</label></div>
               <div class="form-check"><input class="form-check-input" type="checkbox" id="mc-output" data-path="global.enable_output">
                 <label class="form-check-label" for="mc-output">Output enabled</label></div>
             </div>
@@ -258,6 +292,8 @@
             <label class="btn btn-outline-secondary" for="mc-as-temp">Temp</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-wind" value="wind">
             <label class="btn btn-outline-secondary" for="mc-as-wind">Wind</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-social" value="social">
+            <label class="btn btn-outline-secondary" for="mc-as-social">Social</label>
           </div>
         </div>
         <div class="card-body">
@@ -302,6 +338,16 @@
   </div>
 </template>
 
+<template id="mc-site-tpl">
+  <div class="row g-2 align-items-center mb-1">
+    <div class="col-auto"><img class="mc-logo" alt=""></div>
+    <div class="col-4 col-sm-3"><div class="form-check form-switch mb-0"><input class="form-check-input mc-site-on" type="checkbox" role="switch">
+      <label class="form-check-label mc-site-name"></label></div></div>
+    <div class="col"><div class="input-group input-group-sm"><span class="input-group-text">@</span>
+      <input type="text" class="form-control mc-site-handle" maxlength="31" placeholder="handle" autocomplete="off" spellcheck="false"></div></div>
+  </div>
+</template>
+
 <script>
 (function () {
   const API = '/api/plugin/fpp-matrixcountdown/';
@@ -337,6 +383,56 @@
     const el = $('#mc-save-msg'); el.textContent = msg; el.className = 'small ' + (isError ? 'mc-err' : 'text-success');
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // ── social media ──
+  const SITES = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube']];
+  const SITE_NAME = Object.fromEntries(SITES);
+  function buildSiteRows() {
+    const box = $('#mc-so-sites');
+    SITES.forEach(([key, name]) => {
+      const node = $('#mc-site-tpl').content.cloneNode(true);
+      const on = $('.mc-site-on', node), handle = $('.mc-site-handle', node);
+      on.id = 'mc-so-' + key + '-on'; on.dataset.path = 'social.sites.' + key + '.enabled';
+      handle.id = 'mc-so-' + key + '-handle'; handle.dataset.path = 'social.sites.' + key + '.handle';
+      handle.setAttribute('aria-label', name + ' handle');
+      $('.mc-site-name', node).textContent = name; $('.mc-site-name', node).htmlFor = on.id;
+      $('.mc-logo', node).dataset.site = key; $('.mc-logo', node).alt = name;
+      box.appendChild(node);
+    });
+  }
+  async function loadLogos() {
+    try {
+      const r = await api('logos');
+      if (r && r.logos) $$('.mc-logo').forEach(img => { if (r.logos[img.dataset.site]) img.src = 'data:image/png;base64,' + r.logos[img.dataset.site]; });
+    } catch (e) {}
+  }
+  const cleanHandle = h => String(h || '').trim().replace(/^@+/, '').trim();
+  // Same grouping as countdown/social.py social_screens()
+  function socialScreens(S) {
+    const groups = new Map(), problems = [];
+    SITES.forEach(([key, name]) => {
+      const site = (S.sites || {})[key] || {};
+      if (!site.enabled) return;
+      const h = cleanHandle(site.handle);
+      if (!h) { problems.push(`${name} is on but has no handle.`); return; }
+      if (h.length > 30) { problems.push(`${name} handle is longer than 30 characters.`); return; }
+      if (!/^[A-Za-z0-9._-]+$/.test(h)) { problems.push(`${name} handle may only have letters, digits, dots, underscores and dashes.`); return; }
+      const k = h.toLowerCase();
+      if (!groups.has(k)) groups.set(k, { handle: h, sites: [] });
+      groups.get(k).sites.push(name);
+    });
+    return { screens: Array.from(groups.values()), problems };
+  }
+  function refreshSocial() {
+    const S = cfg.social || {};
+    $('#mc-social-body').style.opacity = S.enabled ? '' : '.55';
+    const { screens, problems } = socialScreens(S);
+    const desc = sc => sc.sites.join(' + ') + ' @' + sc.handle;
+    $('#mc-so-plan').textContent = !screens.length ? 'Turn on a site and enter its handle.'
+      : (screens.length === 1 ? '1 screen: ' : screens.length + ' screens: ') + screens.map(desc).join(', then ')
+        + ` · ${Number(S.screen_seconds) || 5} s each`;
+    $('#mc-so-warn').textContent = problems.join(' ');
+  }
 
   // ── style cards ──
   function buildStyleCards() {
@@ -430,10 +526,12 @@
     $('#mc-ex-temp').textContent = join(WT.label, '72°F');
     $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
     $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
-      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide).' : '';
+      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide). Social media screens never scroll.'
+      : 'Social media screens never scroll: they are held still for their seconds.';
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
+    refreshSocial();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
     $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
@@ -484,7 +582,7 @@
     const list = (r.strips || []).map(x => x.message);
     $('#mc-preview-text').textContent = list.length
       ? list.map(m => '“' + m + '”').join(list.length > 1 ? '  →  ' : '') + (list.length > 1 ? '  (taking turns)' : '')
-      : '(blank: the target has been reached)';
+      : (as === 'social' ? '' : '(blank: the target has been reached)');
     warnEl.textContent = r.warning || '';
     const info = `Counting down to ${r.target.name || 'the target'}: ${r.target.when_text} (FPP local time)` + (r.target.repeats ? ', every year' : '');
     $('#mc-target-info').textContent = info;
@@ -496,7 +594,7 @@
     const items = r.strips || [];
     Promise.all(items.map(x => new Promise(res => {
       const img = new Image();
-      img.onload = () => res({ slot: x.slot, message: x.message, img });
+      img.onload = () => res({ slot: x.slot, message: x.message, still: !!x.still, img });
       img.onerror = () => res(null);
       img.src = 'data:image/png;base64,' + x.strip;
     }))).then(loaded => {
@@ -549,21 +647,28 @@
     if (strips.length) {
       const t = performance.now() / 1000;
       if (slotIdx >= strips.length) slotIdx = 0;
-      let cur = strips[slotIdx].img;
-      const at = img => mover.position(t, W, H, img.width, img.height,
+      // Social screens are held still at 0,0; everything else moves like the matrix
+      const at = item => item.still ? [0, 0] : mover.position(t, W, H, item.img.width, item.img.height,
                                        preview.direction, preview.pixels_per_second, preview.repeat_delay);
+      let cur = strips[slotIdx];
       let p = at(cur);
-      // Take turns like the matrix: after each pass, or after the hold time when static
+      // Take turns like the matrix: a social screen after its seconds; otherwise
+      // after each pass, or after the hold time when static
       if (strips.length > 1) {
         const static_ = preview.direction === 'static';
-        if ((static_ && t - slotStarted >= (preview.static_hold || 5)) || (!static_ && mover.passes !== slotPasses)) {
+        const done = cur.still ? t - slotStarted >= (preview.screen_seconds || 5)
+                   : static_ ? t - slotStarted >= (preview.static_hold || 5)
+                   : mover.passes !== slotPasses;
+        if (done) {
+          const wasStill = cur.still;
           slotIdx = (slotIdx + 1) % strips.length;
+          cur = strips[slotIdx];
+          if (wasStill && !cur.still) mover.reset();   // a fresh pass from the edge
           slotPasses = mover.passes; slotStarted = t;
-          cur = strips[slotIdx].img;
           p = at(cur);
         }
       }
-      if (p) pctx.drawImage(cur, p[0], p[1]);
+      if (p) pctx.drawImage(cur.img, p[0], p[1]);
     }
     const avail = canvas.parentElement.clientWidth - 16;
     const scale = Math.max(1, Math.min(6, Math.floor(avail / W)));
@@ -606,8 +711,11 @@
     }
     saved = JSON.stringify(cfg);
     refresh();
-    const W = cfg.weather || {};
-    notify(W.enabled && !W.source ? 'Saved. Choose where the weather comes from for it to show.' : 'Saved', W.enabled && !W.source);
+    const W = cfg.weather || {}, S = cfg.social || {};
+    const noScreens = S.enabled && !socialScreens(S).screens.length;
+    notify(W.enabled && !W.source ? 'Saved. Choose where the weather comes from for it to show.'
+         : noScreens ? 'Saved. Turn on a site and enter its handle for social media to show.' : 'Saved',
+           (W.enabled && !W.source) || noScreens);
     setTimeout(loadStatus, 600);
   };
 
@@ -698,6 +806,12 @@
     $('#mc-s-weather').textContent = wt;
     $('#mc-s-weather').className = w.error ? (hasReading ? 'mc-warn' : 'mc-err') : '';
     $('#mc-w-live').textContent = w.enabled ? 'Now: ' + wt : '';
+    const so = s.social || {}, soEl = $('#mc-s-social');
+    const soProblems = Object.values(so.problems || {});
+    soEl.textContent = !so.enabled ? 'off'
+      : (so.screens || []).length ? so.screens.map(x => x.plain).join(' → ') + (soProblems.length ? ' · ' + soProblems.join('; ') : '')
+      : 'no screens: ' + (soProblems.join('; ') || 'turn on a site and enter its handle');
+    soEl.className = so.enabled && soProblems.length ? 'mc-warn' : '';
     const o = s.output || {};
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
@@ -712,6 +826,8 @@
 
   // ── start ──
   buildStyleCards();
+  buildSiteRows();
+  loadLogos();
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);
   $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => { mover.reset(); schedulePreview(0); }));

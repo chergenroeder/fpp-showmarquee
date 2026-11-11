@@ -358,7 +358,7 @@ class Daemon(unittest.TestCase):
                            "weather": {"enabled": enabled, "port": 50222}}, f)
             cfg = self.mc.load_config()
             self.assertEqual(cfg["weather"]["source"], source)
-            self.assertEqual(cfg["global"]["schema_version"], 2)
+            self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
             self.assertEqual(self.saved_file()["weather"]["source"], source)
 
     def test_switching_source_swaps_the_reader(self):

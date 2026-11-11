@@ -79,7 +79,25 @@ From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 - [ ] **Matrix Countdown - State**: Off blanks the matrix; On brings it back; Toggle flips it.
 - [ ] **Matrix Countdown - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
 
-## 6. Recovery
+## 6. Social media
+
+```bash
+set '{"countdown":{"motion":{"direction":"R2L"}},"social":{"enabled":true,"screen_seconds":5,"sites":{"facebook":{"enabled":true,"handle":"SmithFamilyLights"},"instagram":{"enabled":true,"handle":"SmithFamilyLights"},"tiktok":{"enabled":true,"handle":"SmithFamilyLights"},"youtube":{"enabled":true,"handle":"SmithFamilyLights"}}}}'
+```
+
+- [ ] After the countdown's pass, **one screen** shows all four logos side by side with `@SmithFamilyLights` underneath, held still for 5 s; then the countdown scrolls in fresh from the edge.
+- [ ] The logos are recognisable and in colour from across the yard.
+
+```bash
+set '{"social":{"screen_seconds":3,"sites":{"instagram":{"handle":"smith_lights"},"tiktok":{"handle":"@Smith_Lights"}}}}'
+```
+
+- [ ] **Two screens**, 3 s each: Facebook + YouTube `@SmithFamilyLights`, then Instagram + TikTok `@smith_lights` (case and `@` ignored when matching).
+- [ ] With `"direction":"static"` the countdown holds for its time, then each screen for 3 s.
+- [ ] Turn **Countdown on** off: only the social screens take turns.
+- [ ] The page's **Social media** status line names the screens; switching a site on with an empty handle shows a warning there and in the card.
+
+## 7. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.

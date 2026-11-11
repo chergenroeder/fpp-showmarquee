@@ -361,7 +361,7 @@ Let the user pick where the weather comes from: an **internet service (Open-Mete
 
 | # | Question | Decision |
 |---|----------|----------|
-| 1 | Choosing the source | **The user picks.** `weather.source` is `"open-meteo"`, `"tempest"` or `""` (not chosen), and starts as `""`. Turning Weather on shows the choice with **Open-Meteo listed first as recommended** and the Tempest as the alternative; until one is picked, Weather shows nothing and sends nothing. One source at a time; no automatic fallback. (This meets guideline 14.2, which says a feature with a remote provider must not default to it; decided 2026-11-11.) |
+| 1 | Choosing the source | **The user picks.** `weather.source` is `"open-meteo"`, `"tempest"` or `""` (not chosen), and starts as `""`. Turning Weather on shows the two choices with **neither recommended** (Open-Meteo, then the Tempest, labelled as for Tempest owners whose hub is on the same network as the player; changed 2026-11-11); until one is picked, Weather shows nothing and sends nothing. One source at a time; no automatic fallback. (This meets guideline 14.2, which says a feature with a remote provider must not default to it; decided 2026-11-11.) |
 | 2 | Location | **FPP's own Latitude/Longitude by default** (FPP **Settings → General**; read live, never copied). The plugin settings can **override** them with the user's own lat/lon. If FPP has no location and none is typed, the page says so and nothing is sent. A city/ZIP lookup can come later. |
 | 3 | How often | **Every 15 minutes**, matching Open-Meteo's 15-minute update. Fetch shortly after each quarter hour (:01, :16, :31, :46) so each fetch gets new data. Not a setting. |
 | 4 | Stale data | Too old after **3 × 15 = 45 minutes**. A failed fetch keeps the last good reading until then and retries after 1, 2, 4, 8 min, then every 15. The Tempest keeps its own 5-minute limit. |
@@ -373,7 +373,7 @@ Let the user pick where the weather comes from: an **internet service (Open-Mete
 | Guideline | What 2.1 does |
 |---|---|
 | 14.1 Name every off-box recipient | A `privacy.sends` entry: to `https://api.open-meteo.com`, what "this player's latitude and longitude, rounded to about 1 km", why "to get the current temperature and wind", `alwaysOn: false`. Open-Meteo is named in the `description`, and the `summary` (≤ 200 chars) is rewritten to cover both sources. |
-| 14.2 Off until turned on; remote features default to local | Weather is off by default, and no source is preselected: the user picks Open-Meteo (listed first, recommended) or the Tempest. So no default setting sends anything, and the remote provider is never chosen for them. |
+| 14.2 Off until turned on; remote features default to local | Weather is off by default, and no source is preselected: the user picks Open-Meteo or the Tempest, with neither recommended. So no default setting sends anything, and the remote provider is never chosen for them. |
 | 14.3 Send only what's needed | Only lat/lon, **rounded to 2 decimals** (about 1 km; Open-Meteo's grid is coarser anyway), and the fixed list of fields. No hostname, serial or FPP version. The User-Agent names the plugin only. |
 | 14.11 Personal data in `plugindata/` | A typed-in location is personal data about where the user lives. It is stored in `<mediadir>/plugindata/fpp-matrixcountdown/location.json`, mode `0600`, not in `config/` (which goes into crash bundles and backups). FPP's own Latitude/Longitude are read when needed, never copied. Coordinates are kept out of the log at the default level. |
 | Red light: "Sends unencrypted to the internet" | HTTPS only. |
@@ -389,7 +389,7 @@ Let the user pick where the weather comes from: an **internet service (Open-Mete
 - [ ] `_ensure_listener()`: start whichever source the settings ask for; restart when the source or location changes.
 - [ ] Settings: `weather.source` in `config.json` (default `""`; validation accepts `""`, `"open-meteo"`, `"tempest"`); `weather.location_override` (on/off) and the coordinates kept in `plugindata`, written by `POST config`. Validation: lat −90 to 90, lon −180 to 180, and a clear error when no location is available. A saved config with Weather on and no `source` (built before 2.1) is treated as `tempest`, so an existing setup doesn't start sending.
 - [ ] `weather_status()`: with no source picked, say "choose a weather source"; otherwise show the source, where the location came from, the last fetch time and any error. The status line reads e.g. "Open-Meteo: 38°F, wind 7 mph W (updated 4 min ago)".
-- [ ] Settings page: a Weather source choice with nothing selected at first: "Internet: Open-Meteo (recommended)" then "Tempest on this network", with the recipient named beside Open-Meteo. Turning Weather on with no source picked highlights the choice, and Save says one is needed for weather to show. Open-Meteo shows "Location: FPP settings (40.01, −100.00)" plus an "Use a different location" switch with lat/lon fields; Tempest shows its port and sensor options. Credit link to Open-Meteo. Bootstrap classes only.
+- [ ] Settings page: a Weather source choice with nothing selected at first: "Internet: Open-Meteo" then "Tempest weather station (for Tempest owners whose hub is on the same network as this player)", with the recipient named beside Open-Meteo. Turning Weather on with no source picked highlights the choice, and Save says one is needed for weather to show. Open-Meteo shows "Location: FPP settings (40.01, −100.00)" plus an "Use a different location" switch with lat/lon fields; Tempest shows its port and sensor options. Credit link to Open-Meteo. Bootstrap classes only.
 - [ ] `pluginInfo.json`: the new `sends` entry, the `description` and `summary` naming Open-Meteo, and the Tempest `systemChanges` entry kept. Re-run the schema and the length limits.
 - [ ] README: the source choice, where the location comes from, what is sent, the new error messages. API.md: the new settings and status fields.
 - [ ] Tests: decode a saved Open-Meteo reply; missing or null fields; a failed fetch keeps the last reading until 45 min; the retry schedule; quarter-hour timing; FPP location vs override; rounding; the override file is 0600 and stays out of `config/`; an old config without `source` stays on Tempest; a fresh config has no source and starts no thread; Weather on with no source sends nothing; switching source restarts the right thread; validation; certificate and timeout errors give the right text. All against a fake HTTPS/HTTP server, never the real API.
@@ -399,7 +399,7 @@ Let the user pick where the weather comes from: an **internet service (Open-Mete
 **Built (2026-11-11)**
 - [x] `countdown/weather.py`: `OpenMeteoPoller` (HTTPS, 10 s timeout, plugin User-Agent; fetches at once, then at :01/:16/:31/:46; retries after 1, 2, 4, 8 min; a settings save refetches only if the location changed; the thread catches its own errors). `fetch_open_meteo()` turns failures into page messages (no internet, timeout, HTTP code and reason, certificate → "check this player's date and time"). `Location`/`make_location()` round to 2 decimals and treat 0, 0 as unset. `Reading.max_age_s` gives Open-Meteo its 45-minute limit; value ages come from the server's time, clamped to 15 min so a wrong player clock can't hide a fresh reading.
 - [x] Daemon: `weather.source` (`""` by default, so nothing is sent until one is chosen), `weather.open_meteo.use_fpp_location`; FPP's `Latitude`/`Longitude` read from `/api/settings` (confirmed on fpp-matrix.local; FPP marks both `pii`), cached a minute. A typed-in location goes to `plugindata/fpp-matrixcountdown/location.json` (0600, removed when cleared), never into `config/` or the log; `GET config` adds it for the page. Schema 2: settings saved with Weather on and no source become `tempest`. Status: `source`, `location`, `last_fetch_age_s`, `next_fetch_s`; the Tempest's hub IP is now `hub_ip`.
-- [x] Settings page: the source choice (nothing selected at first, Open-Meteo first with a "recommended" badge), what is sent and to whom, FPP's location or "Use a different location" with lat/lon, the Open-Meteo credit, Tempest-only options shown only for the Tempest, a warning (and a Save note) when Weather is on without a source.
+- [x] Settings page: the source choice (nothing selected at first, Open-Meteo, then the Tempest for owners whose hub is on the same network as the player; no "recommended" badge), what is sent and to whom, FPP's location or "Use a different location" with lat/lon, the Open-Meteo credit, Tempest-only options shown only for the Tempest, a warning (and a Save note) when Weather is on without a source.
 - [x] `pluginInfo.json`: a `sends` entry for api.open-meteo.com; description, summary and `other` updated. Passes the template schema; lengths within limits. README and API.md updated.
 - [x] 27 tests in `tests/test_open_meteo.py` against a fake Open-Meteo (155 in total, all passing).
 - [x] Live check on the dev server against the real API (test location 40, −100): `Temp 39°F` and `Wind 6 mph W gusts 15` took turns with the countdown in the preview; the config file had no coordinates, the location file was 0600, the log had none.
@@ -411,3 +411,102 @@ Let the user pick where the weather comes from: an **internet service (Open-Mete
 - Fall back to Open-Meteo when the Tempest goes quiet.
 - City/ZIP lookup with Open-Meteo geocoding (another `sends` entry).
 - More messages from the same reply: humidity, today's high/low, a short "Rain" or "Snow" word.
+
+---
+
+## Version 3 — Social Media (planned 2026-11-11, revised 2026-11-11)
+
+A third kind of message: **social media screens** for **Facebook, Instagram, TikTok and YouTube**. Each site has its own on/off switch and its own handle. A screen is **logos on the top line and the handle on the bottom line**, held still (never scrolled), with no "Follow us" wording. With this, the plugin has three message sections: **Countdown**, **Weather** and **Social Media**, all taking turns on the same model.
+
+```
+ Same handle on all four:        Different handles: one screen each,
+ +----------------------+        shown one after another
+ |  [f] [◎] [♪] [▶]     |        +----------------------+   +----------------------+
+ |  @SmithFamilyLights  |        |      [f]  [▶]        |   |      [◎]  [♪]        |
+ +----------------------+        |  @SmithFamilyLights  |   |    @smith_lights     |
+                                 +----------------------+   +----------------------+
+```
+
+**Why it fits without a new approach:** the plugin already draws every frame itself with Pillow and writes it to the overlay buffer (section 2). A social screen is just one more panel-sized image, drawn once and held for its time. FPP's Image effect (used by fpp-santa-tracker) isn't needed.
+
+**Requirements**
+
+| # | Requirement | Notes |
+|---|-------------|-------|
+| S1 | A screen is **logos on line one, `@handle` on line two** | No lead-in text. Logos as large as the panel allows. |
+| S2 | Four sites: Facebook, Instagram, TikTok, YouTube | Fixed list in v3; a site can be added later with one table entry and one logo |
+| S3 | Each site has its **own on/off** and **own handle** | |
+| S4 | Sites with the **same handle share one screen**: all their logos side by side above the one handle | |
+| S5 | **Different handles get consecutive screens**, one per handle | In the site order above, by the first site that uses each handle |
+| S6 | Social screens are **never scrolled**, whatever the Motion direction is | They are always held still and centered |
+| S7 | **Seconds per screen**: a number input for how long each social screen shows | Default 5 s, 1–600 s. Separate from Motion's "Show each message (s)" for Static. |
+| S8 | A **Social Media** master switch, like Show weather | Off by default |
+| S9 | Takes turns with the countdown and weather | Countdown pass → temperature → wind → social screen 1 → screen 2 → ... → countdown again |
+
+**Design decisions**
+
+| # | Question | Decision |
+|---|----------|----------|
+| 1 | Same handle? | Compared after cleaning (no `@`, spaces trimmed) and **ignoring upper/lower case**, since all four sites treat handles that way. The screen shows the handle as typed for the first of its sites. |
+| 2 | Screen order | Groups in site order (Facebook, Instagram, TikTok, YouTube), each group placed by its first site. Within a group, logos in the same order. |
+| 3 | Layout on the panel | The handle line is measured first in its style (below), shrunk one size at a time until it fits the width. The logos get the height that's left (panel height − handle height − a 1–2 px gap), also limited so all of a group's logos plus gaps fit the width. Logos are square, the same size, centered as a row; the whole screen is centered vertically. On a 64×32 panel with a 10 px handle that gives logos about 18–20 px tall (four fit across at 14 px; two at 20 px). |
+| 4 | Logo artwork | **Drawn in code** with Pillow shapes (`countdown/social.py`) at 4× the size the layout picks, then scaled down, so each size is sharp and no image files are bundled. Full brand colours, including Instagram's gradient. (Changed while building: originally one master PNG per site plus hand-tuned small ones; drawing in code reads clearly down to 12 px.) |
+| 5 | Handle style | The **Text style**'s font and colour (the handle is the only text). The size there is the starting size; it only shrinks if the handle is too wide. |
+| 6 | Handle too wide even at the smallest size | Shown centered and cut off at both edges, and the settings page warns "this handle doesn't fit on a W-pixel panel" next to it. Never scrolled. |
+| 7 | Going back to the countdown | After the last social screen the countdown starts a fresh pass from the edge (`Mover.reset()`), so it never appears halfway across. |
+| 8 | The handle | Typed with or without `@`; stored without it and always shown with one. Allowed: letters, digits, `.` `_` `-`, up to 30 characters. A site switched on with an empty handle is skipped, and the page says so. |
+| 9 | Trademarks | All four allow their logo next to a profile handle; their brand rules ask that it isn't altered. The README will say the logos are trademarks of their owners, shown only to point people to the user's own profiles. To check before listing in fpp-data: whether bundling the logo files needs anything more. |
+| 10 | Privacy | Nothing leaves the player; the plugin only draws what the user typed. Handles are public and stay in `config/`. No `privacy.sends` entry. |
+
+**Config (schema 3)**
+
+```json
+"social": {
+    "enabled": false,
+    "screen_seconds": 5,
+    "sites": {
+        "facebook":  { "enabled": false, "handle": "" },
+        "instagram": { "enabled": false, "handle": "" },
+        "tiktok":    { "enabled": false, "handle": "" },
+        "youtube":   { "enabled": false, "handle": "" }
+    }
+}
+```
+An older config gets `social.enabled = false` from the defaults merge. `SCHEMA_VERSION` goes to 3.
+
+**Code changes**
+
+| Where | Change |
+|---|---|
+| `countdown/social.py` (new) | `SITES` table (key, display name); `clean_handle()`; `social_screens(cfg) -> List[Screen]`, where `Screen = (sites: tuple, handle: str)`, grouped and ordered as above; `load_logo(site, size)` with a cache; `draw_screen(screen, w, h, text_style) -> Image`, the panel-sized picture (also used by the page's logo previews). |
+| `countdown/render.py` | `Renderer` gets a `still(image)` path: return a cached panel image unchanged, no `Mover`. The countdown/weather path is untouched. |
+| `matrixcountdown.py` | Turn-taking: today every turn ends after one pass (or `static_hold`). A turn now has a **kind**: `scroll` (countdown, temperature, wind; ends as today) or `still` (each social screen, named `social:1`, `social:2`, ...; ends after `social.screen_seconds`). After the last still screen, `mover.reset()`. Also: `validate_config` for `social.*`; `status.social` (screens, any site on with no handle, handles that won't fit); `status.showing` gives e.g. `[Facebook][YouTube] @SmithFamilyLights`. |
+| Preview (`POST preview`) | New `as: social`, which returns every social screen as PNGs. "Now" plays the social screens in turn, each for its seconds, as the matrix does. |
+| `GET logos` (new) | The logos as 48 px PNGs for the settings page, drawn by the same code as the matrix. |
+| `commands/` | Optional: **Matrix Countdown - Social** `On`/`Off`/`Toggle` for the scheduler. |
+| `pluginInfo.json` | Description and privacy summary mention social media; no new `sends`. |
+
+**Settings page: three message sections**
+
+1. **Countdown**: today's *Count down to* and *Message* cards under one heading; the **Countdown on** switch moves from the Matrix card to this header.
+2. **Weather**: unchanged.
+3. **Social Media** (new card): a *Show social media* switch in the header, then a **Seconds per screen** number input (1–600, with up/down arrows) and one row per site: its logo, an on/off switch, and an `@` input for the handle. Under the rows, a line says what the matrix will show, e.g. "2 screens: Facebook + YouTube @SmithFamilyLights, then Instagram + TikTok @smith_lights". Warnings for a site that's on with no handle, or a handle too wide for the panel.
+
+**Shared** by all three and kept below them: *Motion* (with a note that social screens never scroll), *Number style / Text style* (the Text style also sets the handle's font and colour), *Matrix*, and *Preview* (new mode: Social).
+
+**Build steps**
+- [x] Logos drawn in code; checked on a contact sheet at 128, 20 and 12 px and on 64×32 and 128×64 screens with 1, 2 and 4 logos.
+- [x] `social.py`: handle cleaning, grouping, `layout_screen()` / `draw_screen()`, `ScreenCache`.
+- [x] Daemon: turn kinds (a `Screen` is held for `social.screen_seconds`; a `Message` ends after a pass or `static_hold`), `mover.reset()` after social, config, validation, handles saved without `@`, schema 3, `status.social`, `GET logos`. The still path lives in the daemon's `draw()` with a `ScreenCache`, so `render.py` is unchanged.
+- [x] Preview: `as: social` and social screens in "Now", each item with `still`; `screen_seconds`; a warning when a handle is too wide.
+- [x] Settings page: three sections (1 · Countdown, 2 · Weather, 3 · Social Media, then "Shared by all three": Motion, styles, Matrix); **Countdown on** moved to the Count down to header; Social Media card with Seconds per screen, a row per site (logo, switch, `@` handle), the "what will show" line and warnings; a Social preview button; a Social media status line.
+- [x] README (Social media section, trademark note, troubleshooting), API.md, TESTING.md (section 6), `pluginInfo.json` description and summary. The optional FPP command is not built.
+- [x] Tests: `clean_handle()` and handle rules; grouping (all the same, all different, two pairs, case and `@`, off/empty/bad handles skipped, master off); layout (logo size from the panel and handle height, width limit for 4 logos, handle shrinking, too wide); drawing (logo sizes and brand colours, logos above the handle and centered, too-wide flag, cache); preview (`now` order and `still`, `social` mode, sample, too-wide warning, validation, `@` removed on save, `GET logos`); the real loop with a fake fppd (countdown → each screen for its seconds, screens hold still, social only, Static).
+  31 tests in `tests/test_social.py` (186 in total, all passing).
+- [x] Dev server check: the Social Media card, logos, "2 screens: …" line, status line, and the Social preview holding each screen for its seconds.
+- [ ] Live check on fpp-matrix.local (TESTING.md section 6): one shared handle on four sites, then two handles; check the logos read clearly from across the yard.
+
+**Later ideas (not in v3)**
+- More sites (X, Threads, Bluesky, Snapchat): a row in `SITES` and a logo.
+- A QR code screen to the user's page (large panels only).
+- Show the social screens only every N countdown passes.

@@ -51,5 +51,15 @@
             "enabled": true, "label": "Wind", "direction": true,
             "gusts": true, "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"
         }
+    },
+    "social": {
+        "enabled": false,
+        "screen_seconds": 5,
+        "sites": {
+            "facebook":  { "enabled": false, "handle": "" },
+            "instagram": { "enabled": false, "handle": "" },
+            "tiktok":    { "enabled": false, "handle": "" },
+            "youtube":   { "enabled": false, "handle": "" }
+        }
     }
 }

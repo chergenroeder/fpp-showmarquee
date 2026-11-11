@@ -22,6 +22,7 @@ function getEndpointsfppmatrixcountdown() {
         array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppmatrixcountdownModels'),
         array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppmatrixcountdownFonts'),
         array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppmatrixcountdownVersion'),
+        array('method' => 'GET',  'endpoint' => 'logos',          'callback' => 'fppmatrixcountdownLogos'),
         array('method' => 'POST', 'endpoint' => 'daemon/start',   'callback' => 'fppmatrixcountdownDaemonStart'),
         array('method' => 'POST', 'endpoint' => 'daemon/stop',    'callback' => 'fppmatrixcountdownDaemonStop'),
         array('method' => 'POST', 'endpoint' => 'daemon/restart', 'callback' => 'fppmatrixcountdownDaemonRestart'),
@@ -65,6 +66,7 @@ function fppmatrixcountdownTarget()        { return fppmatrixcountdownDaemonRequ
 function fppmatrixcountdownModels()        { return fppmatrixcountdownDaemonRequest('models'); }
 function fppmatrixcountdownFonts()         { return fppmatrixcountdownDaemonRequest('fonts'); }
 function fppmatrixcountdownVersion()       { return fppmatrixcountdownDaemonRequest('version'); }
+function fppmatrixcountdownLogos()         { return fppmatrixcountdownDaemonRequest('logos'); }
 function fppmatrixcountdownDaemonStop()    { return fppmatrixcountdownDaemonRequest('daemon/stop', 'POST'); }
 function fppmatrixcountdownDaemonRestart() { return fppmatrixcountdownDaemonRequest('daemon/restart', 'POST'); }
 

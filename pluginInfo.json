@@ -2,7 +2,7 @@
 	"name": "Matrix Countdown Clock",
 	"repoName": "fpp-matrixcountdown",
 	"author": "Chuck Hergenroeder",
-	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show the temperature and wind, taking turns with the countdown: from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
+	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show your Facebook, Instagram, TikTok and YouTube handles with each site's logo, held still on screens that take turns with the countdown, and the temperature and wind: from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
 	"homeURL": "https://github.com/chergenroeder/fpp-matrixcountdown",
 	"srcURL": "https://github.com/chergenroeder/fpp-matrixcountdown.git",
 	"bugURL": "https://github.com/chergenroeder/fpp-matrixcountdown/issues",
@@ -10,7 +10,7 @@
 	"releaseNotesStyle": "gitHistory",
 
 	"privacy": {
-		"summary": "Draws a countdown on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
+		"summary": "Draws a countdown and your social handles on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
 		"sends": [
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",

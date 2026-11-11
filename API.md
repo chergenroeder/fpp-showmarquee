@@ -53,6 +53,14 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "wind_mph": 2.1, "wind_dir": "NNE", "wind_age_s": 1,
     "gust_mph": 2.5, "humidity": 40.0,
     "messages": { "temperature": "Temp 37°F", "wind": "Wind 2 mph NNE" }
+  },
+  "social": {
+    "enabled": true, "screen_seconds": 5.0,
+    "screens": [
+      { "sites": ["facebook", "youtube"], "handle": "SmithFamilyLights", "plain": "[Facebook] [YouTube] @SmithFamilyLights" },
+      { "sites": ["instagram"], "handle": "smith_lights", "plain": "[Instagram] @smith_lights" }
+    ],
+    "problems": { "tiktok": "TikTok is on but has no handle" }
   }
 }
 ```
@@ -63,8 +71,9 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `target` | `null` if a custom target has no valid date. `display` is `days`, `hms`, `hours`, `minutes` or `blank`. |
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
-| `showing` | What the matrix is drawing now: `slot` is `countdown`, `temperature` or `wind`. `message` (above) is always the countdown. |
+| `showing` | What the matrix is drawing now: `slot` is `countdown`, `temperature`, `wind`, or `social:<sites>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
 | `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `messages` are empty strings when a reading is too old or switched off. |
+| `social` | `screens`: the social media screens in the order they show, one per distinct handle (sites with the same handle, ignoring case and `@`, share a screen). `problems`: sites that are on but can't show, by site key. |
 
 ### `GET version`
 
@@ -112,6 +121,16 @@ The full settings:
     "temperature": { "enabled": true, "label": "Temp" },
     "wind": { "enabled": true, "label": "Wind", "direction": true, "gusts": true,
               "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm" }
+  },
+  "social": {
+    "enabled": false,
+    "screen_seconds": 5,
+    "sites": {
+      "facebook":  { "enabled": false, "handle": "" },
+      "instagram": { "enabled": false, "handle": "" },
+      "tiktok":    { "enabled": false, "handle": "" },
+      "youtube":   { "enabled": false, "handle": "" }
+    }
   }
 }
 ```
@@ -133,6 +152,9 @@ The full settings:
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
 | `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
+| `social.enabled` | show the social media screens |
+| `social.screen_seconds` | 1–600: how long each social media screen shows (screens are always held still, whatever `motion.direction` is) |
+| `social.sites.<site>.enabled` / `handle` | site is `facebook`, `instagram`, `tiktok` or `youtube`. Handle: up to 30 letters, digits, `.`, `_`, `-`; a leading `@` is accepted and removed when saved. A site that's on with no handle is skipped. |
 | `*_style.font` | a name from `GET fonts`; `""` = Pillow's built-in font. A missing font falls back to an installed bold sans font. |
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
@@ -183,7 +205,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `temperature`, `wind`. The weather modes use the live reading (even if that message is switched off), or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `temperature`, `wind`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle). The weather modes use the live reading (even if that message is switched off), or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {
@@ -192,7 +214,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
   "display": "days",
   "message": "Christmas in 45 Days",
   "direction": "R2L", "pixels_per_second": 15.0, "repeat_delay": 0.0,
-  "static_hold": 5.0,
+  "static_hold": 5.0, "screen_seconds": 5.0,
   "strip": "<base64 PNG of the drawn message>", "strip_width": 120, "strip_height": 13,
   "strips": [
     { "slot": "countdown", "message": "Christmas in 45 Days", "strip": "<base64 PNG>", "strip_width": 120, "strip_height": 13 },
@@ -202,7 +224,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 }
 ```
 
-`strips` lists the messages that take turns, in order: with `as: "now"` and Weather on, `countdown`, `temperature` and `wind` (live, or a sample with a `note` if none has arrived; switched-off or stale ones are left out). The other modes return one. Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`; the top-level `strip` is the first. `static_hold` is how long each shows in Static. `strip` is `null` when the message is blank. `warning` appears only when a font was replaced.
+`strips` lists the messages that take turns, in order: with `as: "now"`, `countdown`, then with Weather on `temperature` and `wind` (live, or a sample with a `note` if none has arrived; switched-off or stale ones are left out), then with Social Media on one `social:<sites>` screen per handle. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "still", "strip", "strip_width", "strip_height"}`. For a social screen `still` is `true` and `strip` is the whole panel-sized picture, held at 0,0 for `screen_seconds`; otherwise it moves like the matrix. The top-level `strip` is the first. `static_hold` is how long each scrolling message shows in Static. `strip` is `null` when the message is blank. `warning` appears when a font was replaced, or when a handle is too wide for the panel even at the smallest size.
 
 ---
 
@@ -215,6 +237,10 @@ Pixel overlay models in FPP: `[{"name": "P5 Panel", "width": 192, "height": 96}]
 ### `GET fonts`
 
 Font names the plugin can draw with: `["C059-Bold", "DejaVuSans", "DejaVuSans-Bold", ...]`. Add `?refresh=1` to rescan after adding fonts (to `/home/fpp/media/fonts/`, for example).
+
+### `GET logos`
+
+The social media logos as the plugin draws them, 48×48 base64 PNGs, for the settings page: `{"logos": {"facebook": "<base64 PNG>", "instagram": ..., "tiktok": ..., "youtube": ...}}`
 
 ---
 
