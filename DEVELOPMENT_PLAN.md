@@ -93,7 +93,7 @@ Stored at `/home/fpp/media/config/plugin.fpp-matrixcountdown.json`, with `config
 
 ```json
 {
-  "global": { "schema_version": 1, "enable_output": true, "fpp_host": "localhost", "fps": 30 },
+  "global": { "schema_version": 1, "enable_output": true, "fpp_host": "localhost", "fps": 20 },
   "countdown": {
     "enabled": true,
     "model": "",
@@ -143,21 +143,22 @@ fpp-matrixcountdown/
 ```
 
 - **Daemon port:** 32330, so it can run beside the scroller on 32329.
-- **Main loop:** one thread at `fps`. Each tick computes the countdown (cheap), redraws the message image only when the text changes (once a second at most), moves the scroll position by `pps / fps`, and writes the frame.
+- **Main loop:** one thread, capped at `fps` (default 20, fppd's idle output rate). After writing a frame it waits for fppd to clear the dirty bit before writing the next, so it follows fppd's real rate (faster while a sequence plays at 40 fps). Each tick computes the countdown (cheap), redraws the message image only when the text changes (once a second at most), places the scroll position from elapsed time × px/s (so speed doesn't depend on frame rate), and writes the frame.
 - **One countdown on one overlay model** in v1. It must be a different model from any Matrix Scroller uses; the settings page warns if the chosen model is also set in the scroller's config.
 
 ---
 
 ## 6. Phases
 
-### Phase 0 — Spike on real FPP hardware (½–1 day) ⚠️ do first
-Test script: `scripts/spike_overlay.py --model "<model>"` (run on the player). It covers every item below and prints a report.
+### Phase 0 — Spike on real FPP hardware ✅ passed 2026-11-10
+Test script: `sudo python3 scripts/spike_overlay.py --model "<model>"` (run on the player). It covers every item below and prints a report.
 - [x] Find the shared-memory buffer name and layout in FPP source (see Section 2).
-- [ ] Confirm that name and layout on a real FPP 9 / FPP 10 player.
-- [ ] Write a test pattern from Python, toggle the model state, and confirm it shows on the matrix (colour order, top-left corner, motion).
-- [ ] Confirm Pillow is present. `fpp_install.sh` already installs `python3-pil` when it is missing.
-- [ ] Measure the frame rate and how quickly fppd picks up frames at 30 fps on a Pi 3/4 at your panel size.
-- **Exit:** a scrolling image drawn by Python appears on the matrix. If not, switch to the fallback in Section 2.
+- [x] Confirm that name and layout on a real player: FPP 10.3, model "P5 Panel" 192×96. Buffer `/dev/shm/FPP-Model-Overlay-Buffer-P5 Panel`, 55,312 bytes (192×96×3 + a 16-byte header), flags `0x300` = 3 bytes per pixel.
+- [x] Test pattern: red, green, blue and white, the top-left corner pixel, and the left-to-right bar all looked right on the matrix.
+- [x] Pillow 11.1.0 is present. Two-colour "8 Days to Christmas" scrolled correctly.
+- [x] Frame rate: fppd picked up **every** frame (481/481), about 50 ms after each write, so it outputs at **20 fps** when idle. That is fppd's own output rate, so writing faster is wasted. Load average stayed at 0.00.
+- [x] Root required: the test fails as the `fpp` user (see Phase 4).
+- **Outcome:** direct buffer output works, so the fallback in Section 2 is not needed.
 
 ### Phase 1 — Scaffold (½ day)
 - [x] Copy the plugin wiring from the scroller: `pluginInfo.json`, `menu.inc`, `api.php` proxy, `daemon_lib.sh`, install/uninstall, postStart/preStop.

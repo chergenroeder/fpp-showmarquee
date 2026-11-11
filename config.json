@@ -3,7 +3,7 @@
         "schema_version": 1,
         "enable_output": true,
         "fpp_host": "localhost",
-        "fps": 30
+        "fps": 20
     },
     "countdown": {
         "enabled": true,
