@@ -534,7 +534,11 @@
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
     out.className = o.state === 'error' ? 'mc-err' : '';
-    $('#mc-s-time').textContent = `${s.local_time} (${s.timezone})`;
+    const clock = s.clock_synced === true ? ' · synced to internet time'
+                : s.clock_synced === false ? ' · NOT synced to internet time: the countdown is only as right as this clock' : '';
+    const timeEl = $('#mc-s-time');
+    timeEl.textContent = `${s.local_time} (${s.timezone})${clock}`;
+    timeEl.className = s.clock_synced === false ? 'mc-warn' : '';
     $('#mc-version').textContent = s.commit;
   }
 

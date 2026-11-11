@@ -76,6 +76,13 @@ class Endpoints(CommandsBase):
         self.post("state", {"enabled": False})
         self.assertFalse(self.mc.load_config()["countdown"]["enabled"])
 
+    def test_partial_config_post_keeps_other_settings(self):
+        self.assertEqual(self.post("config", {"countdown": {"model": "P5 Panel"}})[0], 200)
+        self.assertEqual(self.post("config", {"countdown": {"motion": {"direction": "static"}}})[0], 200)
+        self.assertEqual(self.cd["model"], "P5 Panel")
+        self.assertEqual(self.cd["motion"]["direction"], "static")
+        self.assertEqual(self.cd["motion"]["pixels_per_second"], 15)   # default kept
+
     def test_target_switch_keeps_custom_date(self):
         self.post("target", {"type": "custom", "date": "2027-03-14", "time": "18:30", "name": "Opening Night"})
         self.post("target", {"type": "christmas"})

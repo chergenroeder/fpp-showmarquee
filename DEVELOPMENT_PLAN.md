@@ -165,7 +165,7 @@ Test script: `sudo python3 scripts/spike_overlay.py --model "<model>"` (run on t
 - [x] Rename everything (`ms_` → `mc_`, matrixscroller → matrixcountdown, port 32330, log file, config path).
 - [x] Bare daemon: loads config (laid over the bundled defaults), validates on save, serves `status`/`config`/`models`/`fonts`/`version`/`reload`/daemon stop/restart, follows FPP's plugin log level. Tested locally.
 - [x] New `pluginInfo.json` privacy block.
-- [ ] New icon (`icon.png` is the scroller's for now).
+- [x] New icon (Phase 7).
 - [x] Create the GitHub repo `chergenroeder/fpp-matrixcountdown` (public).
 - [x] Install on FPP from the repo and check the menu page, API proxy and autostart.
 
@@ -224,10 +224,14 @@ Notes from building it:
 - [x] 12 tests run the real API handler and the real command scripts (quoting, blank optional args, errors, daemon down). 100 tests in total.
 - [x] On the player: both commands appear in FPP's command list and work.
 
-### Phase 7 — Hardening and release (1 day)
-- [ ] Test on hardware: all five directions × both orders × both under-1-day modes. Use a temporary custom target a few minutes away to test the 1h and zero boundaries, and check the matrix goes blank.
-- [ ] Check the clock: FPP's time must be right (NTP); show the FPP local time and time zone on the status bar.
-- [ ] Write the README and API.md, then do a Plugin Manager install test from the URL.
+### Phase 7 — Hardening and release (built 2026-11-10)
+- [ ] Hardware pass with [TESTING.md](TESTING.md): all five directions × both orders × both under-1-day modes. A custom target a few minutes away covers the 1 h and zero boundaries, then FPP commands and recovery.
+- [x] Clock: `status.clock_synced` (from `timedatectl`'s NTPSynchronized) is shown on the status line, with a warning when the clock isn't synced.
+- [x] `POST config` now lays a partial body over the **current** settings, not the defaults, so `{"countdown": {"model": "X"}}` no longer resets everything else.
+- [x] README.md (install, settings, FPP commands, troubleshooting, development) and API.md (every endpoint, settings reference, Home Assistant example).
+- [x] Own icon (LED-dot "8 DAYS") replaces the scroller's.
+- [ ] Fresh install from the Plugin Manager URL on a player without the plugin (or after uninstalling it).
+- [ ] Optional: submit to FPP's plugin list (`FalconChristmas/fpp-pluginList`) so it can be installed without the URL.
 
 **Rough total: 8–10 working days**, mostly in Phases 3 and 5.
 

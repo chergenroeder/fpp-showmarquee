@@ -126,6 +126,30 @@ def font_path(name: str) -> Optional[str]:
     return FONTS.resolve(name)[0]
 
 
+_clock_cache = {"at": -1e9, "value": None}
+
+
+def clock_synced() -> Optional[bool]:
+    """Whether the system clock is synced over NTP (systemd), or None if unknown.
+
+    The countdown is only as right as the player's clock; FPP players without
+    an RTC keep wrong time until NTP syncs. Cached for a minute.
+    """
+    now = time.monotonic()
+    if now - _clock_cache["at"] < 60:
+        return _clock_cache["value"]
+    value = None
+    try:
+        r = subprocess.run(["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
+                           capture_output=True, text=True, timeout=1.5)
+        if r.returncode == 0 and r.stdout.strip() in ("yes", "no"):
+            value = r.stdout.strip() == "yes"
+    except (OSError, subprocess.SubprocessError):
+        pass
+    _clock_cache.update(at=now, value=value)
+    return value
+
+
 def pillow_version() -> Optional[str]:
     try:
         import PIL
@@ -273,8 +297,12 @@ class CountdownDaemon:
             return copy.deepcopy(self.cfg)
 
     def update_config(self, new_cfg: dict) -> List[str]:
-        """Merge, validate and save. Returns validation errors (nothing saved if any)."""
-        merged = _deep_merge(load_defaults(), new_cfg)
+        """Lay new_cfg over the current settings, validate and save.
+
+        A partial body changes only what it holds. Returns validation errors
+        (nothing is saved if there are any).
+        """
+        merged = _deep_merge(_deep_merge(load_defaults(), self.get_config()), new_cfg)
         _migrate_config(merged)
         errors = validate_config(merged)
         if errors:
@@ -439,6 +467,7 @@ class CountdownDaemon:
             "timezone": now.tzname(),
             "utc_offset": now.strftime("%z"),
             "pillow": pillow_version(),
+            "clock_synced": clock_synced(),
             "enable_output": bool(cfg.get("global", {}).get("enable_output", True)),
             "enabled": bool(cd.get("enabled", True)),
             "model": cd.get("model", ""),
