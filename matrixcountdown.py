@@ -27,6 +27,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
 from countdown.message import build_message
+from countdown.output import OutputError, OverlayOutput
 from countdown.timecalc import compute_display, local_now, resolve_target
 
 # ── Paths ────────────────────────────────────────────────────────────────────
@@ -264,13 +265,24 @@ def validate_config(cfg: dict) -> List[str]:
 # ── Daemon ────────────────────────────────────────────────────────────────────
 
 class CountdownDaemon:
+    RETRY_S = 5.0      # wait between attempts to open the output after an error
+    CHECK_S = 5.0      # how often to check the buffer/model are still ours
+    IDLE_S = 0.5       # loop pace while nothing is being drawn
+
     def __init__(self):
         self._lock = threading.Lock()
         self._stop = threading.Event()
+        self._wake = threading.Event()   # set on config change, so the loop reacts at once
         self.started_at = time.time()
         self.cfg = load_config()
+        self._cfg_version = 0
         apply_log_level()
-        log.info("matrixcountdown @ %s starting (Pillow %s)", GIT_COMMIT, pillow_version() or "NOT installed")
+        log.info("matrixcountdown @ %s starting as uid %d (Pillow %s)",
+                 GIT_COMMIT, os.geteuid(), pillow_version() or "NOT installed")
+        # Output state, written by the loop thread, read by get_status()
+        self._out_state = "starting"     # drawing | blank | off | error | starting
+        self._out_error = ""
+        self._fps = 0.0
 
     def _global(self) -> dict:
         return self.cfg.get("global", {})
@@ -288,15 +300,23 @@ class CountdownDaemon:
             return errors
         with self._lock:
             self.cfg = merged
+            self._cfg_version += 1
             save_config(merged)
+        self._wake.set()
         log.info("Config updated")
         return []
 
     def reload_config(self):
         with self._lock:
             self.cfg = load_config()
+            self._cfg_version += 1
+        self._wake.set()
         apply_log_level()
         log.info("Config reloaded")
+
+    def _snapshot(self):
+        with self._lock:
+            return copy.deepcopy(self.cfg), self._cfg_version
 
     def get_models(self) -> List[dict]:
         return get_fpp_models(self._global().get("fpp_host", "localhost"))
@@ -333,16 +353,155 @@ class CountdownDaemon:
             "target_type": (cd.get("target") or {}).get("type"),
             "config_errors": validate_config(cfg),
             "target": target_info,
-            "message": message,   # what the matrix shows (drawing arrives in Phases 3-4)
+            "message": message,
+            "output": {"state": self._out_state, "error": self._out_error,
+                       "fps": round(self._fps, 1), "root": os.geteuid() == 0},
         }
 
+    # ── Main loop ──
+
+    def _set_state(self, state: str, error: str = ""):
+        if (state, error) != (self._out_state, self._out_error):
+            if error:
+                log.error("Output: %s", error)
+            else:
+                log.info("Output: %s", state)
+        self._out_state, self._out_error = state, error
+
     def run(self):
-        log.info("Main loop running (no output until Phase 4)")
-        while not self._stop.wait(1.0):
-            pass
+        """Draw frames until stop(). One thread owns the output and renderer."""
+        try:
+            from countdown.render import Renderer
+        except ImportError:
+            self._set_state("error", "Pillow is not installed (apt-get install python3-pil)")
+            self._stop.wait()
+            return
+
+        out: Optional[OverlayOutput] = None
+        renderer = None
+        renderer_key = None
+        next_open = 0.0
+        next_check = 0.0
+        frame_times: List[float] = []
+
+        def shut_output():
+            nonlocal out, renderer, renderer_key
+            if out is not None:
+                out.close(turn_off=True)
+            out, renderer, renderer_key = None, None, None
+
+        while not self._stop.is_set():
+            cfg, version = self._snapshot()
+            g, cd = cfg.get("global", {}), cfg.get("countdown", {})
+            model = str(cd.get("model") or "")
+            host = str(g.get("fpp_host") or "localhost")
+            fps = min(60.0, max(1.0, float(g.get("fps", 20) or 20)))
+            errors = validate_config(cfg)
+
+            # Nothing to draw: make sure the model is off
+            reason = ("output disabled" if not g.get("enable_output", True) else
+                      "countdown disabled" if not cd.get("enabled", True) else
+                      "no model chosen" if not model else "")
+            if reason or errors:
+                if out is not None:
+                    shut_output()
+                if errors:
+                    self._set_state("error", "config: " + "; ".join(errors))
+                else:
+                    self._set_state("off", "")
+                self._fps = 0.0
+                self._wait(self.IDLE_S)
+                continue
+
+            # (Re)open the buffer when the model/host changed or after an error
+            if out is not None and (out.model != model or out.host != host):
+                shut_output()
+            now_m = time.monotonic()
+            if out is not None and now_m >= next_check:
+                next_check = now_m + self.CHECK_S
+                if not out.check():
+                    log.info("Overlay buffer for '%s' changed (fppd restarted?); reopening", model)
+                    out.close(turn_off=False)
+                    out, renderer, renderer_key = None, None, None
+            if out is None:
+                if now_m < next_open:
+                    self._wait(min(self.IDLE_S, next_open - now_m))
+                    continue
+                candidate = OverlayOutput(host, model)
+                try:
+                    candidate.open()
+                except OutputError as e:
+                    self._set_state("error", str(e))
+                    next_open = now_m + self.RETRY_S
+                    continue
+                out = candidate
+                next_check = now_m + self.CHECK_S
+                log.info("Opened overlay buffer for '%s' (%dx%d, %d bytes/pixel)",
+                         model, out.width, out.height, out.bpp)
+
+            # Renderer follows the config and the panel size
+            key = (version, out.width, out.height)
+            if renderer_key != key:
+                renderer = Renderer(out.width, out.height, cd, lambda n: detect_fonts().get(n))
+                renderer_key = key
+
+            try:
+                now = local_now()
+                target = resolve_target(cd.get("target") or {}, now)
+                if target is None:
+                    shut_output()
+                    self._set_state("error", "custom target has no valid date")
+                    self._wait(self.IDLE_S)
+                    continue
+                layout = cd.get("layout") or {}
+                message = build_message(compute_display(target, now, layout), target, layout)
+
+                if message.blank:
+                    if out.model_on:
+                        out.off()
+                    renderer.strip_for(message)   # so the next pass starts fresh
+                    self._set_state("blank", "")
+                    self._fps = 0.0
+                    frame_times.clear()
+                    self._wait(self.IDLE_S)
+                    continue
+
+                out.on()
+                t0 = time.monotonic()
+                out.write_rgb(renderer.frame(message, t0).tobytes())
+                self._set_state("drawing", "")
+                period = 1.0 / fps
+                # Follow fppd's real output rate: wait for it to take the frame
+                out.wait_picked_up(period * 3)
+                frame_times.append(t0)
+                if len(frame_times) > 40:
+                    del frame_times[0]
+                if len(frame_times) > 1:
+                    self._fps = (len(frame_times) - 1) / max(1e-6, frame_times[-1] - frame_times[0])
+                rest = period - (time.monotonic() - t0)
+                if rest > 0:
+                    self._wait(rest)
+            except OutputError as e:
+                self._set_state("error", str(e))
+                shut_output()
+                next_open = time.monotonic() + self.RETRY_S
+            except Exception as e:  # noqa: BLE001 - keep the loop alive, but say why
+                log.exception("Unexpected error in the drawing loop")
+                self._set_state("error", f"unexpected: {e}")
+                shut_output()
+                next_open = time.monotonic() + self.RETRY_S
+
+        shut_output()
+        self._set_state("off", "")
+
+    def _wait(self, seconds: float):
+        """Sleep, waking early on a config change or stop."""
+        if self._wake.wait(seconds):
+            self._wake.clear()
 
     def stop(self):
         self._stop.set()
+        self._wake.set()
 
 
 _daemon: Optional[CountdownDaemon] = None

@@ -17,6 +17,7 @@
       <tr><td>FPP local time</td><td id="mc-time">–</td></tr>
       <tr><td>Target</td><td id="mc-target">–</td></tr>
       <tr><td>Model</td><td id="mc-model">–</td></tr>
+      <tr><td>Output</td><td id="mc-output">–</td></tr>
       <tr><td>Pillow</td><td id="mc-pillow">–</td></tr>
       <tr><td>Config</td><td id="mc-errors">–</td></tr>
     </table>
@@ -51,6 +52,11 @@ async function mcRefresh() {
     : (s.target_type || '–') + ' (no valid date)');
   mcText('mc-model', s.model || '(none chosen)');
   mcText('mc-pillow', s.pillow || 'NOT installed');
+  const o = s.output || {};
+  const out = document.getElementById('mc-output');
+  out.textContent = (o.state || '–') + (o.state === 'drawing' ? ' at ' + o.fps + ' fps' : '') +
+                    (o.error ? ': ' + o.error : '') + (o.root === false ? ' (daemon is not root)' : '');
+  out.className = o.state === 'error' ? 'mc-err' : '';
   const err = document.getElementById('mc-errors');
   err.textContent = s.config_errors.length ? s.config_errors.join('; ') : 'OK';
   err.className = s.config_errors.length ? 'mc-err' : '';

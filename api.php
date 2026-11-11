@@ -71,10 +71,16 @@ function fppmatrixcountdownDaemonStart() {
     if ($alive !== false) {
         return json(array('status' => 'already_running'));
     }
-    shell_exec('MEDIADIR=' . escapeshellarg($settings['mediaDirectory']) .
-               ' LOGDIR=' . escapeshellarg($settings['logDirectory']) .
-               ' nohup python3 ' . escapeshellarg($daemon) .
-               ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null &');
+    // The daemon must run as root to write the overlay buffer fppd (root)
+    // creates with mode 0644. The web server runs as fpp, which FPP gives
+    // passwordless sudo; -n fails instead of prompting if that's not so.
+    // The redirect runs inside the root shell too: the log file is root's.
+    $sudo  = (function_exists('posix_geteuid') && posix_geteuid() === 0) ? '' : 'sudo -n ';
+    $inner = 'MEDIADIR=' . escapeshellarg($settings['mediaDirectory']) .
+             ' LOGDIR=' . escapeshellarg($settings['logDirectory']) .
+             ' exec python3 ' . escapeshellarg($daemon) .
+             ' >> ' . escapeshellarg($logfile) . ' 2>&1 </dev/null';
+    shell_exec('nohup ' . $sudo . 'sh -c ' . escapeshellarg($inner) . ' >/dev/null 2>&1 &');
     usleep(1200000); // 1.2 s startup grace
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');
     return json(array('status' => $alive !== false ? 'running' : 'starting'));

@@ -189,11 +189,16 @@ Notes from building it:
 - [x] 25 renderer tests (65 in total; they skip cleanly where Pillow isn't installed). Checked by eye with `scripts/render_preview.py`, which writes an LED-style contact sheet and one GIF per direction. Golden PNGs weren't used because font rendering differs between machines.
 - [ ] Bundle a few pixel fonts that suit small matrices (optional; the system fonts work).
 
-### Phase 4 — FPP output (1 day)
-- [ ] `output.py`: map the buffer, write frames, turn the model on at start and off on stop or disable.
-- [ ] Reconnect if FPP restarts or the model is renamed or removed (re-open the buffer, log once).
-- [ ] Honor `enable_output` and the repeat delay.
-- [ ] **The daemon must run as root.** fppd (root) creates the buffer with mode 0644, so only root can write to it. This was found on FPP 10.3, where the test failed as the `fpp` user. postStart/install already run as root. The web UI's Start button runs as `fpp`, so it must launch the daemon with `sudo` (FPP gives `fpp` passwordless sudo; check this on the player). If the buffer still can't be opened, report "permission denied: daemon is not root" in `status` and on the page instead of failing silently.
+### Phase 4 — FPP output ✅ built 2026-11-10, waiting for a hardware check (`countdown/output.py`)
+- [x] `output.py`: open the buffer (after `PUT .../mmap`), write frames (RGB, or RGBW with white 0), and set the dirty bit. The model is turned on while drawing; it is blanked and turned off when the countdown is blank, disabled, the model changes, or the daemon stops.
+- [x] Main loop in the daemon. It waits for fppd to take each frame, so it follows fppd's real rate, capped at `fps`. A config change takes effect at once.
+- [x] Reconnect: every 5 s it checks whether fppd has replaced the buffer (an fppd restart) or the model was turned off by something else. It then reopens the buffer or turns the model back on. If opening fails, it retries every 5 s.
+- [x] Honor `enable_output`, the countdown's `enabled` switch, and the repeat delay (Phase 3).
+- [x] **Root:** the web UI's Start button runs the daemon with `sudo -n`; the log redirect runs as root too, because root owns the log file. If the buffer can't be opened, `status.output.error` says why: not root, model not found, FPP unreachable, or FPP Host isn't this player.
+- [x] `status.output` = `{state: drawing|blank|off|error, error, fps, root}`, also shown on the stand-in page.
+- [x] 15 tests against a fake fppd (`tests/fake_fpp.py`), covering a real HTTP API, a buffer file and an output thread. They check drawing, going blank and off, stopping, errors and recovery, switching models, fppd restarts, disabling output, RGBW and permissions. 80 tests in total.
+- [ ] On the player: Christmas countdown on "P5 Panel"; then Stop/Start from the page (sudo path); then restart fppd and check it recovers.
+- [ ] Not done: drawing to a matrix on *another* player. The buffer is local, so FPP Host must be this player. If that's ever wanted, it needs a different output path.
 
 ### Phase 5 — Web UI (2 days)
 - [ ] Target: radio buttons **Custom / Christmas / New Year's**. The date and time pickers and the **Repeat every year** checkbox show only for Custom. Event name field. Next-target readout ("Counting down to Fri Dec 25 2026, 00:00 local").
