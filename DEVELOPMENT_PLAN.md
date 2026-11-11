@@ -212,9 +212,17 @@ Notes from building it:
 - [x] `scripts/dev_server.py`: fake fppd + real daemon + an FPP-like page wrapper, for working on the page without a player. Used to check the page at desktop and phone widths, in light and dark mode.
 - [ ] Check inside FPP on the player (real fonts, FPP's own page chrome and dark mode).
 
-### Phase 6 — API and FPP commands (½ day)
-- [ ] REST: `status` (target, remaining time, current message), `config` GET/POST, `reload`, `preview.png`, daemon start/stop/restart, snapshots.
-- [ ] FPP commands: *Countdown On/Off*, *Set Target* (custom/christmas/newyear), so playlists and the scheduler can control it.
+### Phase 6 — API and FPP commands ✅ built 2026-11-10, waiting for a check on the player
+- [x] REST (`/api/plugin/fpp-matrixcountdown/...`): `status`, `config` GET/POST, `reload`, `preview`, `models`, `fonts`, `version`, daemon start/stop/restart, plus:
+  - `POST state` `{"enabled": true|false|"toggle"}`: countdown on/off, saved.
+  - `POST target` `{"type": "christmas"|"newyear"|"custom", "date", "time", "name", "repeat"}`: only `type` is required; a custom target keeps its saved date, time and name when they're left out. It is saved, and invalid values save nothing.
+- [x] FPP commands (`commands/descriptions.json`; registered at install through `callbacks.sh`, as in the scroller):
+  - **Matrix Countdown - State**: On / Off / Toggle.
+  - **Matrix Countdown - Set Target**: Christmas / New Year's Day / Custom, with optional date, time, event name and repeat.
+  - Both talk to the daemon on 127.0.0.1 with a 2 s limit, so a stopped daemon can't hold up fppd's scheduler, and they report its errors.
+- [x] Settings **Download / Upload** (JSON) on the page, instead of the scroller's named snapshots: there is only one countdown. An upload is laid over the current settings and must be reviewed and saved.
+- [x] 12 tests run the real API handler and the real command scripts (quoting, blank optional args, errors, daemon down). 100 tests in total.
+- [ ] On the player: both commands show up under FPP's command list (e.g. a playlist's FPP Command entry) and work from there and from the scheduler.
 
 ### Phase 7 — Hardening and release (1 day)
 - [ ] Test on hardware: all five directions × both orders × both under-1-day modes. Use a temporary custom target a few minutes away to test the 1h and zero boundaries, and check the matrix goes blank.

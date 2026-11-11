@@ -195,7 +195,12 @@
     <button type="button" class="btn btn-sm btn-primary" id="mc-save" onclick="mcSave()">Save</button>
     <button type="button" class="btn btn-sm btn-outline-secondary" id="mc-revert" onclick="mcLoad()">Revert</button>
     <span class="small" id="mc-save-msg"></span>
-    <span class="ms-auto small text-muted">Version <span id="mc-version">–</span></span>
+    <span class="ms-auto d-flex gap-1 align-items-center">
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mcDownload()" title="Save the settings as a JSON file">Download settings</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('mc-upload').click()" title="Load settings from a JSON file; review, then Save">Upload settings</button>
+      <input type="file" id="mc-upload" accept=".json,application/json" class="d-none">
+      <span class="small text-muted ms-2">Version <span id="mc-version">–</span></span>
+    </span>
   </div>
 </div>
 
@@ -482,6 +487,33 @@
     setTimeout(loadStatus, 600);
   };
 
+  window.mcDownload = function () {
+    if (!cfg) return;
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'matrixcountdown-settings.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  async function mcUpload(file) {
+    let data;
+    try { data = JSON.parse(await file.text()); } catch (e) { notify('Not a settings file: ' + e.message, true); return; }
+    if (!data || typeof data !== 'object' || !data.countdown) { notify('Not a settings file: no "countdown" section', true); return; }
+    // Lay the file over the current settings so a partial file only changes what it holds
+    const merge = (base, over) => {
+      for (const k of Object.keys(over)) {
+        if (over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) && base[k] && typeof base[k] === 'object') merge(base[k], over[k]);
+        else base[k] = over[k];
+      }
+      return base;
+    };
+    cfg = merge(JSON.parse(JSON.stringify(cfg)), data);
+    fillFonts(); fillModels(); toForm();
+    notify('Settings loaded from ' + file.name + ': check them, then Save');
+  }
+
   window.mcDaemon = async function (action) {
     try { await api('daemon/' + action, { method: action === 'start' ? 'GET' : 'POST' }); } catch (e) {}
     setTimeout(loadStatus, 1500);
@@ -511,6 +543,7 @@
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);
   $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => { mover.reset(); schedulePreview(0); }));
+  $('#mc-upload').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) mcUpload(f); });
   window.addEventListener('beforeunload', e => { if (cfg && JSON.stringify(cfg) !== saved) { e.preventDefault(); e.returnValue = ''; } });
 
   fetch('/api/plugin/fpp-matrixscroller/config').then(r => r.json()).then(c => {

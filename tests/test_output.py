@@ -18,6 +18,7 @@ sys.path.insert(0, HERE)
 
 from countdown.output import OutputError, OverlayOutput  # noqa: E402
 from fake_fpp import FakeFPP  # noqa: E402
+from daemon_env import clear_config, daemon_module  # noqa: E402
 
 try:
     import PIL  # noqa: F401
@@ -128,28 +129,11 @@ class DaemonLoop(OutputBase):
 
     @classmethod
     def setUpClass(cls):
-        # The daemon module fixes its paths and log file at import, once per
-        # process, so import it once with a media folder kept for the class.
-        cls.media = tempfile.mkdtemp()
-        os.environ["MEDIADIR"] = cls.media
-        os.environ["LOGDIR"] = os.path.join(cls.media, "logs")
-        import matrixcountdown
-        cls.mc = matrixcountdown
-        if cls.mc.MEDIA_DIR != cls.media:
-            raise unittest.SkipTest("matrixcountdown was imported earlier with other paths")
-        cls.mc.CountdownDaemon.CHECK_S = 0.3
-        cls.mc.CountdownDaemon.RETRY_S = 0.3
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.media, ignore_errors=True)
+        cls.mc = daemon_module()
 
     def setUp(self):
         super().setUp()
-        try:
-            os.remove(self.mc.CONFIG_PATH)
-        except FileNotFoundError:
-            pass
+        clear_config()
         self.d = self.mc.CountdownDaemon()
         self.thread = threading.Thread(target=self.d.run, daemon=True)
 

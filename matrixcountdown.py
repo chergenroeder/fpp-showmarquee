@@ -295,6 +295,49 @@ class CountdownDaemon:
         apply_log_level()
         log.info("Config reloaded")
 
+    def set_enabled(self, value) -> dict:
+        """On / off / toggle the countdown and save it (FPP command "State")."""
+        cfg = self.get_config()
+        cur = bool(cfg["countdown"].get("enabled", True))
+        if value == "toggle":
+            new = not cur
+        elif isinstance(value, bool):
+            new = value
+        else:
+            return {"error": "enabled must be true, false or \"toggle\""}
+        cfg["countdown"]["enabled"] = new
+        errors = self.update_config(cfg)
+        return {"error": "; ".join(errors)} if errors else {"enabled": new}
+
+    def set_target(self, body: dict) -> dict:
+        """Switch the target and save it (FPP command "Set Target").
+
+        body: {"type": "christmas"|"newyear"|"custom", "date": "YYYY-MM-DD",
+               "time": "HH:MM", "name": "...", "repeat": bool}; all but type optional.
+        A custom target with no date keeps the date already saved.
+        """
+        kind = str(body.get("type") or "").strip().lower()
+        kind = {"new year's day": "newyear", "new years day": "newyear", "new year": "newyear",
+                "christmas day": "christmas"}.get(kind, kind)
+        if kind not in ("christmas", "newyear", "custom"):
+            return {"error": "type must be christmas, newyear or custom"}
+        cfg = self.get_config()
+        t = cfg["countdown"]["target"]
+        t["type"] = kind
+        if body.get("date"):
+            t["custom_date"] = str(body["date"]).strip()
+        if body.get("time"):
+            t["custom_time"] = str(body["time"]).strip()
+        if body.get("repeat") is not None and body.get("repeat") != "":
+            r = body["repeat"]
+            t["custom_repeat_yearly"] = r if isinstance(r, bool) else str(r).strip().lower() in ("1", "true", "yes", "on")
+        if body.get("name"):
+            t.setdefault("event_name", {})[kind] = str(body["name"]).strip()[:60]
+        errors = self.update_config(cfg)
+        if errors:
+            return {"error": "; ".join(errors)}
+        return {"target": t}
+
     def _snapshot(self):
         with self._lock:
             return copy.deepcopy(self.cfg), self._cfg_version
@@ -617,6 +660,18 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Invalid config", "details": errors})
             else:
                 self._send_json(200, {"status": "saved"})
+        elif route == "state":
+            body = self._read_json()
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Body must be a JSON object"})
+            result = _daemon.set_enabled(body.get("enabled"))
+            self._send_json(400 if "error" in result else 200, result)
+        elif route == "target":
+            body = self._read_json()
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Body must be a JSON object"})
+            result = _daemon.set_target(body)
+            self._send_json(400 if "error" in result else 200, result)
         elif route == "preview":
             body = self._read_json()
             if not isinstance(body, dict):

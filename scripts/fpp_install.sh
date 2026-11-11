@@ -7,7 +7,9 @@ PLUGIN_DIR=$(cd "$(dirname "$0")/.." && pwd)
 . "$PLUGIN_DIR/scripts/daemon_lib.sh"
 
 chmod +x "$PLUGIN_DIR/matrixcountdown.py"
-chmod +x "$PLUGIN_DIR"/scripts/*.sh "$PLUGIN_DIR/scripts/spike_overlay.py"
+chmod +x "$PLUGIN_DIR"/scripts/*.sh "$PLUGIN_DIR"/scripts/*.py
+# fppd runs these directly (FPP commands and the callbacks script)
+chmod +x "$PLUGIN_DIR/callbacks.sh" "$PLUGIN_DIR"/commands/*.sh
 
 mkdir -p "$MC_LOGDIR"
 mkdir -p "$MC_MEDIADIR/config"

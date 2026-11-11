@@ -1,0 +1,157 @@
+"""FPP command scripts and the state/target endpoints they call.
+
+Runs the real API handler on a free port and the real commands/*.sh scripts
+against it (bash and curl needed). Run: python3 -m unittest discover -s tests
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import threading
+import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from daemon_env import clear_config, daemon_module  # noqa: E402
+
+COMMANDS = os.path.join(HERE, "..", "commands")
+HAVE_TOOLS = bool(shutil.which("bash") and shutil.which("curl"))
+
+
+class CommandsBase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mc = daemon_module()
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), cls.mc.ApiHandler)
+        cls.base = f"http://127.0.0.1:{cls.server.server_address[1]}/api/plugin/matrixcountdown"
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def setUp(self):
+        clear_config()
+        self.mc._daemon = self.mc.CountdownDaemon()   # the API handler talks to this one
+
+    def tearDown(self):
+        self.mc._daemon = None
+
+    def post(self, route, body):
+        req = urllib.request.Request(f"{self.base}/{route}", data=json.dumps(body).encode(), method="POST")
+        req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=3) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+
+    def run_cmd(self, script, *args):
+        env = dict(os.environ, MC_API=self.base)
+        return subprocess.run(["bash", os.path.join(COMMANDS, script), *args],
+                              env=env, capture_output=True, text=True, timeout=10)
+
+    @property
+    def cd(self):
+        return self.mc._daemon.get_config()["countdown"]
+
+
+class Endpoints(CommandsBase):
+
+    def test_state_on_off_toggle(self):
+        self.assertEqual(self.post("state", {"enabled": False}), (200, {"enabled": False}))
+        self.assertFalse(self.cd["enabled"])
+        self.assertEqual(self.post("state", {"enabled": "toggle"}), (200, {"enabled": True}))
+        self.assertTrue(self.cd["enabled"])
+        code, body = self.post("state", {"enabled": "maybe"})
+        self.assertEqual(code, 400)
+
+    def test_state_is_saved(self):
+        self.post("state", {"enabled": False})
+        self.assertFalse(self.mc.load_config()["countdown"]["enabled"])
+
+    def test_target_switch_keeps_custom_date(self):
+        self.post("target", {"type": "custom", "date": "2027-03-14", "time": "18:30", "name": "Opening Night"})
+        self.post("target", {"type": "christmas"})
+        t = self.cd["target"]
+        self.assertEqual((t["type"], t["custom_date"], t["custom_time"]), ("christmas", "2027-03-14", "18:30"))
+        code, body = self.post("target", {"type": "custom"})
+        self.assertEqual(code, 200)
+        self.assertEqual(self.cd["target"]["event_name"]["custom"], "Opening Night")
+
+    def test_target_names_and_repeat(self):
+        self.assertEqual(self.post("target", {"type": "New Year's Day"})[0], 200)
+        self.assertEqual(self.cd["target"]["type"], "newyear")
+        self.post("target", {"type": "custom", "date": "2020-06-15", "repeat": "true"})
+        self.assertTrue(self.cd["target"]["custom_repeat_yearly"])
+        self.post("target", {"type": "custom", "repeat": False})
+        self.assertFalse(self.cd["target"]["custom_repeat_yearly"])
+
+    def test_target_errors_save_nothing(self):
+        self.assertEqual(self.post("target", {"type": "easter"})[0], 400)
+        code, body = self.post("target", {"type": "custom", "date": "14/03/2027"})
+        self.assertEqual(code, 400)
+        self.assertIn("custom_date", body["error"])
+        self.assertEqual(self.cd["target"]["type"], "christmas")
+        code, _ = self.post("target", {"type": "custom"})   # no date saved yet
+        self.assertEqual(code, 400)
+
+
+@unittest.skipUnless(HAVE_TOOLS, "bash and curl needed")
+class Scripts(CommandsBase):
+
+    def test_state_script(self):
+        r = self.run_cmd("state.sh", "Off")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(self.cd["enabled"])
+        self.run_cmd("state.sh", "Toggle")
+        self.assertTrue(self.cd["enabled"])
+
+    def test_state_script_rejects_bad_value(self):
+        r = self.run_cmd("state.sh", "Sideways")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("On, Off or Toggle", r.stderr)
+
+    def test_set_target_custom_with_all_fields(self):
+        r = self.run_cmd("set_target.sh", "Custom", "2027-03-14", "18:30", 'Bob\'s "Big" Night', "true")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        t = self.cd["target"]
+        self.assertEqual((t["type"], t["custom_date"], t["custom_time"], t["custom_repeat_yearly"]),
+                         ("custom", "2027-03-14", "18:30", True))
+        self.assertEqual(t["event_name"]["custom"], 'Bob\'s "Big" Night')
+
+    def test_set_target_fixed_holidays_with_empty_optional_args(self):
+        # fppd passes optional args left blank as empty strings
+        r = self.run_cmd("set_target.sh", "New Year's Day", "", "", "", "")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.cd["target"]["type"], "newyear")
+        self.run_cmd("set_target.sh", "Christmas")
+        self.assertEqual(self.cd["target"]["type"], "christmas")
+
+    def test_set_target_reports_daemon_error(self):
+        r = self.run_cmd("set_target.sh", "Custom", "not-a-date")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("custom_date", r.stderr)
+
+    def test_daemon_not_running(self):
+        env = dict(os.environ, MC_API="http://127.0.0.1:1/api/plugin/matrixcountdown")
+        r = subprocess.run(["bash", os.path.join(COMMANDS, "state.sh"), "On"], env=env,
+                           capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("daemon not running", r.stderr)
+
+    def test_descriptions_match_scripts(self):
+        with open(os.path.join(COMMANDS, "descriptions.json")) as f:
+            for cmd in json.load(f):
+                self.assertTrue(os.access(os.path.join(COMMANDS, cmd["script"]), os.X_OK), cmd["script"])
+                self.assertTrue(cmd["name"].startswith("Matrix Countdown - "))
+
+
+if __name__ == "__main__":
+    unittest.main()
