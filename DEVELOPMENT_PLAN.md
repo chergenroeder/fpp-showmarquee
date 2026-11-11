@@ -268,3 +268,31 @@ Notes from building it:
 | 6 | Sharing a model with the scroller | **Separate models**; UI warns on a clash |
 | 7 | Vertical scroll, text too wide | **Two lines**, then shrink a piece if still too wide |
 | 8 | Static mode | **Yes**, a fifth "Static (centered)" option |
+
+---
+
+## Version 2 — Weather from a Tempest station (started 2026-11-10)
+
+Add messages showing the user's WeatherFlow Tempest **temperature** and **wind speed**.
+
+**Decisions**
+- Source: the hub's **local UDP broadcast** (port 50222). It needs no internet, account or token, wind updates every ~3 s and temperature every ~1 min. Tempest's cloud REST API (personal token) can be a later fallback for players on another network.
+- Units: **°F** and **mph**.
+
+**Protocol** (WeatherFlow UDP reference v143)
+- `rapid_wind`: `ob = [epoch, wind m/s, direction °]`, about every 3 s.
+- `obs_st`: `obs[0] = [epoch, lull, avg, gust (m/s), direction °, interval s, pressure mb, air temp °C, humidity %, lux, UV, solar W/m², rain mm, precip type, strike km, strikes, battery V, report interval min]`, about every 60 s.
+- Also `hub_status` (10 s) and `device_status` (60 s). Listen with `SO_REUSEADDR`/`SO_REUSEPORT` so other listeners (Home Assistant, WeeWX) keep working.
+
+**Check:** `scripts/tempest_listen.py` (no sudo). On this network (2026-11-10, from a Mac), it heard hub **HB-00069444** at 192.168.1.147 with Tempest sensor **ST-00084993**:
+- 75 s gave obs_st=4, rapid_wind=49, hub_status=14, device_status=3.
+- **Every packet arrived twice** (probably two network interfaces), so the reader must drop duplicates by timestamp.
+- A sample reading: 38.2°F, wind 0 mph, pressure 837 mb, humidity 0.0% (suspicious; the sensor may report 0 when it fails), battery 2.68 V.
+- [ ] Run it on the FPP player: the player must be on the same network segment as the hub.
+
+**Open questions (before building)**
+1. How weather and the countdown share the matrix: take turns every pass, every N passes, or on a timer? Or a weather-only mode?
+2. Which readings: temperature, wind average, and also gust and direction ("Wind 8 mph NW, gusts 12")?
+3. Message wording and order, e.g. "72°F" / "Wind 8 mph"; the same number/text styles or their own?
+4. What to show when no reading has arrived for a few minutes: skip weather silently (proposed), or show "--"?
+5. Calm wind: "Calm", or "Wind 0 mph"?
