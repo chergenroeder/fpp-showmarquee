@@ -200,15 +200,17 @@ Notes from building it:
 - [x] Checked on the player (FPP 10.3, "P5 Panel" 192×96): the Christmas countdown scrolled, Stop then Start from the page worked (the sudo path), and it recovered by itself after an fppd restart.
 - [ ] Not done: drawing to a matrix on *another* player. The buffer is local, so FPP Host must be this player. If that's ever wanted, it needs a different output path.
 
-### Phase 5 — Web UI (2 days)
-- [ ] Target: radio buttons **Custom / Christmas / New Year's**. The date and time pickers and the **Repeat every year** checkbox show only for Custom. Event name field. Next-target readout ("Counting down to Fri Dec 25 2026, 00:00 local").
-- [ ] Layout: number-first / number-last radios with the live examples **"8 Days to Christmas"** / **"Christmas in 8 Days"**, plus connector and unit text fields.
-- [ ] Under 1 day: radios **HH:MM:SS countdown** / **Hours only (minutes in the last hour)**, with examples.
-- [ ] Motion: direction dropdown (L→R, R→L, T→B, B→T, Static), speed, repeat delay (speed and delay hidden for Static).
-- [ ] Two style cards, **Text style** and **Number style**, each with font, size and color.
-- [ ] **Live preview** on a canvas sized to the chosen model, drawn in the browser from the same rules (fonts loaded via `@font-face` from the plugin). Alternatively, a `GET preview.png` endpoint where the daemon draws the frame itself (exact match, simpler, no animation).
-- [ ] Daemon controls, snapshots, dark/light mode, git commit in the footer (from the scroller).
-- [ ] Validation: a custom date in the past (repeat off) shows a warning, and saving requires a model to be chosen.
+### Phase 5 — Web UI ✅ built 2026-11-10, waiting for a check on the player (`matrixcountdown.html`)
+- [x] Target: radio buttons **Christmas / New Year's / Custom**. The date and time pickers and **Repeat every year** show only for Custom. The event name field edits the name of the chosen target. A readout shows the next target in FPP local time.
+- [x] Layout: number-first / number-last radios with live examples built from your event name, joining words and units. The joining words and unit words sit under a fold.
+- [x] Under 1 day: radios **Countdown timer** / **Hours only**, with examples, and a note on minutes in the last hour and going blank at zero.
+- [x] Motion: direction dropdown (Right to Left, Left to Right, Bottom to Top, Top to Bottom, Static); speed and pause are hidden for Static; a two-line note for vertical/static.
+- [x] **Number style** and **Text style** cards: font (fonts found on the player, plus "built-in"; a missing font is flagged), size, colour, smooth edges.
+- [x] **Live preview** drawn by the daemon itself (`POST preview` with the unsaved settings), so fonts and layout match the matrix exactly. The page animates it with the same motion as the daemon, at the chosen model's size, with an LED-style grid. "Preview as": Now / 8 days out / Under a day. "Now" refreshes every second so the timer ticks.
+- [x] Daemon Start/Restart/Stop, a status box (now showing, output state and fps, FPP local time), version footer, Bootstrap variables so FPP's dark mode applies.
+- [x] Validation: a past custom date (repeat off) gets a warning and a blank preview. No model gets a warning. A model also used by Matrix Scroller gets a warning (read from the scroller's config if it's installed). The server rejects bad values on Save and says which field. Unsaved changes are marked, and leaving the page asks first.
+- [x] `scripts/dev_server.py`: fake fppd + real daemon + an FPP-like page wrapper, for working on the page without a player. Used to check the page at desktop and phone widths, in light and dark mode.
+- [ ] Check inside FPP on the player (real fonts, FPP's own page chrome and dark mode).
 
 ### Phase 6 — API and FPP commands (½ day)
 - [ ] REST: `status` (target, remaining time, current message), `config` GET/POST, `reload`, `preview.png`, daemon start/stop/restart, snapshots.

@@ -51,6 +51,9 @@ class FakeFPP:
                 return (name if name in fake.models else None), (parts[5] if len(parts) > 5 else "")
 
             def do_GET(self):
+                if self.path.rstrip("/") == "/api/overlays/models":
+                    return self._json(200, [{"Name": n, "width": w, "height": h, "isActive": fake.state[n]}
+                                            for n, (w, h) in fake.models.items()])
                 name, cmd = self._model()
                 if name is None or cmd:
                     return self._json(404, {"error": "Model Not found"})

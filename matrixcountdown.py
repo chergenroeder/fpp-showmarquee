@@ -22,7 +22,9 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime
+import base64
+import io
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
@@ -318,6 +320,69 @@ class CountdownDaemon:
         with self._lock:
             return copy.deepcopy(self.cfg), self._cfg_version
 
+    def preview(self, body: dict) -> dict:
+        """The message as the matrix would draw it, from unsaved form settings.
+
+        body: {"config": {...partial config...}, "width": w, "height": h,
+               "as": "now" | "days" | "under_day"}
+        Returns the drawn strip as a PNG (base64) plus what the page needs to
+        animate it the same way the daemon moves it.
+        """
+        try:
+            from countdown.render import Style, layout_strip
+        except ImportError:
+            return {"error": "Pillow is not installed"}
+        cfg = _deep_merge(load_defaults(), body.get("config") or {})
+        errors = validate_config(cfg)
+        if errors:
+            return {"error": "; ".join(errors)}
+        cd = cfg["countdown"]
+        try:
+            w = max(1, min(2048, int(body.get("width") or 192)))
+            h = max(1, min(2048, int(body.get("height") or 96)))
+        except (TypeError, ValueError):
+            return {"error": "width and height must be numbers"}
+        now = local_now()
+        target = resolve_target(cd.get("target") or {}, now)
+        if target is None:
+            return {"error": "the custom target has no valid date"}
+        mode = body.get("as", "now")
+        if mode == "days":
+            at = target.when - timedelta(days=8) + timedelta(hours=1)
+        elif mode == "under_day":
+            at = target.when - timedelta(hours=8, minutes=14, seconds=32)
+        else:
+            at = now
+        layout = cd.get("layout") or {}
+        display = compute_display(target, at, layout)
+        message = build_message(display, target, layout)
+        motion = cd.get("motion") or {}
+        result = {
+            "width": w, "height": h,
+            "target": {"when": target.when.isoformat(timespec="minutes"),
+                       "when_text": target.when.strftime("%a %b %-d %Y, %H:%M"),
+                       "name": target.name, "repeats": target.repeats},
+            "display": display.kind,
+            "message": message.plain,
+            "direction": motion.get("direction", "R2L"),
+            "pixels_per_second": float(motion.get("pixels_per_second", 15)),
+            "repeat_delay": float(motion.get("repeat_delay", 0)),
+            "strip": None,
+        }
+        resolve = lambda n: detect_fonts().get(n)  # noqa: E731
+        strip = layout_strip(message, Style.from_cfg(cd.get("text_style") or {}, resolve),
+                             Style.from_cfg(cd.get("number_style") or {}, resolve), w, result["direction"])
+        if strip is not None:
+            buf = io.BytesIO()
+            strip.save(buf, format="PNG")
+            result["strip"] = base64.b64encode(buf.getvalue()).decode()
+            result["strip_width"], result["strip_height"] = strip.size
+        missing = [cd[s]["font"] for s in ("text_style", "number_style")
+                   if cd[s].get("font") and cd[s]["font"] not in detect_fonts()]
+        if missing:
+            result["warning"] = "font not found, using the built-in font: " + ", ".join(sorted(set(missing)))
+        return result
+
     def get_models(self) -> List[dict]:
         return get_fpp_models(self._global().get("fpp_host", "localhost"))
 
@@ -568,6 +633,12 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Invalid config", "details": errors})
             else:
                 self._send_json(200, {"status": "saved"})
+        elif route == "preview":
+            body = self._read_json()
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Body must be a JSON object"})
+            result = _daemon.preview(body)
+            self._send_json(400 if "error" in result else 200, result)
         elif route == "reload":
             _daemon.reload_config()
             self._send_json(200, {"status": "reloaded"})

@@ -1,74 +1,527 @@
-<!-- Matrix Countdown Clock: Phase 1 placeholder page. The full settings UI arrives in Phase 5. -->
+<!-- Matrix Countdown Clock settings page. FPP wraps this in its own page (Bootstrap 5, jQuery). -->
 <style>
-  #mc-root { max-width: 760px; font-family: inherit; }
-  #mc-root .mc-card { border: 1px solid rgba(127,127,127,.35); border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
-  #mc-root h3 { margin: 0 0 8px; }
-  #mc-root table td { padding: 2px 12px 2px 0; vertical-align: top; }
-  #mc-root .mc-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; color: #fff; font-size: .85em; }
-  #mc-root .mc-on { background: #2e7d32; } #mc-root .mc-off { background: #c62828; }
-  #mc-root button { margin-right: 6px; }
-  #mc-root .mc-err { color: #c62828; }
+  #mc-root { max-width: 1100px; background-color: var(--bs-body-bg); color: var(--bs-body-color); }
+  #mc-root .mc-lbl { font-size: .78em; color: var(--bs-secondary-color, #6c757d); text-transform: uppercase;
+                     letter-spacing: .07em; font-weight: 600; margin: 14px 0 6px; }
+  #mc-root .mc-lbl:first-child { margin-top: 0; }
+  #mc-root .mc-example { font-family: var(--bs-font-monospace, monospace); font-size: .85em; color: var(--bs-secondary-color, #6c757d); }
+  #mc-root .form-check-label .mc-example { margin-left: .4em; }
+  #mc-root .mc-hidden { display: none !important; }
+  #mc-root .mc-preview-wrap { background: #111; border-radius: 6px; padding: 8px; overflow: hidden; }
+  #mc-root canvas { display: block; margin: 0 auto; image-rendering: pixelated; max-width: 100%; }
+  #mc-root .mc-color { width: 3.2rem; padding: .15rem; }
+  #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color, #dee2e6); }
+  #mc-root .mc-warn { color: var(--bs-warning-text-emphasis, #997404); }
+  #mc-root .mc-err { color: var(--bs-danger, #dc3545); }
+  #mc-root td.mc-k { color: var(--bs-secondary-color, #6c757d); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
-<div id="mc-root">
-  <div class="mc-card">
-    <h3>Matrix Countdown Clock <span id="mc-badge" class="mc-badge mc-off">Offline</span></h3>
-    <table>
-      <tr><td>FPP local time</td><td id="mc-time">–</td></tr>
-      <tr><td>Target</td><td id="mc-target">–</td></tr>
-      <tr><td>Model</td><td id="mc-model">–</td></tr>
-      <tr><td>Output</td><td id="mc-output">–</td></tr>
-      <tr><td>Pillow</td><td id="mc-pillow">–</td></tr>
-      <tr><td>Config</td><td id="mc-errors">–</td></tr>
-    </table>
+<div class="container-fluid px-3 py-3" id="mc-root">
+
+  <!-- Status -->
+  <div class="card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <strong>Matrix Countdown Clock</strong>
+        <span id="mc-badge" class="badge bg-secondary">Loading…</span>
+      </div>
+      <div class="d-flex gap-1">
+        <button type="button" class="btn btn-sm btn-outline-success" onclick="mcDaemon('start')">Start</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mcDaemon('restart')">Restart</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="mcDaemon('stop')">Stop</button>
+      </div>
+    </div>
+    <div class="card-body py-2">
+      <table class="small mb-0">
+        <tr><td class="mc-k">Now showing</td><td id="mc-s-message">–</td></tr>
+        <tr><td class="mc-k">Output</td><td id="mc-s-output">–</td></tr>
+        <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
+      </table>
+    </div>
   </div>
-  <div class="mc-card">
-    <h3>Daemon</h3>
-    <button class="buttons" onclick="mcDaemon('start')">Start</button>
-    <button class="buttons" onclick="mcDaemon('restart')">Restart</button>
-    <button class="buttons" onclick="mcDaemon('stop')">Stop</button>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+
+      <!-- Target -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Count down to</strong></div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-3 mb-2">
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-type" id="mc-type-christmas" value="christmas" data-path="countdown.target.type">
+              <label class="form-check-label" for="mc-type-christmas">Christmas Day <span class="mc-example">Dec 25</span></label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-type" id="mc-type-newyear" value="newyear" data-path="countdown.target.type">
+              <label class="form-check-label" for="mc-type-newyear">New Year's Day <span class="mc-example">Jan 1</span></label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-type" id="mc-type-custom" value="custom" data-path="countdown.target.type">
+              <label class="form-check-label" for="mc-type-custom">Custom date</label></div>
+          </div>
+
+          <div id="mc-custom" class="row g-2 mb-2">
+            <div class="col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-date">Date</label>
+              <input type="date" class="form-control form-control-sm" id="mc-date" data-path="countdown.target.custom_date"></div>
+            <div class="col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-time">Time</label>
+              <input type="time" class="form-control form-control-sm" id="mc-time" data-path="countdown.target.custom_time"></div>
+            <div class="col-sm-4 d-flex align-items-end">
+              <div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-repeat" data-path="countdown.target.custom_repeat_yearly">
+                <label class="form-check-label" for="mc-repeat">Repeat every year</label></div></div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-sm-7"><label class="form-label form-label-sm mb-0" for="mc-name">Event name</label>
+              <input type="text" class="form-control form-control-sm" id="mc-name" maxlength="60"></div>
+          </div>
+          <div class="small mt-2" id="mc-target-info"></div>
+          <div class="small mc-warn" id="mc-target-warn"></div>
+        </div>
+      </div>
+
+      <!-- Message -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Message</strong></div>
+        <div class="card-body">
+          <div class="mc-lbl">Number position</div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="mc-pos" id="mc-pos-first" value="first" data-path="countdown.layout.number_position">
+            <label class="form-check-label" for="mc-pos-first">Number first <span class="mc-example" id="mc-ex-first"></span></label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="mc-pos" id="mc-pos-last" value="last" data-path="countdown.layout.number_position">
+            <label class="form-check-label" for="mc-pos-last">Number last <span class="mc-example" id="mc-ex-last"></span></label></div>
+
+          <div class="mc-lbl">Under 1 day left</div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="mc-under" id="mc-under-hms" value="hms" data-path="countdown.layout.under_one_day">
+            <label class="form-check-label" for="mc-under-hms">Countdown timer <span class="mc-example" id="mc-ex-hms"></span></label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="mc-under" id="mc-under-hours" value="hours" data-path="countdown.layout.under_one_day">
+            <label class="form-check-label" for="mc-under-hours">Hours only <span class="mc-example" id="mc-ex-hours"></span></label></div>
+          <div class="small text-muted ms-4">Hours only switches to minutes in the last hour. At zero the matrix goes blank for the rest of the day.</div>
+
+          <details class="mt-3">
+            <summary class="small">Joining words and unit words</summary>
+            <div class="row g-2 mt-1">
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Number first: “8 Days <u>to</u> …”</label>
+                <input type="text" class="form-control form-control-sm" data-path="countdown.layout.connector_first" maxlength="20"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Number last: “… <u>in</u> 8 Days”</label>
+                <input type="text" class="form-control form-control-sm" data-path="countdown.layout.connector_last" maxlength="20"></div>
+            </div>
+            <div class="row g-2 mt-1">
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Day</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.day" maxlength="20"></div>
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Days</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.days" maxlength="20"></div>
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Hour</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.hour" maxlength="20"></div>
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Hours</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.hours" maxlength="20"></div>
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Minute</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.minute" maxlength="20"></div>
+              <div class="col-4 col-md-2"><label class="form-label form-label-sm mb-0">Minutes</label><input type="text" class="form-control form-control-sm" data-path="countdown.layout.units.minutes" maxlength="20"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Motion -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Motion</strong></div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-dir">Direction</label>
+              <select class="form-select form-select-sm" id="mc-dir" data-path="countdown.motion.direction">
+                <option value="R2L">Right to Left</option>
+                <option value="L2R">Left to Right</option>
+                <option value="B2T">Bottom to Top</option>
+                <option value="T2B">Top to Bottom</option>
+                <option value="static">Static (centered)</option>
+              </select></div>
+            <div class="col-6 col-sm-3 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-pps">Speed (px/s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
+            <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
+          </div>
+          <div class="small text-muted mt-2" id="mc-dir-note"></div>
+        </div>
+      </div>
+
+      <!-- Styles -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6" data-style="number_style"></div>
+        <div class="col-md-6" data-style="text_style"></div>
+      </div>
+
+      <!-- Display -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>Matrix</strong></div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-sm-7"><label class="form-label form-label-sm mb-0" for="mc-model">Overlay model</label>
+              <select class="form-select form-select-sm" id="mc-model" data-path="countdown.model"></select></div>
+            <div class="col-sm-5 d-flex flex-column justify-content-end">
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="mc-enabled" data-path="countdown.enabled">
+                <label class="form-check-label" for="mc-enabled">Countdown on</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="mc-output" data-path="global.enable_output">
+                <label class="form-check-label" for="mc-output">Output enabled</label></div>
+            </div>
+          </div>
+          <div class="small mc-warn mt-2" id="mc-model-warn"></div>
+          <details class="mt-2">
+            <summary class="small">Advanced</summary>
+            <div class="row g-2 mt-1">
+              <div class="col-6 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-fps">Max frame rate</label>
+                <input type="number" class="form-control form-control-sm" id="mc-fps" min="1" max="60" step="1" data-path="global.fps" data-type="number"></div>
+            </div>
+            <div class="small text-muted mt-1">FPP shows overlay frames at its own output rate (20 per second when idle); higher values only help while a faster sequence plays.</div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="col-lg-5">
+      <div class="card mb-3" style="position: sticky; top: .5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <strong>Preview</strong>
+          <div class="btn-group btn-group-sm" role="group" aria-label="Preview as">
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-now" value="now" checked>
+            <label class="btn btn-outline-secondary" for="mc-as-now">Now</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-days" value="days">
+            <label class="btn btn-outline-secondary" for="mc-as-days">8 days out</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-under" value="under_day">
+            <label class="btn btn-outline-secondary" for="mc-as-under">Under a day</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mc-preview-wrap"><canvas id="mc-canvas" width="192" height="96"></canvas></div>
+          <div class="small mt-2" id="mc-preview-text">–</div>
+          <div class="small mc-warn" id="mc-preview-warn"></div>
+          <div class="small text-muted" id="mc-preview-size"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <p>The settings page is still being built. Until then, settings can be changed through
-     <code>/api/plugin/fpp-matrixcountdown/config</code>.</p>
-  <small>Version <span id="mc-version">–</span></small>
+
+  <div class="mc-savebar py-2 d-flex align-items-center gap-2 flex-wrap">
+    <button type="button" class="btn btn-sm btn-primary" id="mc-save" onclick="mcSave()">Save</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="mc-revert" onclick="mcLoad()">Revert</button>
+    <span class="small" id="mc-save-msg"></span>
+    <span class="ms-auto small text-muted">Version <span id="mc-version">–</span></span>
+  </div>
 </div>
 
+<template id="mc-style-tpl">
+  <div class="card h-100">
+    <div class="card-header"><strong class="mc-style-title"></strong> <span class="mc-example mc-style-example"></span></div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-12"><label class="form-label form-label-sm mb-0">Font</label>
+          <select class="form-select form-select-sm mc-font" data-field="font"></select></div>
+        <div class="col-5"><label class="form-label form-label-sm mb-0">Size</label>
+          <input type="number" class="form-control form-control-sm" min="4" max="128" step="1" data-field="size" data-type="number"></div>
+        <div class="col-3"><label class="form-label form-label-sm mb-0">Colour</label>
+          <input type="color" class="form-control form-control-sm mc-color" data-field="color"></div>
+        <div class="col-4 d-flex align-items-end">
+          <div class="form-check mb-1"><input class="form-check-input" type="checkbox" data-field="antialias">
+            <label class="form-check-label small">Smooth edges</label></div></div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
-const MC_API = '/api/plugin/fpp-matrixcountdown/';
+(function () {
+  const API = '/api/plugin/fpp-matrixcountdown/';
+  const $ = (sel, el) => (el || document).querySelector(sel);
+  const $$ = (sel, el) => Array.from((el || document).querySelectorAll(sel));
 
-function mcText(id, v) { document.getElementById(id).textContent = v; }
+  let cfg = null;          // settings being edited
+  let saved = '';          // JSON of the last saved settings, for the unsaved marker
+  let fonts = [];
+  let models = [];
+  let preview = null;      // last preview response
+  let stripImg = null;     // Image of the drawn strip
+  let previewSeq = 0;
 
-async function mcRefresh() {
-  let s = null;
-  try { s = await (await fetch(MC_API + 'status')).json(); } catch (e) {}
-  const badge = document.getElementById('mc-badge');
-  const online = s && s.running;
-  badge.textContent = online ? 'Online' : 'Offline';
-  badge.className = 'mc-badge ' + (online ? 'mc-on' : 'mc-off');
-  if (!online) return;
-  mcText('mc-time', s.local_time + ' (' + s.timezone + ')');
-  mcText('mc-target', s.target
-    ? s.target.name + ' — ' + s.target.when + (s.message.plain ? '  ·  "' + s.message.plain + '"' : '  ·  (blank)')
-    : (s.target_type || '–') + ' (no valid date)');
-  mcText('mc-model', s.model || '(none chosen)');
-  mcText('mc-pillow', s.pillow || 'NOT installed');
-  const o = s.output || {};
-  const out = document.getElementById('mc-output');
-  out.textContent = (o.state || '–') + (o.state === 'drawing' ? ' at ' + o.fps + ' fps' : '') +
-                    (o.error ? ': ' + o.error : '') + (o.root === false ? ' (daemon is not root)' : '');
-  out.className = o.state === 'error' ? 'mc-err' : '';
-  const err = document.getElementById('mc-errors');
-  err.textContent = s.config_errors.length ? s.config_errors.join('; ') : 'OK';
-  err.className = s.config_errors.length ? 'mc-err' : '';
-  mcText('mc-version', s.commit);
-}
+  // ── helpers ──
+  async function api(path, opts) {
+    const r = await fetch(API + path, opts);
+    return r.json();
+  }
+  function post(path, body) {
+    return api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  }
+  function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+  function setPath(obj, path, val) {
+    const keys = path.split('.'); let o = obj;
+    keys.slice(0, -1).forEach(k => { if (typeof o[k] !== 'object' || o[k] === null) o[k] = {}; o = o[k]; });
+    o[keys[keys.length - 1]] = val;
+  }
+  function notify(msg, isError) {
+    if (window.jQuery && jQuery.jGrowl) { jQuery.jGrowl(msg, { themeState: isError ? 'danger' : 'success' }); }
+    const el = $('#mc-save-msg'); el.textContent = msg; el.className = 'small ' + (isError ? 'mc-err' : 'text-success');
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-async function mcDaemon(action) {
-  const method = action === 'start' ? 'GET' : 'POST';
-  try { await fetch(MC_API + 'daemon/' + action, { method }); } catch (e) {}
-  setTimeout(mcRefresh, 1500);
-}
+  // ── style cards ──
+  function buildStyleCards() {
+    $$('[data-style]').forEach(col => {
+      const which = col.dataset.style;
+      const node = $('#mc-style-tpl').content.cloneNode(true);
+      $('.mc-style-title', node).textContent = which === 'number_style' ? 'Number style' : 'Text style';
+      $$('[data-field]', node).forEach(el => { el.dataset.path = 'countdown.' + which + '.' + el.dataset.field; });
+      col.appendChild(node);
+    });
+  }
 
-mcRefresh();
-setInterval(mcRefresh, 2000);
+  function fillFonts() {
+    $$('.mc-font').forEach(sel => {
+      const current = getPath(cfg, sel.dataset.path) || '';
+      const names = fonts.slice();
+      let html = '<option value="">(built-in font)</option>';
+      if (current && !names.includes(current)) html += `<option value="${esc(current)}">${esc(current)} (not found)</option>`;
+      html += names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      sel.innerHTML = html;
+      sel.value = current;
+    });
+  }
+
+  function fillModels() {
+    const sel = $('#mc-model');
+    const current = getPath(cfg, 'countdown.model') || '';
+    let html = '<option value="">(choose a model)</option>';
+    if (current && !models.some(m => m.name === current)) html += `<option value="${esc(current)}">${esc(current)} (not found in FPP)</option>`;
+    html += models.map(m => `<option value="${esc(m.name)}">${esc(m.name)}${m.width ? ` (${m.width}×${m.height})` : ''}</option>`).join('');
+    sel.innerHTML = html;
+    sel.value = current;
+  }
+
+  // ── form <-> cfg ──
+  function toForm() {
+    $$('[data-path]').forEach(el => {
+      const v = getPath(cfg, el.dataset.path);
+      if (el.type === 'radio') el.checked = (el.value === v);
+      else if (el.type === 'checkbox') el.checked = !!v;
+      else if (v !== undefined && v !== null) el.value = v;
+    });
+    const type = getPath(cfg, 'countdown.target.type');
+    $('#mc-name').value = getPath(cfg, 'countdown.target.event_name.' + type) || '';
+    refresh();
+  }
+
+  function onInput(e) {
+    const el = e.target;
+    if (el.id === 'mc-name') {
+      setPath(cfg, 'countdown.target.event_name.' + getPath(cfg, 'countdown.target.type'), el.value);
+    } else if (el.dataset.path) {
+      let v;
+      if (el.type === 'checkbox') v = el.checked;
+      else if (el.type === 'radio') { if (!el.checked) return; v = el.value; }
+      else if (el.dataset.type === 'number') { v = el.value === '' ? '' : Number(el.value); }
+      else v = el.value;
+      setPath(cfg, el.dataset.path, v);
+      if (el.dataset.path === 'countdown.target.type') $('#mc-name').value = getPath(cfg, 'countdown.target.event_name.' + v) || '';
+    } else return;
+    refresh();
+  }
+
+  // ── what depends on the form ──
+  function refresh() {
+    const t = cfg.countdown.target, L = cfg.countdown.layout, U = L.units || {};
+    const name = (t.event_name && t.event_name[t.type]) || '';
+    $('#mc-custom').classList.toggle('mc-hidden', t.type !== 'custom');
+    const join = (...w) => w.map(x => String(x || '').trim()).filter(Boolean).join(' ');
+    const first = L.number_position !== 'last';
+    $('#mc-ex-first').textContent = join('8', U.days, L.connector_first, name);
+    $('#mc-ex-last').textContent = join(name, L.connector_last, '8', U.days);
+    const ordered = (num) => first ? join(num, L.connector_first, name) : join(name, L.connector_last, num);
+    $('#mc-ex-hms').textContent = ordered('08:14:32');
+    $('#mc-ex-hours').textContent = ordered(join('9', U.hours));
+    const dir = cfg.countdown.motion.direction;
+    $$('.mc-moving').forEach(el => el.classList.toggle('mc-hidden', dir === 'static'));
+    $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
+      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide).' : '';
+    $$('.mc-style-example').forEach(el => {
+      el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
+    });
+    modelWarnings();
+    const dirty = JSON.stringify(cfg) !== saved;
+    $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
+    if (dirty) { const m = $('#mc-save-msg'); m.textContent = 'Unsaved changes'; m.className = 'small mc-warn'; }
+    schedulePreview();
+  }
+
+  let scrollerModels = [];
+  function modelWarnings() {
+    const m = cfg.countdown.model;
+    let warn = '';
+    if (!m) warn = 'No model chosen: nothing will be drawn.';
+    else if (scrollerModels.includes(m)) warn = `Matrix Scroller also uses “${m}”. The two plugins would draw over each other; choose a separate model.`;
+    $('#mc-model-warn').textContent = warn;
+  }
+
+  // ── preview ──
+  let previewTimer = null;
+  function schedulePreview(delay) {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(loadPreview, delay === undefined ? 250 : delay);
+  }
+
+  function panelSize() {
+    const m = models.find(x => x.name === cfg.countdown.model);
+    return m && m.width ? { w: m.width, h: m.height, real: true } : { w: 192, h: 96, real: false };
+  }
+
+  async function loadPreview() {
+    const seq = ++previewSeq;
+    const size = panelSize();
+    const as = $('input[name="mc-as"]:checked').value;
+    let r;
+    try { r = await post('preview', { config: cfg, width: size.w, height: size.h, as }); }
+    catch (e) { r = { error: 'daemon not running' }; }
+    if (seq !== previewSeq) return;
+    const warnEl = $('#mc-preview-warn');
+    $('#mc-preview-size').textContent = size.real ? `${size.w}×${size.h} (${cfg.countdown.model})` : `${size.w}×${size.h} (example size: choose a model)`;
+    if (r.error) {
+      $('#mc-preview-text').innerHTML = `<span class="mc-err">${esc(r.error)}</span>`;
+      warnEl.textContent = '';
+      return;
+    }
+    const restart = !preview || !preview.strip || preview.direction !== r.direction ||
+                    preview.pixels_per_second !== r.pixels_per_second || preview.width !== r.width;
+    preview = r;
+    if (restart) mover.reset();
+    $('#mc-preview-text').textContent = r.message ? '“' + r.message + '”' : '(blank: the target has been reached)';
+    warnEl.textContent = r.warning || '';
+    const info = `Counting down to ${r.target.name || 'the target'}: ${r.target.when_text} (FPP local time)` + (r.target.repeats ? ', every year' : '');
+    $('#mc-target-info').textContent = info;
+    const t = cfg.countdown.target;
+    $('#mc-target-warn').textContent = (as === 'now' && r.display === 'blank' && t.type === 'custom' && !t.custom_repeat_yearly)
+      ? 'This date has passed: the matrix stays blank. Pick a later date or turn on Repeat every year.' : '';
+    if (r.strip) {
+      const img = new Image();
+      img.onload = () => { if (seq === previewSeq) stripImg = img; };
+      img.src = 'data:image/png;base64,' + r.strip;
+    } else {
+      stripImg = null;
+    }
+  }
+
+  // Same motion as countdown/render.py Mover
+  const mover = {
+    start: null, doneAt: null,
+    reset() { this.start = null; this.doneAt = null; },
+    position(t, W, H, sw, sh, dir, pps, delay) {
+      const cx = Math.floor((W - sw) / 2), cy = Math.floor((H - sh) / 2);
+      if (dir === 'static') return [cx, cy];
+      if (this.start === null) this.start = t;
+      if (this.doneAt !== null) {
+        if (t - this.doneAt < delay) return null;
+        this.start = t; this.doneAt = null;
+      }
+      let travel = (t - this.start) * pps;
+      const horiz = dir === 'L2R' || dir === 'R2L';
+      const span = horiz ? W + sw : H + sh;
+      if (travel >= span) {
+        if (delay > 0) { this.doneAt = t; return null; }
+        this.start = t - (travel - span) / pps; travel -= span;
+      }
+      const s = Math.floor(travel);
+      if (dir === 'R2L') return [W - s, cy];
+      if (dir === 'L2R') return [s - sw, cy];
+      if (dir === 'T2B') return [cx, s - sh];
+      return [cx, H - s];
+    }
+  };
+
+  const panel = document.createElement('canvas');
+  function draw() {
+    requestAnimationFrame(draw);
+    const canvas = $('#mc-canvas');
+    if (!preview) return;
+    const W = preview.width, H = preview.height;
+    if (panel.width !== W || panel.height !== H) { panel.width = W; panel.height = H; }
+    const pctx = panel.getContext('2d');
+    pctx.fillStyle = '#000'; pctx.fillRect(0, 0, W, H);
+    if (stripImg) {
+      const p = mover.position(performance.now() / 1000, W, H, stripImg.width, stripImg.height,
+                               preview.direction, preview.pixels_per_second, preview.repeat_delay);
+      if (p) pctx.drawImage(stripImg, p[0], p[1]);
+    }
+    const avail = canvas.parentElement.clientWidth - 16;
+    const scale = Math.max(1, Math.min(6, Math.floor(avail / W)));
+    if (canvas.width !== W * scale || canvas.height !== H * scale) { canvas.width = W * scale; canvas.height = H * scale; }
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(panel, 0, 0, W * scale, H * scale);
+    if (scale >= 3) {   // LED gaps
+      ctx.fillStyle = 'rgba(17,17,17,.9)';
+      for (let x = 0; x <= W; x++) ctx.fillRect(x * scale, 0, 1, H * scale);
+      for (let y = 0; y <= H; y++) ctx.fillRect(0, y * scale, W * scale, 1);
+    }
+  }
+
+  // ── load / save ──
+  async function mcLoad() {
+    try {
+      const [c, f, m] = await Promise.all([api('config'), api('fonts'), api('models')]);
+      if (c.error) throw new Error(c.error);
+      cfg = c; saved = JSON.stringify(cfg);
+      fonts = Array.isArray(f) ? f : [];
+      models = Array.isArray(m) ? m : [];
+    } catch (e) {
+      notify('Could not load settings: ' + (e.message || e) + '. Is the daemon running?', true);
+      return;
+    }
+    fillFonts(); fillModels(); toForm();
+    $('#mc-save-msg').textContent = '';
+  }
+  window.mcLoad = mcLoad;
+
+  window.mcSave = async function () {
+    if (!cfg) return;
+    let r;
+    try { r = await post('config', cfg); } catch (e) { r = { error: 'daemon not running' }; }
+    if (r.error) {
+      const plain = d => d.replace(/^(countdown|global)\./, '').replace(/[._]/g, ' ');
+      notify('Not saved: ' + (r.details ? r.details.map(plain).join('; ') : r.error), true);
+      return;
+    }
+    saved = JSON.stringify(cfg);
+    refresh();
+    notify('Saved');
+    setTimeout(loadStatus, 600);
+  };
+
+  window.mcDaemon = async function (action) {
+    try { await api('daemon/' + action, { method: action === 'start' ? 'GET' : 'POST' }); } catch (e) {}
+    setTimeout(loadStatus, 1500);
+    if (action !== 'stop') setTimeout(() => { if (!cfg) mcLoad(); }, 2000);
+  };
+
+  // ── status ──
+  async function loadStatus() {
+    let s = null;
+    try { s = await api('status'); } catch (e) {}
+    const badge = $('#mc-badge');
+    const online = s && s.running;
+    badge.textContent = online ? 'Online' : 'Offline';
+    badge.className = 'badge ' + (online ? 'bg-success' : 'bg-danger');
+    if (!online) { $('#mc-s-output').textContent = 'daemon not running'; return; }
+    $('#mc-s-message').textContent = s.message && s.message.plain ? '“' + s.message.plain + '”' : '(blank)';
+    const o = s.output || {};
+    const out = $('#mc-s-output');
+    out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
+    out.className = o.state === 'error' ? 'mc-err' : '';
+    $('#mc-s-time').textContent = `${s.local_time} (${s.timezone})`;
+    $('#mc-version').textContent = s.commit;
+  }
+
+  // ── start ──
+  buildStyleCards();
+  $('#mc-root').addEventListener('input', onInput);
+  $('#mc-root').addEventListener('change', onInput);
+  $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => { mover.reset(); schedulePreview(0); }));
+  window.addEventListener('beforeunload', e => { if (cfg && JSON.stringify(cfg) !== saved) { e.preventDefault(); e.returnValue = ''; } });
+
+  fetch('/api/plugin/fpp-matrixscroller/config').then(r => r.json()).then(c => {
+    scrollerModels = ((c && c.panels) || []).map(p => p.model).filter(Boolean);
+    if (cfg) modelWarnings();
+  }).catch(() => {});
+
+  mcLoad().then(loadStatus);
+  setInterval(loadStatus, 2000);
+  // Keep the "Now" preview current (the number changes over time)
+  setInterval(() => { if (cfg && $('#mc-as-now').checked) schedulePreview(0); }, 1000);
+  requestAnimationFrame(draw);
+})();
 </script>

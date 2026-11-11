@@ -16,6 +16,7 @@ function getEndpointsfppmatrixcountdown() {
         array('method' => 'GET',  'endpoint' => 'config',         'callback' => 'fppmatrixcountdownGetConfig'),
         array('method' => 'POST', 'endpoint' => 'config',         'callback' => 'fppmatrixcountdownPostConfig'),
         array('method' => 'POST', 'endpoint' => 'reload',         'callback' => 'fppmatrixcountdownReload'),
+        array('method' => 'POST', 'endpoint' => 'preview',        'callback' => 'fppmatrixcountdownPreview'),
         array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppmatrixcountdownModels'),
         array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppmatrixcountdownFonts'),
         array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppmatrixcountdownVersion'),
@@ -56,6 +57,7 @@ function fppmatrixcountdownStatus()        { return fppmatrixcountdownDaemonRequ
 function fppmatrixcountdownGetConfig()     { return fppmatrixcountdownDaemonRequest('config'); }
 function fppmatrixcountdownPostConfig()    { return fppmatrixcountdownDaemonRequest('config', 'POST'); }
 function fppmatrixcountdownReload()        { return fppmatrixcountdownDaemonRequest('reload', 'POST'); }
+function fppmatrixcountdownPreview()       { return fppmatrixcountdownDaemonRequest('preview', 'POST'); }
 function fppmatrixcountdownModels()        { return fppmatrixcountdownDaemonRequest('models'); }
 function fppmatrixcountdownFonts()         { return fppmatrixcountdownDaemonRequest('fonts'); }
 function fppmatrixcountdownVersion()       { return fppmatrixcountdownDaemonRequest('version'); }
