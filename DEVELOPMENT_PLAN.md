@@ -229,9 +229,9 @@ Notes from building it:
 - [x] Clock: `status.clock_synced` (from `timedatectl`'s NTPSynchronized) is shown on the status line, with a warning when the clock isn't synced.
 - [x] `POST config` now lays a partial body over the **current** settings, not the defaults, so `{"countdown": {"model": "X"}}` no longer resets everything else.
 - [x] README.md (install, settings, FPP commands, troubleshooting, development) and API.md (every endpoint, settings reference, Home Assistant example).
-- [x] Own icon (LED-dot "8 DAYS") replaces the scroller's.
+- [x] Own icon: a stopwatch whose ring runs down (`scripts/make_icon.py`), replacing the scroller's.
 - [ ] Fresh install from the Plugin Manager URL on a player without the plugin (or after uninstalling it).
-- [ ] Optional: submit to FPP's plugin list (`FalconChristmas/fpp-pluginList`) so it can be installed without the URL.
+- [ ] Category **Messaging** ("Messaging, Signage & Countdown"): FPP takes categories only from the central list `FalconChristmas/fpp-data/pluginList.json` (third field of each entry), not from `pluginInfo.json`. Until a pull request adds `["fpp-matrixcountdown", "<pluginInfo URL>", "Messaging", "<date>"]` there, it shows under Other and installs only by URL.
 
 **Rough total: 8–10 working days**, mostly in Phases 3 and 5.
 
