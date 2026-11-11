@@ -166,8 +166,8 @@ Test script: `sudo python3 scripts/spike_overlay.py --model "<model>"` (run on t
 - [x] Bare daemon: loads config (laid over the bundled defaults), validates on save, serves `status`/`config`/`models`/`fonts`/`version`/`reload`/daemon stop/restart, follows FPP's plugin log level. Tested locally.
 - [x] New `pluginInfo.json` privacy block.
 - [ ] New icon (`icon.png` is the scroller's for now).
-- [ ] Create the GitHub repo `chergenroeder/fpp-matrixcountdown`; `pluginInfo.json` already points there.
-- [ ] Install on FPP from the repo and check the menu page, API proxy and autostart.
+- [x] Create the GitHub repo `chergenroeder/fpp-matrixcountdown` (public).
+- [x] Install on FPP from the repo and check the menu page, API proxy and autostart.
 
 ### Phase 2 — Countdown engine (1 day)
 - [x] `resolve_target()` with Christmas, New Year and yearly-custom rollover after the target day ends (`countdown/timecalc.py`).
@@ -189,7 +189,7 @@ Notes from building it:
 - [x] 25 renderer tests (65 in total; they skip cleanly where Pillow isn't installed). Checked by eye with `scripts/render_preview.py`, which writes an LED-style contact sheet and one GIF per direction. Golden PNGs weren't used because font rendering differs between machines.
 - [ ] Bundle a few pixel fonts that suit small matrices (optional; the system fonts work).
 
-### Phase 4 — FPP output ✅ built 2026-11-10, waiting for a hardware check (`countdown/output.py`)
+### Phase 4 — FPP output ✅ done and checked on hardware 2026-11-10 (`countdown/output.py`)
 - [x] `output.py`: open the buffer (after `PUT .../mmap`), write frames (RGB, or RGBW with white 0), and set the dirty bit. The model is turned on while drawing; it is blanked and turned off when the countdown is blank, disabled, the model changes, or the daemon stops.
 - [x] Main loop in the daemon. It waits for fppd to take each frame, so it follows fppd's real rate, capped at `fps`. A config change takes effect at once.
 - [x] Reconnect: every 5 s it checks whether fppd has replaced the buffer (an fppd restart) or the model was turned off by something else. It then reopens the buffer or turns the model back on. If opening fails, it retries every 5 s.
@@ -197,7 +197,7 @@ Notes from building it:
 - [x] **Root:** the web UI's Start button runs the daemon with `sudo -n`; the log redirect runs as root too, because root owns the log file. If the buffer can't be opened, `status.output.error` says why: not root, model not found, FPP unreachable, or FPP Host isn't this player.
 - [x] `status.output` = `{state: drawing|blank|off|error, error, fps, root}`, also shown on the stand-in page.
 - [x] 15 tests against a fake fppd (`tests/fake_fpp.py`), covering a real HTTP API, a buffer file and an output thread. They check drawing, going blank and off, stopping, errors and recovery, switching models, fppd restarts, disabling output, RGBW and permissions. 80 tests in total.
-- [ ] On the player: Christmas countdown on "P5 Panel"; then Stop/Start from the page (sudo path); then restart fppd and check it recovers.
+- [x] Checked on the player (FPP 10.3, "P5 Panel" 192×96): the Christmas countdown scrolled, Stop then Start from the page worked (the sudo path), and it recovered by itself after an fppd restart.
 - [ ] Not done: drawing to a matrix on *another* player. The buffer is local, so FPP Host must be this player. If that's ever wanted, it needs a different output path.
 
 ### Phase 5 — Web UI (2 days)
