@@ -29,9 +29,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
 from countdown.fonts import FontIndex
-from countdown.message import build_message
+from countdown.message import Message, build_message
 from countdown.output import OutputError, OverlayOutput
 from countdown.timecalc import compute_display, local_now, resolve_target
+from countdown.weather import Reading, TempestListener, compass, c_to_f, ms_to_mph, weather_messages
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 # FPP exports MEDIADIR/LOGDIR to the processes it launches; fall back to the
@@ -255,6 +256,27 @@ def validate_config(cfg: dict) -> List[str]:
             errors.append(f"countdown.{style}.color must look like #rrggbb")
     m = cd.get("motion") or {}
     try:
+        if not 1 <= float(m.get("static_hold", 5)) <= 600:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("countdown.motion.static_hold must be from 1 to 600 seconds")
+    w = cfg.get("weather") or {}
+    try:
+        if not 1 <= int(w.get("port", 50222)) <= 65535:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("weather.port must be a UDP port number (1-65535)")
+    try:
+        if not 0.5 <= float(w.get("stale_minutes", 5)) <= 1440:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("weather.stale_minutes must be from 0.5 to 1440")
+    try:
+        if float((w.get("wind") or {}).get("gust_min_diff_mph", 5)) < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("weather.wind.gust_min_diff_mph must be 0 or more")
+    try:
         if not 1 <= float(m.get("pixels_per_second")) <= 500:
             raise ValueError
     except (TypeError, ValueError):
@@ -288,6 +310,9 @@ class CountdownDaemon:
         self._out_state = "starting"     # drawing | blank | off | error | starting
         self._out_error = ""
         self._fps = 0.0
+        self._showing = {"slot": None, "message": ""}   # what the loop is drawing now
+        self._listener: Optional[TempestListener] = None
+        self._listener_lock = threading.Lock()
 
     def _global(self) -> dict:
         return self.cfg.get("global", {})
@@ -397,22 +422,38 @@ class CountdownDaemon:
         if target is None:
             return {"error": "the custom target has no valid date"}
         mode = body.get("as", "now")
-        if mode == "days":
-            at = target.when - timedelta(days=8) + timedelta(hours=1)
-        elif mode == "under_day":
-            at = target.when - timedelta(hours=8, minutes=14, seconds=32)
+        weather_note = None
+        if mode in ("temperature", "wind"):
+            wcfg = cfg.get("weather") or {}
+            # Show this message even if it's switched off, so it can be styled first
+            shown_cfg = {**wcfg, "temperature": {**(wcfg.get("temperature") or {}), "enabled": True},
+                         "wind": {**(wcfg.get("wind") or {}), "enabled": True}}
+            reading = self.weather_reading()
+            if reading is None or weather_messages(reading, shown_cfg)[mode].blank:
+                # A sample, so styles and layout can be tried before data arrives
+                now_m = time.monotonic()
+                reading = Reading(temp_c=(72 - 32) * 5 / 9, temp_at=now_m, wind_ms=8 / 2.2369363,
+                                  wind_dir=315, wind_at=now_m, gust_ms=15 / 2.2369363, gust_at=now_m)
+                weather_note = "sample reading (no live weather" + ("" if wcfg.get("enabled") else ": Weather is off") + ")"
+            message = weather_messages(reading, shown_cfg)[mode]
+            display = None
         else:
-            at = now
-        layout = cd.get("layout") or {}
-        display = compute_display(target, at, layout)
-        message = build_message(display, target, layout)
+            if mode == "days":
+                at = target.when - timedelta(days=8) + timedelta(hours=1)
+            elif mode == "under_day":
+                at = target.when - timedelta(hours=8, minutes=14, seconds=32)
+            else:
+                at = now
+            layout = cd.get("layout") or {}
+            display = compute_display(target, at, layout)
+            message = build_message(display, target, layout)
         motion = cd.get("motion") or {}
         result = {
             "width": w, "height": h,
             "target": {"when": target.when.isoformat(timespec="minutes"),
                        "when_text": target.when.strftime("%a %b %-d %Y, %H:%M"),
                        "name": target.name, "repeats": target.repeats},
-            "display": display.kind,
+            "display": display.kind if display is not None else mode,
             "message": message.plain,
             "direction": motion.get("direction", "R2L"),
             "pixels_per_second": float(motion.get("pixels_per_second", 15)),
@@ -434,6 +475,8 @@ class CountdownDaemon:
                 label = "Number" if which == "number_style" else "Text"
                 notes.append(f"{label} font \u201c{want}\u201d isn't on this player; using "
                              + (f"\u201c{used}\u201d" if used else "the built-in font") + " instead.")
+        if weather_note:
+            result["note"] = weather_note
         if notes:
             result["warning"] = " ".join(notes)
         return result
@@ -477,7 +520,62 @@ class CountdownDaemon:
             "message": message,
             "output": {"state": self._out_state, "error": self._out_error,
                        "fps": round(self._fps, 1), "root": os.geteuid() == 0},
+            "showing": dict(self._showing),
+            "weather": self.weather_status(cfg),
         }
+
+    # ── Weather ──
+
+    def _ensure_listener(self, cfg: dict) -> Optional[TempestListener]:
+        """Start, restart or stop the Tempest listener to match the settings."""
+        w = cfg.get("weather") or {}
+        want = bool(w.get("enabled"))
+        port = int(w.get("port", 50222) or 50222)
+        device = str(w.get("device") or "").strip().upper()
+        with self._listener_lock:
+            cur = self._listener
+            if want and (cur is None or cur.port != port or cur.device != device):
+                if cur is not None:
+                    cur.stop()
+                self._listener = TempestListener(port, device)
+                self._listener.start()
+                log.info("Listening for Tempest weather on UDP port %d%s", port,
+                         f" (sensor {device})" if device else "")
+            elif not want and cur is not None:
+                cur.stop()
+                self._listener = None
+                log.info("Stopped listening for Tempest weather")
+            return self._listener
+
+    def weather_reading(self) -> Optional[Reading]:
+        with self._listener_lock:
+            return self._listener.reading() if self._listener is not None else None
+
+    def weather_status(self, cfg: dict) -> dict:
+        w = cfg.get("weather") or {}
+        with self._listener_lock:
+            lst = self._listener
+        info = {"enabled": bool(w.get("enabled")), "listening": bool(lst and lst.running),
+                "error": lst.error if lst else ""}
+        if lst is None:
+            return info
+        r = lst.reading()
+        now = time.monotonic()
+        age = lambda at: None if at is None else round(now - at)  # noqa: E731
+        msgs = weather_messages(r, w, now)
+        info.update({
+            "hub": r.hub, "device": r.device, "source": r.source, "packets": r.packets,
+            "last_packet_age_s": age(r.last_packet_at),
+            "temp_f": None if r.temp_c is None else round(c_to_f(r.temp_c), 1),
+            "temp_age_s": age(r.temp_at),
+            "wind_mph": None if r.wind_ms is None else round(ms_to_mph(r.wind_ms), 1),
+            "wind_dir": None if r.wind_dir is None else compass(r.wind_dir),
+            "wind_age_s": age(r.wind_at),
+            "gust_mph": None if r.gust_ms is None else round(ms_to_mph(r.gust_ms), 1),
+            "humidity": r.humidity,
+            "messages": {k: m.plain for k, m in msgs.items()},
+        })
+        return info
 
     # ── Main loop ──
 
@@ -504,6 +602,9 @@ class CountdownDaemon:
         next_open = 0.0
         next_check = 0.0
         frame_times: List[float] = []
+        slot: Optional[str] = None      # which message is up: countdown | temperature | wind
+        slot_passes = 0
+        slot_started = 0.0
 
         def shut_output():
             nonlocal out, renderer, renderer_key
@@ -518,10 +619,13 @@ class CountdownDaemon:
             host = str(g.get("fpp_host") or "localhost")
             fps = min(60.0, max(1.0, float(g.get("fps", 20) or 20)))
             errors = validate_config(cfg)
+            wcfg = cfg.get("weather") or {}
+            if not errors:
+                self._ensure_listener(cfg)
 
             # Nothing to draw: make sure the model is off
             reason = ("output disabled" if not g.get("enable_output", True) else
-                      "countdown disabled" if not cd.get("enabled", True) else
+                      "countdown and weather off" if not (cd.get("enabled", True) or wcfg.get("enabled")) else
                       "no model chosen" if not model else "")
             if reason or errors:
                 if out is not None:
@@ -531,6 +635,7 @@ class CountdownDaemon:
                 else:
                     self._set_state("off", "")
                 self._fps = 0.0
+                self._showing = {"slot": None, "message": ""}
                 self._wait(self.IDLE_S)
                 continue
 
@@ -565,31 +670,61 @@ class CountdownDaemon:
             if renderer_key != key:
                 renderer = Renderer(out.width, out.height, cd, font_path)
                 renderer_key = key
+                slot_passes = 0
 
             try:
-                now = local_now()
-                target = resolve_target(cd.get("target") or {}, now)
-                if target is None:
-                    shut_output()
-                    self._set_state("error", "custom target has no valid date")
-                    self._wait(self.IDLE_S)
-                    continue
-                layout = cd.get("layout") or {}
-                message = build_message(compute_display(target, now, layout), target, layout)
+                # The messages that take turns: countdown, temperature, wind
+                candidates = []
+                if cd.get("enabled", True):
+                    now = local_now()
+                    target = resolve_target(cd.get("target") or {}, now)
+                    if target is not None:
+                        layout = cd.get("layout") or {}
+                        candidates.append(("countdown", build_message(
+                            compute_display(target, now, layout), target, layout)))
+                if wcfg.get("enabled"):
+                    reading = self.weather_reading()
+                    if reading is not None:
+                        candidates.extend(weather_messages(reading, wcfg).items())
+                available = [(n, m) for n, m in candidates if not m.blank]
 
-                if message.blank:
+                if not available:
                     if out.model_on:
                         out.off()
-                    renderer.strip_for(message)   # so the next pass starts fresh
+                    renderer.strip_for(Message(()))   # so the next pass starts fresh
                     self._set_state("blank", "")
                     self._fps = 0.0
+                    self._showing = {"slot": None, "message": ""}
                     frame_times.clear()
+                    slot = None
                     self._wait(self.IDLE_S)
                     continue
+
+                names = [n for n, _ in available]
+                if slot not in names:
+                    # Next in the cycle after the one that went away (or the first)
+                    order = [n for n, _ in candidates]
+                    later = [n for n in names if slot in order and order.index(n) > order.index(slot)]
+                    slot = (later or names)[0]
+                    slot_passes, slot_started = renderer.mover.passes, time.monotonic()
+                message = dict(available)[slot]
+                self._showing = {"slot": slot, "message": message.plain}
 
                 out.on()
                 t0 = time.monotonic()
-                out.write_rgb(renderer.frame(message, t0).tobytes())
+                frame = renderer.frame(message, t0)
+                # Take turns: switch after each full pass, or after the hold time when static
+                if len(names) > 1:
+                    static = renderer.direction == "static"
+                    hold = float((cd.get("motion") or {}).get("static_hold", 5) or 5)
+                    if (static and t0 - slot_started >= hold) or (not static and renderer.mover.passes != slot_passes):
+                        slot = names[(names.index(slot) + 1) % len(names)]
+                        slot_passes, slot_started = renderer.mover.passes, t0
+                        message = dict(available)[slot]
+                        self._showing = {"slot": slot, "message": message.plain}
+                        # The pass that just started belongs to the new message
+                        frame = renderer.frame(message, t0)
+                out.write_rgb(frame.tobytes())
                 self._set_state("drawing", "")
                 period = 1.0 / fps
                 # Follow fppd's real output rate: wait for it to take the frame
@@ -614,6 +749,10 @@ class CountdownDaemon:
 
         shut_output()
         self._set_state("off", "")
+        with self._listener_lock:
+            if self._listener is not None:
+                self._listener.stop()
+                self._listener = None
 
     def _wait(self, seconds: float):
         """Sleep, waking early on a config change or stop."""

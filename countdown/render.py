@@ -144,13 +144,6 @@ class _Placed:
         return self.font.getmetrics()   # (ascent, descent)
 
 
-def _shrink_to(p: _Placed, max_w: int) -> _Placed:
-    size = p.size
-    while size > MIN_FONT_SIZE and piece_width(p.text, p.style.font(size), p.fixed) > max_w:
-        size -= 1
-    return _Placed(p.text, p.style, size, p.fixed)
-
-
 def layout_strip(message: Message, text_style: Style, number_style: Style,
                  panel_w: int, direction: str) -> Optional[Image.Image]:
     """The whole message drawn once, or None for a blank message."""
@@ -162,12 +155,25 @@ def layout_strip(message: Message, text_style: Style, number_style: Style,
     gap = text_style.font().getlength(" ")
     one_line_w = sum(p.width for p in placed) + gap * (len(placed) - 1)
 
-    two_lines = direction in ("T2B", "B2T", "static") and one_line_w > panel_w and len(placed) > 1
-    if not two_lines:
-        if direction in ("T2B", "B2T", "static") and one_line_w > panel_w:
-            placed = [_shrink_to(placed[0], panel_w)]   # a single piece that is too wide
+    vertical = direction in ("T2B", "B2T", "static")
+    if not vertical or one_line_w <= panel_w:
         return _draw_one_line(placed, gap)
-    return _draw_two_lines([_shrink_to(p, panel_w) for p in placed])
+    groups = message.lines or tuple((i,) for i in range(len(placed)))
+    lines = [_fit_line([placed[i] for i in g], gap, panel_w) for g in groups if g]
+    if len(lines) == 1:
+        return _draw_one_line(lines[0], gap)
+    return _draw_lines(lines, gap)
+
+
+def _line_width(pieces: List["_Placed"], gap: float) -> float:
+    return sum(p.width for p in pieces) + gap * (len(pieces) - 1)
+
+
+def _fit_line(pieces: List["_Placed"], gap: float, max_w: int) -> List["_Placed"]:
+    """Shrink every piece on a line one size at a time until the line fits."""
+    while _line_width(pieces, gap) > max_w and any(p.size > MIN_FONT_SIZE for p in pieces):
+        pieces = [_Placed(p.text, p.style, max(MIN_FONT_SIZE, p.size - 1), p.fixed) for p in pieces]
+    return pieces
 
 
 def _new_image(w: float, h: float) -> Tuple[Image.Image, ImageDraw.ImageDraw]:
@@ -193,15 +199,20 @@ def _draw_one_line(placed: List[_Placed], gap: float) -> Image.Image:
     return img
 
 
-def _draw_two_lines(placed: List[_Placed]) -> Image.Image:
-    width = max(p.width for p in placed)
-    heights = [sum(p.metrics) for p in placed]
-    img, draw = _new_image(width, sum(heights) + LINE_GAP * (len(placed) - 1))
+def _draw_lines(lines: List[List[_Placed]], gap: float) -> Image.Image:
+    """Each line centered, its pieces on one baseline."""
+    width = max(_line_width(line, gap) for line in lines)
+    metrics = [(max(p.metrics[0] for p in line), max(p.metrics[1] for p in line)) for line in lines]
+    img, draw = _new_image(width, sum(a + d for a, d in metrics) + LINE_GAP * (len(lines) - 1))
     y = 0
-    for p, h in zip(placed, heights):
-        _set_aa(draw, p)
-        draw_piece(draw, (width - p.width) / 2, y + p.metrics[0], p.text, p.font, p.style.color, p.fixed)
-        y += h + LINE_GAP
+    for line, (ascent, descent) in zip(lines, metrics):
+        x = (width - _line_width(line, gap)) / 2
+        for i, p in enumerate(line):
+            _set_aa(draw, p)
+            x = draw_piece(draw, x, y + ascent, p.text, p.font, p.style.color, p.fixed)
+            if i < len(line) - 1:
+                x += gap
+        y += ascent + descent + LINE_GAP
     return img
 
 
@@ -221,6 +232,7 @@ class Mover:
         self.direction = direction if direction in DIRECTIONS else "R2L"
         self.pps = max(0.1, float(pps))
         self.delay = max(0.0, float(repeat_delay))
+        self.passes = 0          # completed passes, so callers can switch messages between them
         self.reset()
 
     def reset(self, t: Optional[float] = None):
@@ -244,6 +256,7 @@ class Mover:
         horizontal = self.direction in ("L2R", "R2L")
         span = (self.w + strip_w) if horizontal else (self.h + strip_h)
         if travel >= span:
+            self.passes += 1
             if self.delay > 0:
                 self._done_at = t
                 return None
@@ -277,10 +290,11 @@ class Renderer:
         self._strip: Optional[Image.Image] = None
 
     def strip_for(self, message: Message) -> Optional[Image.Image]:
-        if message.pieces != self._key:
-            was_blank = self._key is None or not self._key
+        key = (message.pieces, message.lines)
+        if key != self._key:
+            was_blank = self._key is None or not self._key[0]
             self._strip = layout_strip(message, self.text_style, self.number_style, self.w, self.direction)
-            self._key = message.pieces
+            self._key = key
             if was_blank or self._strip is None:
                 self.mover.reset()   # start a fresh pass when text (re)appears
         return self._strip

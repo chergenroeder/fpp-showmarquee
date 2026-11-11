@@ -8,7 +8,7 @@ the text style. The renderer puts one space, in the text font, between them.
 """
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .timecalc import Display, Target
 
@@ -19,6 +19,10 @@ TEXT = "text"
 @dataclass(frozen=True)
 class Message:
     pieces: Tuple[Tuple[str, str], ...]   # ((role, text), ...) in display order
+    # How to split into lines when the message is too wide for one (vertical
+    # and static motion): groups of piece indexes, one group per line.
+    # None = each piece on its own line.
+    lines: Optional[Tuple[Tuple[int, ...], ...]] = None
 
     @property
     def plain(self) -> str:

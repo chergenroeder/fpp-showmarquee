@@ -42,7 +42,18 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "plain": "45 Days to Christmas",
     "pieces": [["number", "45 Days"], ["text", "to Christmas"]]
   },
-  "output": { "state": "drawing", "error": "", "fps": 19.8, "root": true }
+  "output": { "state": "drawing", "error": "", "fps": 19.8, "root": true },
+  "showing": { "slot": "wind", "message": "Wind 2 mph NNE" },
+  "weather": {
+    "enabled": true, "listening": true, "error": "",
+    "hub": "HB-00069444", "device": "ST-00084993", "source": "192.168.1.147",
+    "packets": { "obs_st": 12, "rapid_wind": 240, "hub_status": 70, "device_status": 12 },
+    "last_packet_age_s": 1,
+    "temp_f": 37.4, "temp_age_s": 31,
+    "wind_mph": 2.1, "wind_dir": "NNE", "wind_age_s": 1,
+    "gust_mph": 2.5, "humidity": 40.0,
+    "messages": { "temperature": "Temp 37°F", "wind": "Wind 2 mph NNE" }
+  }
 }
 ```
 
@@ -51,7 +62,9 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `clock_synced` | `true`/`false` from NTP, `null` if unknown. |
 | `target` | `null` if a custom target has no valid date. `display` is `days`, `hms`, `hours`, `minutes` or `blank`. |
 | `message.plain` | What the matrix shows; `""` when blank. |
-| `output.state` | `drawing`, `blank` (target reached), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
+| `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
+| `showing` | What the matrix is drawing now: `slot` is `countdown`, `temperature` or `wind`. `message` (above) is always the countdown. |
+| `weather` | Only `enabled`, `listening` and `error` until the listener starts. Values are `null` until a reading arrives; ages are in seconds. `messages` are empty strings when a reading is too old or switched off. |
 
 ### `GET version`
 
@@ -85,9 +98,18 @@ The full settings:
       "units": { "day": "Day", "days": "Days", "hour": "Hour", "hours": "Hours", "minute": "Minute", "minutes": "Minutes" },
       "under_one_day": "hms"
     },
-    "motion": { "direction": "R2L", "pixels_per_second": 15, "repeat_delay": 0 },
+    "motion": { "direction": "R2L", "pixels_per_second": 15, "repeat_delay": 0, "static_hold": 5 },
     "text_style":   { "font": "DejaVuSans-Bold", "size": 10, "color": "#ff0000", "antialias": false },
     "number_style": { "font": "DejaVuSans-Bold", "size": 10, "color": "#00ff00", "antialias": false }
+  },
+  "weather": {
+    "enabled": false,
+    "port": 50222,
+    "device": "",
+    "stale_minutes": 5,
+    "temperature": { "enabled": true, "label": "Temp" },
+    "wind": { "enabled": true, "label": "Wind", "direction": true, "gusts": true,
+              "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm" }
   }
 }
 ```
@@ -101,6 +123,11 @@ The full settings:
 | `motion.direction` | `R2L`, `L2R`, `T2B`, `B2T`, `static` |
 | `motion.pixels_per_second` | 1–500 |
 | `motion.repeat_delay` | seconds ≥ 0 |
+| `motion.static_hold` | 1–600 s: how long each message shows in Static when weather takes turns |
+| `weather.enabled` | listen for the Tempest hub and show weather |
+| `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
+| `weather.stale_minutes` | 0.5–1440: skip readings older than this |
+| `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
 | `*_style.font` | a name from `GET fonts`; `""` = Pillow's built-in font. A missing font falls back to an installed bold sans font. |
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
@@ -151,7 +178,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before). Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `temperature`, `wind`. The weather modes use the live reading (even if that message is switched off), or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {

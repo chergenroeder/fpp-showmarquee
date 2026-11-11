@@ -1,10 +1,11 @@
 # fpp-matrixcountdown — Matrix Countdown Clock
 
-An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center.
+An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center. It can also show the **temperature and wind from your own WeatherFlow Tempest station**, taking turns with the countdown.
 
 ```
 8 Days to Christmas          Christmas in 8 Days
 08:14:32 to Christmas        Christmas in 9 Hours
+Temp 37°F                    Wind 8 mph NW gusts 15
 ```
 
 ## Features
@@ -17,6 +18,7 @@ An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**
 - **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
 - **Five directions:** Right to Left, Left to Right, Bottom to Top, Top to Bottom, and Static (centered). Speed and a pause between passes. For vertical and static, a message wider than the panel goes on two lines.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
+- **Tempest weather** (optional): your station's temperature and wind (speed, direction, gusts), in °F and mph, read straight from the Tempest hub's broadcast on your network. No internet, account or token. The countdown, temperature and wind take turns, one pass each.
 - **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, or change the target.
 - **REST API** for Home Assistant and scripts ([API.md](API.md)).
 - **Settings download and upload** as a JSON file.
@@ -54,14 +56,30 @@ rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
 | Status | Online/Offline, what the matrix shows now, output state and frame rate, the player's local time and whether its clock is synced to internet time. Start / Restart / Stop. |
 | Count down to | Christmas Day, New Year's Day or Custom date. Custom shows a date, a time (24-hour on the player) and **Repeat every year**. Event name. A line shows the exact moment it counts to. |
 | Message | Number first / last, Countdown timer / Hours only, and (folded) the joining and unit words. Each choice shows an example in your own words. |
-| Motion | Direction, speed (pixels per second) and pause between passes. |
+| Motion | Direction, speed (pixels per second) and pause between passes; for Static, how long each message shows. |
 | Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
+| Weather | **Show weather**; Temperature and Wind on/off and their labels; wind direction and gusts. More options: calm-wind text, gust label and threshold, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which hub sent it. |
 | Matrix | Overlay model, **Countdown on**, **Output enabled**; frame rate under Advanced. |
-| Preview | The message at the model's size, moving as it will on the matrix. |
+| Preview | The message at the model's size, moving as it will on the matrix. Preview as Now, 8 days out, Under a day, Temp or Wind (live weather, or a sample if none has arrived). |
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 
 **Frame rate:** FPP shows overlay frames at its own output rate: 20 per second when idle, faster while some sequences play. The plugin follows that rate, so the default 20 is right for most setups.
+
+## Weather from a Tempest station
+
+The Tempest hub broadcasts its readings on your network (UDP port 50222). Turn on **Show weather** and the plugin picks them up, as long as the FPP player is on the same network as the hub. To check, run this on the player and look for `heard from: ... hub(s): HB-...`:
+
+```bash
+python3 /home/fpp/media/plugins/fpp-matrixcountdown/scripts/tempest_listen.py
+```
+
+- **Temperature:** `Temp 72°F`, in whole degrees, updated about once a minute.
+- **Wind:** `Wind 8 mph NW`, updated every 3 seconds. `gusts 15` is added when the gust is at least 5 mph above the wind, and under 1 mph shows `Wind Calm`. When Top/Bottom or Static needs two lines, the wind goes "Wind 8 mph NW" over "gusts 15".
+- **Styles:** readings use the Number style and words the Text style.
+- **Old readings:** a reading older than 5 minutes is skipped, so the countdown just shows more often.
+- **Weather only:** turn **Countdown on** off and leave **Show weather** on.
+- **Several stations:** set **Only this sensor** to your Tempest's serial number (ST-...), shown on the live line.
 
 ## FPP commands
 
@@ -85,6 +103,8 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 | `permission denied ... not running as root` | The plugin must run as root to draw. Click **Stop** then **Start**, or restart FPP. (**Restart** keeps the same user.) |
 | `overlay model '...' not found` | The model was renamed or deleted. Choose it again under **Matrix**. |
 | `drawing needs the plugin on the same player` | The FPP Host setting points at another player; the plugin can only draw on this one. |
+| Weather: `listening for the Tempest hub… no reading yet` | The player isn't hearing the hub. Run `scripts/tempest_listen.py` on the player: if it hears nothing, the player is on a different network (e.g. FPP's own Wi-Fi). |
+| Weather: `cannot listen on UDP port 50222` | Another program holds the port without sharing it. Stop it, or use a different port if your hub is set up to send there. |
 | `Pillow is not installed` | `sudo apt-get install python3-pil`, then **Restart**. |
 | Preview: `font ... isn't on this player; using ... instead` | Pick a font from the list, or reinstall to get DejaVu. |
 | Countdown is off by hours or days | Check the time shown on the status line. If it says **NOT synced to internet time**, fix the player's clock or network (FPP **Settings → Time**). |
@@ -106,6 +126,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0
 | `countdown/render.py` | Pillow drawing and motion. |
 | `countdown/output.py` | Writing frames into the overlay model's buffer (`/dev/shm`). |
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
+| `countdown/weather.py` | Tempest UDP listener and the temperature/wind messages. |
 | `matrixcountdown.html` | The settings page. |
 | `commands/` | FPP commands. |
 | `scripts/` | Install, start/stop, and the dev tools. |

@@ -2,7 +2,7 @@
 	"name": "Matrix Countdown Clock",
 	"repoName": "fpp-matrixcountdown",
 	"author": "Chuck Hergenroeder",
-	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours.",
+	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, scrolling in any direction or held in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show the temperature and wind from your own WeatherFlow Tempest station, taking turns with the countdown.",
 	"homeURL": "https://github.com/chergenroeder/fpp-matrixcountdown",
 	"srcURL": "https://github.com/chergenroeder/fpp-matrixcountdown.git",
 	"bugURL": "https://github.com/chergenroeder/fpp-matrixcountdown/issues",
@@ -10,7 +10,7 @@
 	"releaseNotesStyle": "gitHistory",
 
 	"privacy": {
-		"summary": "Draws a countdown on a matrix model on this player. It talks only to FPP on this device unless you point it at another player.",
+		"summary": "Draws a countdown on a matrix model on this player. It talks only to FPP on this device unless you point it at another player. With Weather on, it also listens for your Tempest weather station's broadcasts on the local network; it sends nothing to it.",
 		"sends": [
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",
@@ -30,6 +30,10 @@
 			{
 				"kind": "network",
 				"what": "its background program listens on 127.0.0.1:32330, reachable only from this device; FPP's web server passes requests to it"
+			},
+			{
+				"kind": "network",
+				"what": "when Weather is turned on, it listens for UDP broadcasts on port 50222 (all interfaces, shared with other listeners) to read a Tempest weather station; nothing is sent"
 			},
 			{
 				"kind": "packages",

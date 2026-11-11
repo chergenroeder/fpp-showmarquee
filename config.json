@@ -33,9 +33,21 @@
         "motion": {
             "direction": "R2L",
             "pixels_per_second": 15,
-            "repeat_delay": 0
+            "repeat_delay": 0,
+            "static_hold": 5
         },
         "text_style":   { "font": "DejaVuSans-Bold", "size": 10, "color": "#ff0000", "antialias": false },
         "number_style": { "font": "DejaVuSans-Bold", "size": 10, "color": "#00ff00", "antialias": false }
+    },
+    "weather": {
+        "enabled": false,
+        "port": 50222,
+        "device": "",
+        "stale_minutes": 5,
+        "temperature": { "enabled": true, "label": "Temp" },
+        "wind": {
+            "enabled": true, "label": "Wind", "direction": true,
+            "gusts": true, "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"
+        }
     }
 }

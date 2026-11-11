@@ -305,3 +305,13 @@ Add messages showing the user's WeatherFlow Tempest **temperature** and **wind s
 - Stale data: a reading older than **5 minutes** is skipped silently, so the countdown just shows more often. The page's status shows the last reading and its age.
 - Each weather message can be switched on/off; a master "Weather" switch; the countdown can also be turned off for weather-only.
 
+
+**Built (2026-11-10)**
+- [x] `countdown/weather.py`: `TempestListener`, a background thread on UDP 50222 that shares the port (`SO_REUSEADDR`/`SO_REUSEPORT`). It drops repeats by (sensor, type, epoch), can filter to one sensor, and falls back to the obs_st minute-average wind when rapid_wind stops. `temperature_message()` / `wind_message()` follow the decisions above.
+- [x] `Message.lines`: which pieces share a line when a message must split. The wind splits as "Wind 8 mph NW" over "gusts 15"; "Wind Calm" stays on one line.
+- [x] Taking turns in the daemon loop: countdown → temperature → wind, skipping any that are blank, stale or off. Messages switch at the end of each pass (`Mover.passes`), before the frame is drawn, so the old message never peeks in; Static switches every `motion.static_hold` seconds. The countdown can be off for weather only.
+- [x] Settings (`weather.*`, `motion.static_hold`), validation, `status.weather` and `status.showing`, preview `as: temperature | wind` (live reading or a sample).
+- [x] Settings page: a Weather card (switch, temperature/wind toggles and labels, direction, gusts; more options folded), a live weather line in the status box, Temp and Wind preview modes, "Show each message (s)" for Static.
+- [x] 19 tests (packets, duplicates, sensor filter, a real UDP socket, messages, two-line layout, taking turns with a fake fppd and live UDP packets). 120 tests in total.
+- [x] Live check on the dev server against this network's real hub: `Temp 37°F` and `Wind 2 mph NNE` took turns with the countdown.
+- [ ] On fpp-matrix.local: turn on Show weather and watch the countdown, temperature and wind take turns on the P5 Panel.

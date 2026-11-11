@@ -35,6 +35,7 @@
       <table class="small mb-0">
         <tr><td class="mc-k">Now showing</td><td id="mc-s-message">–</td></tr>
         <tr><td class="mc-k">Output</td><td id="mc-s-output">–</td></tr>
+        <tr><td class="mc-k">Weather</td><td id="mc-s-weather">–</td></tr>
         <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
       </table>
     </div>
@@ -129,6 +130,8 @@
               <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
             <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
               <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
+            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show each message (s)</label>
+              <input type="number" class="form-control form-control-sm" id="mc-hold" min="1" max="600" step="1" data-path="countdown.motion.static_hold" data-type="number"></div>
           </div>
           <div class="small text-muted mt-2" id="mc-dir-note"></div>
         </div>
@@ -138,6 +141,52 @@
       <div class="row g-3 mb-3">
         <div class="col-md-6" data-style="number_style"></div>
         <div class="col-md-6" data-style="text_style"></div>
+      </div>
+
+      <!-- Weather -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Weather <span class="mc-example">Tempest station</span></strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-w-on" data-path="weather.enabled">
+            <label class="form-check-label" for="mc-w-on">Show weather</label></div>
+        </div>
+        <div class="card-body" id="mc-weather-body">
+          <div class="small text-muted mb-2">Takes turns with the countdown: one pass each (or the hold time when Static). Read from the Tempest hub's broadcast on this network; °F and mph.</div>
+          <div class="row g-2 align-items-end">
+            <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
+              <label class="form-check-label" for="mc-w-t-on">Temperature <span class="mc-example" id="mc-ex-temp"></span></label></div></div>
+            <div class="col-5 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-w-t-label">Label</label>
+              <input type="text" class="form-control form-control-sm" id="mc-w-t-label" maxlength="20" data-path="weather.temperature.label"></div>
+          </div>
+          <div class="row g-2 align-items-end mt-1">
+            <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-w-on" data-path="weather.wind.enabled">
+              <label class="form-check-label" for="mc-w-w-on">Wind <span class="mc-example" id="mc-ex-wind"></span></label></div></div>
+            <div class="col-5 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-w-w-label">Label</label>
+              <input type="text" class="form-control form-control-sm" id="mc-w-w-label" maxlength="20" data-path="weather.wind.label"></div>
+            <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-dir" data-path="weather.wind.direction">
+              <label class="form-check-label" for="mc-w-dir">Direction</label></div></div>
+            <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-gust" data-path="weather.wind.gusts">
+              <label class="form-check-label" for="mc-w-gust">Gusts</label></div></div>
+          </div>
+          <details class="mt-3">
+            <summary class="small">More wind and station options</summary>
+            <div class="row g-2 mt-1">
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Calm wind (under 1 mph)</label>
+                <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.calm_text"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Gust label</label>
+                <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.gust_label"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Show gusts when above wind by (mph)</label>
+                <input type="number" class="form-control form-control-sm" min="0" max="100" step="1" data-path="weather.wind.gust_min_diff_mph" data-type="number"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Hide readings older than (min)</label>
+                <input type="number" class="form-control form-control-sm" min="0.5" max="1440" step="0.5" data-path="weather.stale_minutes" data-type="number"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Only this sensor (ST-…)</label>
+                <input type="text" class="form-control form-control-sm" maxlength="20" placeholder="any" data-path="weather.device"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">UDP port</label>
+                <input type="number" class="form-control form-control-sm" min="1" max="65535" step="1" data-path="weather.port" data-type="number"></div>
+            </div>
+          </details>
+          <div class="small mt-2" id="mc-w-live"></div>
+        </div>
       </div>
 
       <!-- Display -->
@@ -179,6 +228,10 @@
             <label class="btn btn-outline-secondary" for="mc-as-days">8 days out</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-under" value="under_day">
             <label class="btn btn-outline-secondary" for="mc-as-under">Under a day</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-temp" value="temperature">
+            <label class="btn btn-outline-secondary" for="mc-as-temp">Temp</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-wind" value="wind">
+            <label class="btn btn-outline-secondary" for="mc-as-wind">Wind</label>
           </div>
         </div>
         <div class="card-body">
@@ -333,6 +386,11 @@
     $('#mc-ex-hours').textContent = ordered(join('9', U.hours));
     const dir = cfg.countdown.motion.direction;
     $$('.mc-moving').forEach(el => el.classList.toggle('mc-hidden', dir === 'static'));
+    $$('.mc-static').forEach(el => el.classList.toggle('mc-hidden', dir !== 'static'));
+    const W = cfg.weather || {}, WT = W.temperature || {}, WW = W.wind || {};
+    $('#mc-weather-body').style.opacity = W.enabled ? '' : '.55';
+    $('#mc-ex-temp').textContent = join(WT.label, '72°F');
+    $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
     $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
       ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide).' : '';
     $$('.mc-style-example').forEach(el => {
@@ -389,6 +447,7 @@
     warnEl.textContent = r.warning || '';
     const info = `Counting down to ${r.target.name || 'the target'}: ${r.target.when_text} (FPP local time)` + (r.target.repeats ? ', every year' : '');
     $('#mc-target-info').textContent = info;
+    if (r.note) warnEl.textContent = (warnEl.textContent ? warnEl.textContent + ' ' : '') + 'Preview uses a ' + r.note + '.';
     const t = cfg.countdown.target;
     $('#mc-target-warn').textContent = (as === 'now' && r.display === 'blank' && t.type === 'custom' && !t.custom_repeat_yearly)
       ? 'This date has passed: the matrix stays blank. Pick a later date or turn on Repeat every year.' : '';
@@ -529,7 +588,24 @@
     badge.textContent = online ? 'Online' : 'Offline';
     badge.className = 'badge ' + (online ? 'bg-success' : 'bg-danger');
     if (!online) { $('#mc-s-output').textContent = 'daemon not running'; return; }
-    $('#mc-s-message').textContent = s.message && s.message.plain ? '“' + s.message.plain + '”' : '(blank)';
+    const showing = s.showing && s.showing.message ? s.showing.message : (s.message && s.message.plain) || '';
+    $('#mc-s-message').textContent = showing ? '“' + showing + '”' + (s.showing && s.showing.slot && s.showing.slot !== 'countdown' ? ` (${s.showing.slot})` : '') : '(blank)';
+    const w = s.weather || {};
+    let wt;
+    if (!w.enabled) wt = 'off';
+    else if (w.error) wt = w.error;
+    else if (w.temp_f == null && w.wind_mph == null) wt = w.listening ? 'listening for the Tempest hub… no reading yet' : 'starting';
+    else {
+      const parts = [];
+      if (w.temp_f != null) parts.push(`${Math.round(w.temp_f)}°F`);
+      if (w.wind_mph != null) parts.push(`wind ${w.wind_mph < 1 ? 'calm' : Math.round(w.wind_mph) + ' mph ' + (w.wind_dir || '')}`.trim());
+      if (w.gust_mph != null) parts.push(`gusts ${Math.round(w.gust_mph)} mph`);
+      const age = w.last_packet_age_s;
+      wt = parts.join(', ') + (age != null ? ` · heard ${age} s ago` : '') + (w.hub ? ` · ${w.hub}${w.device ? ' / ' + w.device : ''}` : '');
+    }
+    $('#mc-s-weather').textContent = wt;
+    $('#mc-s-weather').className = w.error ? 'mc-err' : '';
+    $('#mc-w-live').textContent = w.enabled ? 'Now: ' + wt : '';
     const o = s.output || {};
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
