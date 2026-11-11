@@ -12,12 +12,16 @@ chmod +x "$PLUGIN_DIR"/scripts/*.sh "$PLUGIN_DIR/scripts/spike_overlay.py"
 mkdir -p "$MC_LOGDIR"
 mkdir -p "$MC_MEDIADIR/config"
 
-# The renderer draws frames with Pillow. FPP images usually ship it; install
-# it if not (needs network access the first time).
-if ! python3 -c "import PIL" 2>/dev/null; then
-    echo "Pillow not found; installing python3-pil..."
-    if ! (apt-get update -qq && apt-get install -y -qq python3-pil); then
-        echo "WARNING: could not install python3-pil; the countdown cannot draw until it is installed" >&2
+# The renderer draws frames with Pillow, and the default style uses DejaVu
+# Sans Bold. Install whichever is missing (needs network access the first
+# time). Without DejaVu the countdown still draws, with another installed font.
+PKGS=""
+python3 -c "import PIL" 2>/dev/null || PKGS="$PKGS python3-pil"
+[ -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf ] || PKGS="$PKGS fonts-dejavu-core"
+if [ -n "$PKGS" ]; then
+    echo "Installing:$PKGS"
+    if ! (apt-get update -qq && apt-get install -y -qq $PKGS); then
+        echo "WARNING: could not install$PKGS" >&2
     fi
 fi
 

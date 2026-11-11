@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
+from countdown.fonts import FontIndex
 from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput
 from countdown.timecalc import compute_display, local_now, resolve_target
@@ -107,44 +108,22 @@ def get_fpp_models(host: str) -> List[dict]:
 
 # ── Fonts ─────────────────────────────────────────────────────────────────────
 # Pillow (FreeType) draws TrueType/OpenType fonts, and Type1 .pfb too.
-_FONT_DIRS = [
+FONTS = FontIndex([
     os.path.join(PLUGIN_DIR, "fonts"),
     os.path.join(MEDIA_DIR, "fonts"),
     "/usr/share/fonts/",
     "/usr/local/share/fonts/",
-]
-_FONT_EXTENSIONS = {".ttf", ".otf", ".pfb"}
-_font_cache: Optional[Dict[str, str]] = None
-_font_lock = threading.Lock()
-
-
-def _scan_font_dir(directory: str, found: Dict[str, str]):
-    try:
-        for entry in os.scandir(directory):
-            if entry.is_symlink():
-                continue
-            if entry.is_dir():
-                _scan_font_dir(entry.path, found)
-            elif entry.is_file():
-                base, ext = os.path.splitext(entry.name)
-                # First directory wins, so bundled fonts beat system copies
-                if ext.lower() in _FONT_EXTENSIONS and base not in found:
-                    found[base] = entry.path
-    except OSError:
-        pass
+])
 
 
 def detect_fonts(refresh: bool = False) -> Dict[str, str]:
     """{font name: file path} for every usable font on disk (cached)."""
-    global _font_cache
-    with _font_lock:
-        if _font_cache is None or refresh:
-            found: Dict[str, str] = {}
-            for d in _FONT_DIRS:
-                _scan_font_dir(d, found)
-            _font_cache = dict(sorted(found.items(), key=lambda kv: kv[0].lower()))
-            log.debug("Font detection: %d fonts found", len(_font_cache))
-        return _font_cache
+    return FONTS.all(refresh)
+
+
+def font_path(name: str) -> Optional[str]:
+    """File to draw a style's font with: the font, a fallback, or None (built-in)."""
+    return FONTS.resolve(name)[0]
 
 
 def pillow_version() -> Optional[str]:
@@ -369,18 +348,23 @@ class CountdownDaemon:
             "repeat_delay": float(motion.get("repeat_delay", 0)),
             "strip": None,
         }
-        resolve = lambda n: detect_fonts().get(n)  # noqa: E731
-        strip = layout_strip(message, Style.from_cfg(cd.get("text_style") or {}, resolve),
-                             Style.from_cfg(cd.get("number_style") or {}, resolve), w, result["direction"])
+        strip = layout_strip(message, Style.from_cfg(cd.get("text_style") or {}, font_path),
+                             Style.from_cfg(cd.get("number_style") or {}, font_path), w, result["direction"])
         if strip is not None:
             buf = io.BytesIO()
             strip.save(buf, format="PNG")
             result["strip"] = base64.b64encode(buf.getvalue()).decode()
             result["strip_width"], result["strip_height"] = strip.size
-        missing = [cd[s]["font"] for s in ("text_style", "number_style")
-                   if cd[s].get("font") and cd[s]["font"] not in detect_fonts()]
-        if missing:
-            result["warning"] = "font not found, using the built-in font: " + ", ".join(sorted(set(missing)))
+        notes = []
+        for which in ("number_style", "text_style"):
+            want = str(cd[which].get("font") or "")
+            if want and FONTS.find(want) is None:
+                used = FONTS.resolve(want)[1]
+                label = "Number" if which == "number_style" else "Text"
+                notes.append(f"{label} font \u201c{want}\u201d isn't on this player; using "
+                             + (f"\u201c{used}\u201d" if used else "the built-in font") + " instead.")
+        if notes:
+            result["warning"] = " ".join(notes)
         return result
 
     def get_models(self) -> List[dict]:
@@ -507,7 +491,7 @@ class CountdownDaemon:
             # Renderer follows the config and the panel size
             key = (version, out.width, out.height)
             if renderer_key != key:
-                renderer = Renderer(out.width, out.height, cd, lambda n: detect_fonts().get(n))
+                renderer = Renderer(out.width, out.height, cd, font_path)
                 renderer_key = key
 
             try:

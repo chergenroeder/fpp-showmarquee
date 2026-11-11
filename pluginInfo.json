@@ -30,6 +30,10 @@
 			{
 				"kind": "network",
 				"what": "its background program listens on 127.0.0.1:32330, reachable only from this device; FPP's web server passes requests to it"
+			},
+			{
+				"kind": "packages",
+				"what": "installs the Debian packages python3-pil (to draw frames) and fonts-dejavu-core (its default font) if they are missing; uninstall leaves them"
 			}
 		],
 		"closedCode": false,
