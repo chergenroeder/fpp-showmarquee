@@ -1010,12 +1010,12 @@ class CountdownDaemon:
                               or shwcfg.get("enabled")) else
                       "no model chosen" if not model else "")
             if reason or errors:
-                if out is not None:
-                    shut_output()
+                # The state first, so status never says "drawing" once the model is off
                 if errors:
                     self._set_state("error", "config: " + "; ".join(errors))
                 else:
                     self._set_state("off", "")
+                shut_output()
                 self._fps = 0.0
                 self._showing = {"slot": None, "message": ""}
                 self._wait(self.IDLE_S)

@@ -183,13 +183,13 @@ On the **Messages** tab, turn on **Show on the matrix**:
 
 - [ ] **Stop**, then **Start** on the settings page: the plugin comes back, running as root (Output says drawing, not "permission denied").
 - [ ] FPP's command list has **Show Marquee - Start**; running it while the plugin is running does nothing.
-- [ ] FPP 10.4+: **Reinstall** keeps the settings and a typed-in weather location.
+- [ ] FPP 10.4+: **Reinstall** keeps the settings, a typed-in weather location and the Show logo.
 - [ ] **Uninstall**: `config/plugin.fpp-showmarquee.json` and `plugindata/fpp-showmarquee/` are gone; nothing else in `config/` changed.
 
 ## 12. Recovery
 
-- [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
-- [ ] Reboot the player: the countdown starts on its own.
+- [ ] Restart fppd (**Status → Restart FPPD**): the pages come back by themselves within ~5 s.
+- [ ] Reboot the player: the pages start on their own.
 - [ ] **Stop** then **Start** on the plugin page: it comes back (Start runs it as root).
 - [ ] Choose a model that doesn't exist: Output shows the error; choose the real one again and it recovers.
 

@@ -1,6 +1,6 @@
 {
     "global": {
-        "schema_version": 1,
+        "schema_version": 5,
         "enable_output": true,
         "fpp_host": "localhost",
         "fps": 20,

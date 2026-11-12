@@ -57,7 +57,7 @@ The plugin starts with FPP and stops with it. To get new FPP commands after an u
 
 ### Uninstalling
 
-Uninstalling stops the plugin and removes its settings (`config/plugin.fpp-showmarquee.json`) and its data (`plugindata/fpp-showmarquee/`, which holds a weather location you typed in). On FPP 10.4 and later a **Reinstall** keeps them. On FPP 10.0–10.3, FPP can't tell a Reinstall from an uninstall, so a Reinstall clears them too: click **Download settings** first, then **Upload settings** afterwards.
+Uninstalling stops the plugin and removes its settings (`config/plugin.fpp-showmarquee.json`) and its data (`plugindata/fpp-showmarquee/`, which holds a weather location you typed in and the Show page's logo). On FPP 10.4 and later a **Reinstall** keeps them. On FPP 10.0–10.3, FPP can't tell a Reinstall from an uninstall, so a Reinstall clears them too: click **Download settings** first, then **Upload settings** afterwards.
 
 ## The settings page
 
@@ -81,6 +81,18 @@ Changes take effect when you click **Save**. The button shows `Save *` while the
 
 **Frame rate:** FPP shows overlay frames at its own output rate: 20 per second when idle, faster while some sequences play. The plugin follows that rate, so the default 20 is right for most setups.
 
+## Show
+
+A page for your show's name, its logo, or both. It comes first in the rotation unless you move it.
+
+1. On the **Show** tab, turn on **Show on the matrix** and type the show's name (Enter starts a new line on the matrix).
+2. Optionally, **Upload logo**: PNG, JPG, GIF (its first frame), WebP or SVG. With a logo, **Show the name with the logo** can be turned off to show the logo on its own.
+3. **Colour:** the Text style's (default), the Number style's, or your own. The name uses the Text style's font.
+
+- **Layout:** the name alone is centered and drawn as large as fits (it isn't held to the Text style's size). A logo alone fills as much of the matrix as it can, keeping its shape. With both, the logo goes on the left and the name beside it; a logo much wider than the matrix's shape goes on top, with the name under it. If the name can't be read beside the logo, the logo shrinks; if it still can't, only the logo shows and the preview says so.
+- **The logo** is saved on the player as soon as you upload it (it doesn't wait for **Save**), in `plugindata/fpp-showmarquee/logo.png`. Your browser shrinks it before sending; the player keeps it at most 512 pixels on its longer side, and trims edges that wouldn't light an LED (transparent or black) so the logo fills its space. Transparent parts show as black. Bright, bold logos read best on LEDs: check the preview.
+- **Not in Download settings:** the logo stays on the player. On a new player, upload it again. Uninstalling removes it; a Reinstall keeps it on FPP 10.4 and later.
+
 ## Weather
 
 On the **Weather** tab, turn on **Show on the matrix**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
@@ -94,7 +106,7 @@ On the **Weather** tab, turn on **Show on the matrix**, then choose where the we
  +----------------------+      +----------------------+      +----------------------+
 ```
 
-- **One page.** It shows for **Seconds per page** (default 5), taking turns with the countdown and social media: countdown → weather → social screens → countdown again.
+- **One page.** It shows for **Seconds per page** (default 5), taking turns with the other pages in the order set on **Overview**.
 - **The symbol** shows the weather, the first of these that applies: **thunderstorm**, **snow**, **sleet**, **rain**, **fog**, **wind** (the wind at least 15 mph or the gusts at least 25 mph, under "More wind, symbol and source options"), **cloudy**, **partly cloudy** (the sun or moon behind a cloud), then the **sun** by day and the **moon** at night.
   - **Open-Meteo** gives the conditions for your location every 15 minutes (drizzle shows as rain, freezing rain as sleet).
   - **A Tempest** can only sense rain and lightning: **rain** in the last 10 minutes (**sleet** at or below 34°F / 1°C, or when it senses hail), and a **thunderstorm** after 2 lightning strikes within 20 km (12 miles) in 15 minutes. It can't see clouds, fog or snow, so otherwise it's the sun, moon or wind.
@@ -103,8 +115,7 @@ On the **Weather** tab, turn on **Show on the matrix**, then choose where the we
 - **Units:** °F and mph (the default) or °C and km/h, on the Weather tab. The limits under "More wind, symbol and source options" stay in mph; with °C and km/h chosen, the page shows each one in km/h beside it.
 - **The lines:** the temperature (`72°F` or `22°C`, whole degrees) in the **Number style**; the wind (`Wind 8 mph NW`, or `Wind Calm` under 1 mph; the word "Wind" is the **Label** beside the Wind switch, and can be changed or cleared) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol, which takes the room that's left. On a small panel the page drops the gust line, then the wind direction, then the "Wind" label, rather than use text too small to read.
 - **Temperature or wind off:** the page shows only the other one. With both off there is no weather page.
-- **Old readings** are left off the page; with nothing fresh, the page is skipped and the countdown just shows more often.
-- **Weather only:** switch the countdown off and leave the weather on (on **Overview**).
+- **Old readings** are left off the page; with nothing fresh, the page is skipped and the other pages show more often.
 
 ### Open-Meteo (internet)
 
@@ -142,22 +153,10 @@ On the **Social** tab, turn on **Show on the matrix**, then switch on each site 
 - **Logos on top, handle below.** No other words. The logos are as large as the panel allows once the handle fits underneath.
 - **Same handle, one screen.** Sites whose handles match (ignoring upper/lower case and the `@`) share a screen, logos side by side. Different handles get a screen each, in the order Facebook, Instagram, TikTok, YouTube.
 - **A page each.** Each screen shows for **Seconds per page** (default 5), then the next comes on.
-- **Taking turns:** countdown → weather page → each social screen → countdown again. Switch the countdown off (on **Overview**) for social media only.
+- **Taking turns:** the social screens come one after another, in the page order set on **Overview**.
 - **Style:** the handle uses the **Text style**'s font and colour. It starts at that size and shrinks if it's too wide; if it still doesn't fit at the smallest size the preview warns you and its ends are cut off, so pick a narrower font.
 - **Handles:** up to 30 letters, digits, dots, underscores and dashes. A site that's on with no handle is skipped, and the page says so.
 - Nothing is sent anywhere: the plugin only draws what you type. Facebook, Instagram, TikTok and YouTube logos are trademarks of their owners, shown only to point people to your own profiles.
-
-## Show
-
-A page for your show's name, its logo, or both. It comes first in the rotation unless you move it.
-
-1. On the **Show** tab, turn on **Show on the matrix** and type the show's name (Enter starts a new line on the matrix).
-2. Optionally, **Upload logo**: PNG, JPG, GIF (its first frame), WebP or SVG. With a logo, **Show the name with the logo** can be turned off to show the logo on its own.
-3. **Colour:** the Text style's (default), the Number style's, or your own. The name uses the Text style's font.
-
-- **Layout:** the name alone is centered and drawn as large as fits (it isn't held to the Text style's size). A logo alone fills as much of the matrix as it can, keeping its shape. With both, the logo goes on the left and the name beside it; a logo much wider than the matrix's shape goes on top, with the name under it. If the name can't be read beside the logo, the logo shrinks; if it still can't, only the logo shows and the preview says so.
-- **The logo** is saved on the player as soon as you upload it (it doesn't wait for **Save**), in `plugindata/fpp-showmarquee/logo.png`. Your browser shrinks it before sending; the player keeps it at most 512 pixels on its longer side, and trims edges that wouldn't light an LED (transparent or black) so the logo fills its space. Transparent parts show as black. Bright, bold logos read best on LEDs: check the preview.
-- **Not in Download settings:** the logo stays on the player. On a new player, upload it again. Uninstalling removes it; a Reinstall keeps it on FPP 10.4 and later.
 
 ## Show prep
 
@@ -179,7 +178,7 @@ A page that tells viewers to get your show's audio app before the show: a QR cod
   - **Your own link** replaces either one, for example your show's web page or a short link you set up. It must start with `https://` (or `http://`).
 - **The message:** `{app}` becomes the app's name, which is drawn in the **Number style**; the rest uses the **Text style**, wrapped beside the code and shrunk to fit. Default: "Scan to get the {app} app before the show".
 - **The code** is drawn as large as fits at whole LEDs per square (3 per square on a 96-tall matrix), with a lit border so phones can find it. Shorter links make smaller codes, which get more LEDs per square. If the code or the message doesn't fit, the preview says so.
-- **Turns:** after the social media screens, for **Seconds per page**.
+- **Turns:** for **Seconds per page**, in the page order set on **Overview**.
 - Nothing is sent anywhere: the link is only drawn in the code.
 
 ## Daily schedule
@@ -252,9 +251,9 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 | `off` | Nothing to draw: every page is switched off, **Output enabled** is off, or no model is chosen. |
 | `blank` | The target has been reached; the matrix stays blank for the rest of that day (or for good, for a past custom date without yearly repeat). |
 | `permission denied ... not running as root` | The plugin must run as root to draw. Click **Stop** then **Start**, or restart FPP. (**Restart** keeps the same user.) |
-| `overlay model '...' not found` | The model was renamed or deleted. Choose it again under **Matrix**. |
+| `overlay model '...' not found` | The model was renamed or deleted. Choose it again on the **Display** tab. |
 | `drawing needs the plugin on the same player` | The FPP Host setting points at another player; the plugin can only draw on this one. |
-| Weather: `choose a weather source` | The weather is on but no source is picked. Choose Open-Meteo or Tempest in the Weather card. |
+| Weather: `choose a weather source` | The weather is on but no source is picked. Choose Open-Meteo or Tempest on the Weather tab. |
 | Weather: `no location: set Latitude and Longitude in FPP …` | FPP has no location (Settings → General), or **Use a different location** is on with nothing typed in. |
 | Weather: `no internet: can't look up api.open-meteo.com` | The player has no internet or DNS. Check FPP **Settings → Network** (a show network often has no internet; use the Tempest then). |
 | Weather: `Open-Meteo's certificate couldn't be checked: check this player's date and time` | The player's clock is wrong, so the secure connection fails. Fix the time in FPP **Settings → Time**. |
@@ -285,7 +284,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
 | `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener, day or night, and what goes on the weather page. |
 | `countdown/symbols.py` | The weather symbols and the holiday pictures (drawn in code). |
-| `countdown/still.py` | Still pages: the weather, show prep, schedule and message layouts, how long each page holds, and the cache shared with the social screens. |
+| `countdown/still.py` | Still pages: the show, weather, show prep, schedule and message layouts, how long each page holds, and the cache shared with the social screens. |
 | `countdown/showprep.py` | Show prep: the apps and their links, the page, and the QR code. |
 | `countdown/schedule.py` | Daily schedule: show nights and times, grouping and wording, the page. |
 | `countdown/messages.py` | Custom messages: fill-ins, date windows, the pages. |

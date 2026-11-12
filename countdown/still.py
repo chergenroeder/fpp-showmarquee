@@ -2,8 +2,8 @@
 
 Six kinds take turns with the countdown (also held still, see render.py):
   show.ShowPage          the show's name, its uploaded logo, or both (drawn here)
-  weather.WeatherPage    a sun/moon/wind symbol beside the temperature, wind and
-                         gust lines (drawn here)
+  weather.WeatherPage    a weather symbol beside the temperature, wind and gust
+                         lines (drawn here)
   social.Screen          logos above an @handle (drawn by social.draw_screen)
   showprep.ShowPrepPage  a QR code to the show's audio app beside a message
                          (drawn here)

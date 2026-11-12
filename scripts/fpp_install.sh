@@ -17,7 +17,7 @@ chmod +x "$PLUGIN_DIR/callbacks.sh" "$PLUGIN_DIR"/commands/*.sh
 # and removes them on uninstall when nothing else needs them. Only report it
 # if they're somehow missing; the settings page says the same.
 python3 -c "import PIL" 2>/dev/null \
-    || echo "WARNING: python3-pil is missing; the countdown can't draw until it is installed" >&2
+    || echo "WARNING: python3-pil is missing; nothing can be drawn until it is installed" >&2
 python3 -c "import qrcode" 2>/dev/null \
     || echo "WARNING: python3-qrcode is missing; the show prep page shows no QR code until it is installed" >&2
 
