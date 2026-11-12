@@ -31,11 +31,11 @@ from typing import Dict, List, Optional
 from countdown.fonts import FontIndex
 from countdown.message import Message, build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
-from countdown.social import (SITES, Screen, ScreenCache, clean_handle, handle_problem, social_screens,
-                              social_status)
+from countdown.social import SITES, Screen, clean_handle, handle_problem, social_screens, social_status
+from countdown.still import StillCache, hold_seconds, is_still
 from countdown.timecalc import compute_display, local_now, resolve_target
 from countdown.weather import (NO_LOCATION, Location, OpenMeteoPoller, Reading, TempestListener, compass,
-                               c_to_f, make_location, ms_to_mph, parse_coord, weather_messages)
+                               WeatherPage, c_to_f, make_location, ms_to_mph, parse_coord, weather_page)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 # FPP exports MEDIADIR/LOGDIR to the processes it launches; fall back to the
@@ -55,7 +55,7 @@ API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
 API_PREFIX   = "/api/plugin/matrixcountdown"
 
-SCHEMA_VERSION = 3   # 2: weather.source (Open-Meteo or Tempest); 3: social media screens
+SCHEMA_VERSION = 4   # 2: weather.source (Open-Meteo or Tempest); 3: social media screens; 4: weather page
 
 
 def _get_git_commit() -> str:
@@ -218,13 +218,21 @@ def _migrate_config(cfg: dict) -> bool:
 def _migrate_user(user: dict) -> bool:
     """Migrations that need the saved file itself (before defaults fill gaps)."""
     w = user.get("weather")
+    changed = False
     if isinstance(w, dict) and "source" not in w:
         # Before 2.1 the Tempest was the only source. Keep a setup that had
         # weather on with it, rather than start sending its location; one
         # with weather off picks a source when it turns weather on.
         w["source"] = "tempest" if w.get("enabled") else ""
-        return True
-    return False
+        changed = True
+    if isinstance(w, dict):
+        # Before 4 the weather scrolled as "Temp 72°F" and "Wind 8 mph"; the
+        # weather page has no such labels.
+        for part in ("temperature", "wind"):
+            if isinstance(w.get(part), dict) and "label" in w[part]:
+                del w[part]["label"]
+                changed = True
+    return changed
 
 
 def load_config() -> dict:
@@ -378,6 +386,17 @@ def validate_config(cfg: dict) -> List[str]:
             raise ValueError
     except (TypeError, ValueError):
         errors.append("weather.wind.gust_min_diff_mph must be 0 or more")
+    try:
+        if not 1 <= float(w.get("screen_seconds", 5)) <= 600:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("weather.screen_seconds must be from 1 to 600 seconds")
+    for key in ("wind_mph", "gust_mph"):
+        try:
+            if not 0 <= float((w.get("symbol") or {}).get(key, 0)) <= 200:
+                raise ValueError
+        except (TypeError, ValueError):
+            errors.append(f"weather.symbol.{key} must be from 0 to 200 mph")
     so = cfg.get("social") or {}
     if not isinstance(so.get("enabled", False), bool):
         errors.append("social.enabled must be true or false")
@@ -582,13 +601,14 @@ class CountdownDaemon:
         """The message as the matrix would draw it, from unsaved form settings.
 
         body: {"config": {...partial config...}, "width": w, "height": h,
-               "as": "now" | "days" | "under_day" | "temperature" | "wind" | "social"}
+               "as": "now" | "days" | "under_day" | "weather" | "social"}
         Returns the drawn strip as a PNG (base64) plus what the page needs to
         animate it the same way the daemon moves it.
         """
         try:
             from countdown.render import Style, layout_strip
             from countdown.social import draw_screen
+            from countdown.still import draw_weather_page
         except ImportError:
             return {"error": "Pillow is not installed"}
         cfg = _deep_merge(load_defaults(), body.get("config") or {})
@@ -607,19 +627,19 @@ class CountdownDaemon:
             return {"error": "the custom target has no valid date"}
         mode = body.get("as", "now")
         weather_note = None
-        if mode in ("temperature", "wind"):
+        if mode == "weather":
             wcfg = cfg.get("weather") or {}
-            # Show this message even if it's switched off, so it can be styled first
-            shown_cfg = {**wcfg, "temperature": {**(wcfg.get("temperature") or {}), "enabled": True},
-                         "wind": {**(wcfg.get("wind") or {}), "enabled": True}}
             reading = self.weather_reading()
-            if reading is None or weather_messages(reading, shown_cfg)[mode].blank:
+            page = weather_page(reading, wcfg, hour=now.hour) if reading is not None else None
+            if page is None:
                 # A sample, so styles and layout can be tried before data arrives
-                reading = _sample_reading()
+                page = weather_page(_sample_reading(), wcfg, hour=now.hour)
                 weather_note = "sample reading (no live weather" + (
                     ": Weather is off" if not wcfg.get("enabled") else
                     ": choose a weather source" if not self.weather_source(cfg) else "") + ")"
-            message = weather_messages(reading, shown_cfg)[mode]
+            if page is None:
+                return {"error": "Temperature and Wind are both off: the weather page has nothing to show"}
+            message = page
             display = None
         else:
             if mode == "days":
@@ -640,14 +660,15 @@ class CountdownDaemon:
             sequence = [("countdown", message)] if cd.get("enabled", True) else []
             if wcfg.get("enabled"):
                 reading = self.weather_reading()
-                live = weather_messages(reading, wcfg) if reading is not None else {}
-                if not any(not m.blank for m in live.values()):
-                    live = weather_messages(_sample_reading(), wcfg)
-                    if any(not m.blank for m in live.values()):
+                page = weather_page(reading, wcfg, hour=now.hour) if reading is not None else None
+                if page is None:
+                    page = weather_page(_sample_reading(), wcfg, hour=now.hour)
+                    if page is not None:
                         weather_note = ("sample reading for the weather (choose a weather source)"
                                         if not self.weather_source(cfg) else
                                         "sample reading for the weather (none received yet)")
-                sequence += [(k, m) for k, m in live.items() if not m.blank]
+                if page is not None:
+                    sequence.append((page.slot, page))
             sequence += [(sc.slot, sc) for sc in social_screens(cfg.get("social") or {})]
             if not sequence:
                 sequence = [("countdown", message)]
@@ -672,6 +693,7 @@ class CountdownDaemon:
             "repeat_delay": float(motion.get("repeat_delay", 0)),
             "static_hold": float(motion.get("static_hold", 5)),
             "screen_seconds": float((cfg.get("social") or {}).get("screen_seconds", 5) or 5),
+            "weather_seconds": float((cfg.get("weather") or {}).get("screen_seconds", 5) or 5),
             "strip": None,
             "strips": [],
         }
@@ -679,8 +701,10 @@ class CountdownDaemon:
         number_style = Style.from_cfg(cd.get("number_style") or {}, font_path)
         notes = []
         for slot, msg in sequence:
-            still = isinstance(msg, Screen)
-            if still:
+            still = is_still(msg)
+            if isinstance(msg, WeatherPage):
+                strip = draw_weather_page(msg, w, h, number_style, text_style)
+            elif still:
                 strip, fits = draw_screen(msg, w, h, text_style)
                 if not fits:
                     notes.append(f"@{msg.handle} is too wide for a {w}-pixel matrix even at the smallest size,"
@@ -692,6 +716,7 @@ class CountdownDaemon:
             buf = io.BytesIO()
             strip.save(buf, format="PNG")
             result["strips"].append({"slot": slot, "message": msg.plain, "still": still,
+                                     "seconds": hold_seconds(msg, cfg) if still else None,
                                      "strip": base64.b64encode(buf.getvalue()).decode(),
                                      "strip_width": strip.width, "strip_height": strip.height})
         if result["strips"]:   # the first one also at the top level, as before
@@ -831,7 +856,7 @@ class CountdownDaemon:
         r = lst.reading()
         now = time.monotonic()
         age = lambda at: None if at is None else round(now - at)  # noqa: E731
-        msgs = weather_messages(r, w, now)
+        page = weather_page(r, w, now, local_now().hour)
         info.update({
             "hub": r.hub, "device": r.device, "packets": r.packets,
             "hub_ip": r.source if src == "tempest" else "",
@@ -843,7 +868,11 @@ class CountdownDaemon:
             "wind_dir": None if r.wind_dir is None else compass(r.wind_dir),
             "wind_age_s": age(r.wind_at),
             "gust_mph": None if r.gust_ms is None else round(ms_to_mph(r.gust_ms), 1),
-            "messages": {k: m.plain for k, m in msgs.items()},
+            "page": None if page is None else {"symbol": page.symbol, "lines": list(page.lines),
+                                               "plain": page.plain},
+            "is_day": None if page is None else page.is_day,
+            "day_from": None if page is None else page.day_from,
+            "solar_wm2": r.solar_wm2, "lux": r.lux,
         })
         return info
 
@@ -872,7 +901,7 @@ class CountdownDaemon:
         next_open = 0.0
         next_check = 0.0
         frame_times: List[float] = []
-        screens = ScreenCache()
+        stills = StillCache()
         slot: Optional[str] = None      # which message is up: countdown | temperature | wind | social:...
         slot_passes = 0
         slot_started = 0.0
@@ -944,17 +973,17 @@ class CountdownDaemon:
                 renderer = Renderer(out.width, out.height, cd, font_path)
                 renderer_key = key
                 slot_passes = 0
-                screens = ScreenCache()
+                stills = StillCache()
 
             def draw(item, t):
-                """A frame: scrolling messages move, social screens are held still."""
-                if isinstance(item, Screen):
-                    return screens.get(item, out.width, out.height, renderer.text_style)
+                """A frame: the countdown moves; weather and social pages are held still."""
+                if is_still(item):
+                    return stills.get(item, out.width, out.height, renderer.number_style, renderer.text_style)
                 return renderer.frame(item, t)
 
             try:
-                # The messages that take turns: countdown, temperature, wind,
-                # then one still screen per social media handle
+                # What takes turns: the countdown, the weather page, then one
+                # still screen per social media handle
                 candidates = []
                 if cd.get("enabled", True):
                     now = local_now()
@@ -966,9 +995,11 @@ class CountdownDaemon:
                 if wcfg.get("enabled"):
                     reading = self.weather_reading()
                     if reading is not None:
-                        candidates.extend(weather_messages(reading, wcfg).items())
+                        page = weather_page(reading, wcfg, hour=local_now().hour)
+                        if page is not None:
+                            candidates.append((page.slot, page))
                 candidates.extend((sc.slot, sc) for sc in social_screens(scfg))
-                available = [(n, m) for n, m in candidates if isinstance(m, Screen) or not m.blank]
+                available = [(n, m) for n, m in candidates if is_still(m) or not m.blank]
 
                 if not available:
                     if out.model_on:
@@ -988,7 +1019,7 @@ class CountdownDaemon:
                     order = [n for n, _ in candidates]
                     later = [n for n in names if slot in order and order.index(n) > order.index(slot)]
                     slot = (later or names)[0]
-                    if not isinstance(dict(available)[slot], Screen):
+                    if not is_still(dict(available)[slot]):
                         renderer.mover.reset()
                     slot_passes, slot_started = renderer.mover.passes, time.monotonic()
                 message = dict(available)[slot]
@@ -1000,17 +1031,17 @@ class CountdownDaemon:
                 # Take turns: a social screen after its seconds; a scrolling message
                 # after each full pass, or after the hold time when static
                 if len(names) > 1:
-                    if isinstance(message, Screen):
-                        done = t0 - slot_started >= float(scfg.get("screen_seconds", 5) or 5)
+                    if is_still(message):
+                        done = t0 - slot_started >= hold_seconds(message, cfg)
                     elif renderer.direction == "static":
                         done = t0 - slot_started >= float((cd.get("motion") or {}).get("static_hold", 5) or 5)
                     else:
                         done = renderer.mover.passes != slot_passes
                     if done:
-                        was_still = isinstance(message, Screen)
+                        was_still = is_still(message)
                         slot = names[(names.index(slot) + 1) % len(names)]
                         message = dict(available)[slot]
-                        if was_still and not isinstance(message, Screen):
+                        if was_still and not is_still(message):
                             renderer.mover.reset()   # a fresh pass from the edge, never halfway across
                         slot_passes, slot_started = renderer.mover.passes, t0
                         self._showing = {"slot": slot, "message": message.plain}

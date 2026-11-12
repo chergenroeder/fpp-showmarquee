@@ -20,16 +20,17 @@ from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from countdown.weather import (NO_LOCATION, Location, OpenMeteoError, OpenMeteoPoller,  # noqa: E402
-                               fetch_open_meteo, make_location, weather_messages)
+                               fetch_open_meteo, make_location, weather_page)
 
 T0 = 1794399300          # a quarter hour (12:15:00 UTC on 2026-11-11)
 CFG = {"stale_minutes": 5}
 
 
-def reply(t=T0, temp=3.9, wind=3.1, wdir=268, gust=6.5, rh=76):
+def reply(t=T0, temp=3.9, wind=3.1, wdir=268, gust=6.5, rh=76, is_day=0):
     return {"latitude": 40.0, "longitude": -100.0, "current_units": {},
             "current": {"time": t, "interval": 900, "temperature_2m": temp, "relative_humidity_2m": rh,
-                        "wind_speed_10m": wind, "wind_direction_10m": wdir, "wind_gusts_10m": gust}}
+                        "wind_speed_10m": wind, "wind_direction_10m": wdir, "wind_gusts_10m": gust,
+                        "is_day": is_day}}
 
 
 class FakeOpenMeteo:
@@ -96,7 +97,7 @@ class Fetch(unittest.TestCase):
         self.assertEqual(set(q), {"latitude", "longitude", "current", "wind_speed_unit", "timeformat"})
         self.assertEqual((q["latitude"], q["longitude"]), (["40.71"], ["-74.01"]))
         self.assertEqual(q["current"][0].split(","), ["temperature_2m", "relative_humidity_2m", "wind_speed_10m",
-                                                      "wind_direction_10m", "wind_gusts_10m"])
+                                                      "wind_direction_10m", "wind_gusts_10m", "is_day"])
         self.assertEqual((q["wind_speed_unit"], q["timeformat"]), (["ms"], ["unixtime"]))
         self.assertEqual(headers.get("User-Agent"), "fpp-matrixcountdown (FPP plugin)")
 
@@ -152,15 +153,23 @@ class Poller(unittest.TestCase):
         self.wall = wall
         return OpenMeteoPoller(lambda: self.loc, fetch=fetch or fake_fetch, wall=lambda: self.wall)
 
-    def test_reply_becomes_the_messages(self):
+    def test_reply_becomes_the_page(self):
         p = self.make()
         self.assertTrue(p.poll())
         r = p.reading()
         self.assertEqual(r.source, "open-meteo")
         self.assertEqual(r.humidity, 76)
-        msgs = weather_messages(r, {**CFG, "wind": {"gust_min_diff_mph": 5}})
-        self.assertEqual(msgs["temperature"].plain, "Temp 39°F")
-        self.assertEqual(msgs["wind"].plain, "Wind 7 mph W gusts 15")
+        page = weather_page(r, {**CFG, "wind": {"gust_min_diff_mph": 5}}, hour=12)
+        self.assertEqual(page.lines, ("39°F", "7 mph W", "gusts 15"))
+        # is_day 0 from Open-Meteo wins over the clock (noon): the moon
+        self.assertEqual((page.symbol, page.is_day, page.day_from), ("moon", False, "open-meteo"))
+
+    def test_is_day_is_asked_for_and_read(self):
+        p = self.make()
+        self.next = reply(is_day=1)
+        p.poll()
+        self.assertTrue(p.reading().is_day)
+        self.assertEqual(weather_page(p.reading(), CFG, hour=23).symbol, "sun")
 
     def test_open_meteo_readings_last_45_minutes_not_5(self):
         p = self.make()
@@ -168,8 +177,8 @@ class Poller(unittest.TestCase):
         r, now = p.reading(), time.monotonic()
         age = now - r.temp_at
         self.assertAlmostEqual(age, 120, delta=2)        # from the server's own time
-        self.assertFalse(weather_messages(r, CFG, now + 2600 - age)["temperature"].blank)
-        self.assertTrue(weather_messages(r, CFG, now + 2701 - age)["temperature"].blank)
+        self.assertEqual(weather_page(r, CFG, now + 2600 - age, 12).temp, "39°F")
+        self.assertIsNone(weather_page(r, CFG, now + 2701 - age, 12))
 
     def test_a_wrong_player_clock_cannot_make_a_fresh_reply_stale(self):
         for wall in (T0 + 86400, T0 - 86400):
@@ -177,7 +186,7 @@ class Poller(unittest.TestCase):
             p.poll()
             r = p.reading()
             self.assertLessEqual(time.monotonic() - r.temp_at, 902)
-            self.assertFalse(weather_messages(r, CFG)["temperature"].blank)
+            self.assertEqual(weather_page(r, CFG, hour=12).temp, "39°F")
 
     def test_missing_and_null_fields(self):
         p = self.make()
@@ -186,9 +195,8 @@ class Poller(unittest.TestCase):
         self.assertTrue(p.poll())
         r = p.reading()
         self.assertIsNone(r.temp_c)
-        msgs = weather_messages(r, CFG)
-        self.assertTrue(msgs["temperature"].blank)
-        self.assertEqual(msgs["wind"].plain, "Wind Calm")
+        page = weather_page(r, CFG, hour=12)
+        self.assertEqual(page.lines, ("Calm",))
 
     def test_failed_fetch_keeps_the_last_reading(self):
         p = self.make()
@@ -377,7 +385,8 @@ class Daemon(unittest.TestCase):
                 break
             time.sleep(0.01)
         self.assertEqual((st["source"], st["temp_f"], st["wind_dir"]), ("open-meteo", 39.0, "W"))
-        self.assertEqual(st["messages"]["temperature"], "Temp 39°F")
+        self.assertEqual(st["page"]["lines"][0], "39°F")
+        self.assertEqual((st["is_day"], st["day_from"]), (False, "open-meteo"))
         self.assertEqual(st["last_fetch_age_s"], 0)
         self.assertGreater(st["next_fetch_s"], 0)
         q, _ = self.om.requests[0]

@@ -79,7 +79,25 @@ From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 - [ ] **Matrix Countdown - State**: Off blanks the matrix; On brings it back; Toggle flips it.
 - [ ] **Matrix Countdown - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
 
-## 6. Social media
+## 6. Weather page
+
+Choose Open-Meteo (or the Tempest) in the Weather card, then:
+
+```bash
+set '{"countdown":{"motion":{"direction":"R2L"}},"weather":{"enabled":true,"screen_seconds":5},"social":{"enabled":false}}'
+```
+
+- [ ] After the countdown's pass, **one weather page** is held still for 5 s: a symbol on the left, the temperature over the wind (and gusts) on the right; then the countdown scrolls in fresh from the edge.
+- [ ] By day it's the **sun**, after dark the **moon** (the status line says which, and whether Open-Meteo, the Tempest or the clock decided).
+- [ ] Lower the wind symbol limit to see the **wind** symbol on a calm day:
+  ```bash
+  set '{"weather":{"symbol":{"wind_mph":1,"gust_mph":1}}}'
+  ```
+  then put it back with `set '{"weather":{"symbol":{"wind_mph":15,"gust_mph":25}}}'`.
+- [ ] The text is readable from across the yard; on the P5 panel nothing is cut off.
+- [ ] Turn Wind off: the page shows the temperature only. Turn both off: no weather page.
+
+## 7. Social media
 
 ```bash
 set '{"countdown":{"motion":{"direction":"R2L"}},"social":{"enabled":true,"screen_seconds":5,"sites":{"facebook":{"enabled":true,"handle":"SmithFamilyLights"},"instagram":{"enabled":true,"handle":"SmithFamilyLights"},"tiktok":{"enabled":true,"handle":"SmithFamilyLights"},"youtube":{"enabled":true,"handle":"SmithFamilyLights"}}}}'
@@ -97,7 +115,7 @@ set '{"social":{"screen_seconds":3,"sites":{"instagram":{"handle":"smith_lights"
 - [ ] Turn **Countdown on** off: only the social screens take turns.
 - [ ] The page's **Social media** status line names the screens; switching a site on with an empty handle shows a warning there and in the card.
 
-## 7. Recovery
+## 8. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.

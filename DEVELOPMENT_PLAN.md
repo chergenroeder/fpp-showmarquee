@@ -510,3 +510,87 @@ An older config gets `social.enabled = false` from the defaults merge. `SCHEMA_V
 - More sites (X, Threads, Bluesky, Snapchat): a row in `SITES` and a logo.
 - A QR code screen to the user's page (large panels only).
 - Show the social screens only every N countdown passes.
+
+---
+
+## Version 4 — Weather page (planned 2026-11-11)
+
+Replace the two scrolling weather messages ("Temp 72°F", "Wind 8 mph NW gusts 15") with **one still page**, held like the social media screens, with a **weather symbol on the left**: a **sun** by day, a **moon** at night, or a **wind** symbol when it's windy.
+
+```
+ 64×32, calm day               windy night                 calm night, no gusts
+ +----------------------+      +----------------------+    +----------------------+
+ |  \ | /    72°F       |      |  ~~~~     38°F       |    |   (      41°F        |
+ | -- O --   3 mph SW   |      | ~~~~~~   18 mph NW   |    |    (     Calm        |
+ |  / | \               |      |  ~~~~   gusts 27     |    |                      |
+ +----------------------+      +----------------------+    +----------------------+
+```
+
+**Requirements**
+
+| # | Requirement | Notes |
+|---|-------------|-------|
+| W1 | Weather is **one page**, held still (never scrolled), whatever the Motion direction | Replaces the temperature and wind messages that scroll today |
+| W2 | A **symbol on the left**: sun, moon or wind | Chosen from the reading (rules below) |
+| W3 | The readings on the right: temperature on top, wind below, gusts under that when shown | Same values and rules as today (°F, mph, direction, gusts when ≥ N mph above the wind, "Calm" under 1 mph) |
+| W4 | **Seconds on screen**: how long the weather page shows | Its own setting in the Weather card, like Social Media's Seconds per screen. Default 5 s, 1–600 s. |
+| W5 | Takes turns as before | Countdown → **weather page** → social screens → countdown again |
+
+**Design decisions (to confirm before building)**
+
+| # | Question | Proposal |
+|---|----------|----------|
+| 1 | Which symbol | **Wind** when the wind is at least **15 mph** or the gusts at least **25 mph** (both settings, under "More wind options"). Otherwise **sun** by day and **moon** at night. Wind wins over sun/moon, because it's the more useful thing to show. |
+| 2 | Day or night: Open-Meteo | Add `is_day` to the fields already requested (`current=...,is_day`). It's 1 between sunrise and sunset at the location. No extra call and nothing more is sent. (To check with a live call.) |
+| 3 | Day or night: Tempest | The `obs_st` packet already carries **solar radiation** (W/m², index 11) and **lux** (index 9); keep them in `Reading`. **Day when solar radiation is above 5 W/m²** (lux above 50 if solar is missing). Night readings are 0, and heavy overcast at noon still gives well over 5. Around dawn and dusk it switches over within a minute or two of sunrise and sunset, which is fine for a symbol. |
+| 4 | Day or night not known yet | Sun from 7:00 to 19:00 on the player's clock, moon otherwise, until a reading says. |
+| 5 | Labels | **No "Temp" / "Wind" words on the page**: the symbol and the units say what the numbers are, and the right-hand side is narrow (about 36 px on a 64-wide panel). The Temp and Wind label settings are removed. "gusts" stays as the gust line's word (its label setting stays). |
+| 6 | Temperature or wind switched off | The page shows only what's on: temperature only, or wind only. The symbol still shows. With both off, there is no weather page. |
+| 7 | Stale readings | As today: a value past its stale limit is left off the page. With nothing fresh, the page is skipped. |
+| 8 | Styles | Temperature in the **Number style**; wind and gusts in the **Text style**. Each line starts at its style's size and shrinks to fit the width beside the symbol, like the social handle. |
+| 9 | Layout | The symbol is square, as tall as the panel allows but **no wider than 40 % of it** (32 px tall on 64×32 → 26 px, leaving 36 px for text). The lines are stacked and centered as a block to the right of it, the block centered vertically. On a short panel (16 tall) the gust line is dropped before the text gets too small to read (below 5 px). |
+| 10 | Symbol artwork | **Drawn in code** like the logos (4× then scaled down). **Sun**: a yellow (#FFC400) disc with 8 rays. **Moon**: a pale yellow-white (#F4E9B0) crescent. **Wind**: three light-blue (#7FD3FF) curved lines with curled ends. |
+| 11 | Animation | None in v4: still, like the social screens. A gentle movement (rays turning, wind lines drifting) is a later idea. |
+
+**What changes for existing setups**
+- Weather stops scrolling, and the temperature and wind no longer take separate turns: one weather page replaces both.
+- Motion now applies only to the countdown. Its **Show each message (s)** (Static) is relabelled **Show the countdown (s)**.
+- Settings schema 4: adds `weather.screen_seconds` (5), `weather.symbol.wind_mph` (15) and `weather.symbol.gust_mph` (25). Drops `weather.temperature.label` and `weather.wind.label`. Older settings load with those defaults; the dropped labels are ignored.
+- API: `showing.slot` is `weather` instead of `temperature` / `wind`. `status.weather.messages` becomes `status.weather.page` (`{"symbol": "sun", "lines": ["72°F", "3 mph SW"]}`) plus `is_day`. Preview mode `as: "weather"` replaces `temperature` and `wind`.
+
+**Code changes**
+
+| Where | Change |
+|---|---|
+| `countdown/weather.py` | `Reading` gains `is_day`, `solar_wm2`, `lux` (with their times). Open-Meteo asks for `is_day`; the Tempest reader keeps solar radiation and lux. New `weather_page(reading, cfg, now) -> Optional[WeatherPage]` (`symbol`, `temp_text`, `wind_text`, `gust_text`) replaces `weather_messages()`, reusing today's formatting. `day_or_night()` follows decisions 2–4. |
+| `countdown/symbols.py` (new) | `draw_symbol("sun" \| "moon" \| "wind", size)`, cached, drawn like `social.draw_logo()`. |
+| `countdown/still.py` (new) | What a social screen and the weather page share: line fitting (shrink a line to a width), centering, and the `ScreenCache` (moved from `social.py`). `draw_weather_page(page, w, h, number_style, text_style)` lives here too. |
+| `matrixcountdown.py` | The turn-taking loop treats the weather page as a still item held for `weather.screen_seconds` (a `still_seconds()` helper per kind, so social and weather share one path). Validation for the new settings, schema 4, status and preview changes as above. |
+| `matrixcountdown.html` | Weather card: **Seconds on screen**; the Temperature / Wind switches stay (with their examples now "72°F" and "8 mph NW gusts 15"); label fields removed; the wind-symbol thresholds under "More wind and source options"; a line naming the symbol that would show now ("Showing the moon: night at the player's location"). The Preview's Temp and Wind buttons become one **Weather** button. Motion note: "Weather and social media screens never scroll." |
+| Docs | README (Weather section, settings table, the three symbols), API.md, TESTING.md (a weather page section: day, night, windy), `pluginInfo.json` description. |
+
+**Build steps**
+- [ ] Confirm decisions 1, 3, 5 and 9.
+- [ ] Live call to Open-Meteo with `is_day`; check the Tempest's solar/lux values on fpp-matrix.local at night and around sunset (`scripts/tempest_listen.py` can print them).
+- [ ] Symbols; check them on a contact sheet and on 64×32, 128×64 and 64×16 pages before going on.
+- [ ] `weather.py` reading fields and `weather_page()`; `still.py`; the loop and preview; settings, schema 4, status.
+- [ ] Settings page and docs.
+- [ ] Tests: symbol choice (windy by speed, windy by gusts, day, night, unknown → clock), Tempest solar/lux day/night, Open-Meteo `is_day` decoded, page lines with temperature or wind off, stale values dropped, nothing fresh → no page, layout (symbol ≤ 40 % width, lines fit, gust line dropped on a 16-tall panel), the loop holding the weather page for its seconds between the countdown and social screens, an older config loading with the new defaults, preview `as: weather`.
+- [ ] Live check on fpp-matrix.local: day and night pages, and a windy page (lower the wind threshold to see it on a calm day).
+
+**Later ideas (not in v4)**
+- Clouds, rain, snow and fog symbols from Open-Meteo's `weather_code` (Tempest: rain from its precipitation type).
+- A gentle animation of the symbol.
+- Humidity or today's high/low as another line.
+
+**Built (2026-11-11)**
+- [x] `countdown/symbols.py`: sun, moon and wind drawn in code (4× then scaled down); checked on a contact sheet at 128, 26 and 14 px. The wind's curls were re-spaced so they don't touch at small sizes.
+- [x] `countdown/weather.py`: `Reading.is_day` (Open-Meteo, now asked for with `is_day`), `solar_wm2` / `lux` (Tempest `obs_st` indexes 11 and 9); `day_or_night()` and `weather_page()` → `WeatherPage(symbol, temp, wind, gust, is_day, day_from)`, replacing `weather_messages()` / `temperature_message()` / `wind_message()`. The symbol follows the wind and gusts even with the wind line switched off.
+- [x] `countdown/still.py`: `is_still()`, `hold_seconds()`, `StillCache` (moved from `social.py`, now for both kinds) and the weather layout. Changed from the plan while building: on 64×32 "18 mph NW" can't fit readably beside a 40 % symbol, so the layout tries the symbol at 40 %, 35 % and 30 % of the width, and then shorter versions of the page (no gust line, then the wind without its direction, then one line) until every line is at least size 8. Lines in the same style share a size, so wind and gusts match.
+- [x] Daemon: the weather page is one still turn (`weather`), held for `weather.screen_seconds`; schema 4 (`screen_seconds`, `symbol.wind_mph` / `gust_mph`; old `label`s removed from saved settings); validation; status `page`, `is_day`, `day_from`, `solar_wm2`, `lux`; preview `as: weather`, and every still item carries its own `seconds`.
+- [x] Settings page: Weather card with Seconds on screen, label fields gone, symbol limits under "More wind, symbol and source options", a note on how the symbol is chosen; the status line names the symbol and what decided day or night; Preview has one **Weather** button; Motion's Static hold reads "Show the countdown (s)".
+- [x] Docs: README (Weather section with the three pages, settings, preview, file list), API.md, TESTING.md section 6, `pluginInfo.json` description and the Open-Meteo `why`.
+- [x] Tests: page lines, gusts, calm, options off, stale, wind symbol by speed/gusts/limits, day/night from Open-Meteo, the Tempest's solar and lux, and the clock; layout (symbol ≤ 40 %, lines fit, shared size, gust line dropped on 64×16, variants); drawing; symbols; Open-Meteo `is_day` asked for and read; preview; old settings migrating; validation; the real loop holding the page still for its seconds. 200 tests in total, all passing.
+- [x] Dev server check: Weather preview (moon by the clock at night, sample reading), Now playing countdown → weather → social, the Weather card.
+- [ ] Live call to Open-Meteo with `is_day`, and the Tempest's solar/lux at night on fpp-matrix.local.
+- [ ] Live check on fpp-matrix.local (TESTING.md section 6): day, night and windy pages on the P5 panel.

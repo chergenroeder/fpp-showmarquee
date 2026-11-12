@@ -10,13 +10,15 @@ Tempest: the hub's local UDP broadcast.
 The hub broadcasts JSON on UDP port 50222 (WeatherFlow UDP reference v143):
   rapid_wind  ~every 3 s   ob = [epoch, wind m/s, direction deg]
   obs_st      ~every 60 s  obs[0] = [epoch, lull, avg, gust (m/s), direction deg, interval s,
-                                     pressure mb, air temp C, humidity %, ...]
-TempestListener keeps the latest temperature, wind and gust, each with the time
-it arrived. Some machines receive every packet twice (two network interfaces);
+                                     pressure mb, air temp C, humidity %, lux, UV,
+                                     solar radiation W/m2, ...]
+TempestListener keeps the latest temperature, wind, gust and light level, each
+with the time it arrived. Some machines receive every packet twice (two network interfaces);
 repeats of the same (sensor, type, epoch) are dropped.
 
-weather_messages() turns a reading into the temperature and wind messages, in
-F and mph, skipping anything older than the stale limit.
+weather_page() turns a reading into the weather page: a symbol (sun, moon or
+wind) and the temperature, wind and gust lines, in F and mph, skipping anything
+older than the stale limit.
 """
 
 import json
@@ -31,7 +33,6 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from .message import NUMBER, TEXT, Message
 
 TEMPEST_PORT = 50222
 COMPASS = ("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
@@ -61,6 +62,11 @@ class Reading:
     gust_ms: Optional[float] = None
     gust_at: Optional[float] = None
     humidity: Optional[float] = None
+    is_day: Optional[bool] = None       # Open-Meteo: between sunrise and sunset there
+    is_day_at: Optional[float] = None
+    solar_wm2: Optional[float] = None   # Tempest: solar radiation and illuminance
+    lux: Optional[float] = None
+    light_at: Optional[float] = None
     hub: str = ""
     device: str = ""
     source: str = ""
@@ -194,6 +200,8 @@ class TempestListener:
                     changed = True
                 if get(8) is not None:
                     r.humidity = get(8)
+                if get(11) is not None or get(9) is not None:
+                    r.solar_wm2, r.lux, r.light_at = get(11), get(9), now
                 # Fall back to the minute average for wind if rapid_wind isn't arriving
                 if get(2) is not None and (r.wind_at is None or now - r.wind_at > 30):
                     r.wind_ms, r.wind_dir, r.wind_at = get(2), get(4), now
@@ -213,7 +221,7 @@ class TempestListener:
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_FIELDS = ("temperature_2m", "relative_humidity_2m", "wind_speed_10m",
-                     "wind_direction_10m", "wind_gusts_10m")
+                     "wind_direction_10m", "wind_gusts_10m", "is_day")
 USER_AGENT = "fpp-matrixcountdown (FPP plugin)"
 
 
@@ -450,6 +458,8 @@ class OpenMeteoPoller:
                 r.gust_ms, r.gust_at = get("wind_gusts_10m"), at
             if get("relative_humidity_2m") is not None:
                 r.humidity = get("relative_humidity_2m")
+            if get("is_day") is not None:
+                r.is_day, r.is_day_at = bool(get("is_day")), at
             r.last_packet_at = now
             self.last_fetch_at = now
 
@@ -459,14 +469,40 @@ class OpenMeteoPoller:
             return Reading(**{**r.__dict__, "packets": dict(r.packets)})
 
 
-# ── Messages ──────────────────────────────────────────────────────────────────
+# ── The weather page ──────────────────────────────────────────────────────────
 
 DEFAULTS = {
     "stale_minutes": 5,
-    "temperature": {"enabled": True, "label": "Temp"},
-    "wind": {"enabled": True, "label": "Wind", "direction": True, "gusts": True,
+    "temperature": {"enabled": True},
+    "wind": {"enabled": True, "direction": True, "gusts": True,
              "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"},
+    "symbol": {"wind_mph": 15, "gust_mph": 25},
 }
+SOLAR_DAY_WM2 = 5      # Tempest: day above this solar radiation (night reads 0)
+LUX_DAY = 50           # ... or, without solar radiation, above this illuminance
+CLOCK_DAY = (7, 19)    # neither known: day from 7:00 to 19:00 on the player's clock
+
+
+@dataclass(frozen=True)
+class WeatherPage:
+    symbol: str          # "sun", "moon" or "wind"
+    temp: str = ""       # "72°F"
+    wind: str = ""       # "8 mph NW" or "Calm"
+    gust: str = ""       # "gusts 15"
+    is_day: bool = True
+    day_from: str = ""   # what said day or night: "open-meteo", "tempest" or "clock"
+
+    @property
+    def lines(self) -> Tuple[str, ...]:
+        return tuple(x for x in (self.temp, self.wind, self.gust) if x)
+
+    @property
+    def plain(self) -> str:
+        return " ".join((f"[{self.symbol.capitalize()}]",) + self.lines)
+
+    @property
+    def slot(self) -> str:
+        return "weather"
 
 
 def _fresh(at: Optional[float], now: float, stale_s: float) -> bool:
@@ -479,47 +515,57 @@ def _stale_s(r: Reading, cfg: dict) -> float:
     return float(cfg.get("stale_minutes", DEFAULTS["stale_minutes"])) * 60
 
 
-def temperature_message(r: Reading, cfg: dict, now: float) -> Message:
-    t = {**DEFAULTS["temperature"], **(cfg.get("temperature") or {})}
-    stale_s = _stale_s(r, cfg)
-    if not t.get("enabled") or r.temp_c is None or not _fresh(r.temp_at, now, stale_s):
-        return Message(())
-    value = f"{round(c_to_f(r.temp_c))}°F"
-    label = str(t.get("label") or "").strip()
-    pieces = ((TEXT, label), (NUMBER, value)) if label else ((NUMBER, value),)
-    return Message(pieces)
+def day_or_night(r: Reading, now: float, stale_s: float, hour: int) -> Tuple[bool, str]:
+    """(is it day, what said so): Open-Meteo's is_day, the Tempest's light, or the clock."""
+    if r.is_day is not None and _fresh(r.is_day_at, now, stale_s):
+        return r.is_day, "open-meteo"
+    if _fresh(r.light_at, now, stale_s):
+        if r.solar_wm2 is not None:
+            return r.solar_wm2 > SOLAR_DAY_WM2, "tempest"
+        if r.lux is not None:
+            return r.lux > LUX_DAY, "tempest"
+    return CLOCK_DAY[0] <= hour < CLOCK_DAY[1], "clock"
 
 
-def wind_message(r: Reading, cfg: dict, now: float) -> Message:
-    w = {**DEFAULTS["wind"], **(cfg.get("wind") or {})}
-    stale_s = _stale_s(r, cfg)
-    if not w.get("enabled") or r.wind_ms is None or not _fresh(r.wind_at, now, stale_s):
-        return Message(())
-    mph = ms_to_mph(r.wind_ms)
-    label = str(w.get("label") or "").strip()
-    first: List[Tuple[str, str]] = [(TEXT, label)] if label else []
-    if mph < 1:
-        first.append((NUMBER, str(w.get("calm_text") or "Calm").strip() or "Calm"))
-    else:
-        speed = f"{round(mph)} mph"
-        if w.get("direction") and r.wind_dir is not None:
-            speed += " " + compass(r.wind_dir)
-        first.append((NUMBER, speed))
-    second: List[Tuple[str, str]] = []
-    if (w.get("gusts") and r.gust_ms is not None and _fresh(r.gust_at, now, stale_s)):
-        gust = ms_to_mph(r.gust_ms)
-        if gust >= 1 and gust - mph >= float(w.get("gust_min_diff_mph", 5)):
-            glabel = str(w.get("gust_label") or "").strip()
-            second = ([(TEXT, glabel)] if glabel else []) + [(NUMBER, str(round(gust)))]
-    pieces = tuple(first + second)
-    lines = None
-    if second:   # two-line layout: "Wind 8 mph NW" over "gusts 15"
-        lines = (tuple(range(len(first))), tuple(range(len(first), len(pieces))))
-    elif len(pieces) == 2:
-        lines = ((0, 1),)   # "Wind Calm" stays on one line
-    return Message(pieces, lines)
+def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
+                 hour: Optional[int] = None) -> Optional[WeatherPage]:
+    """The page for this reading, or None when there's nothing fresh to show.
 
-
-def weather_messages(r: Reading, cfg: dict, now: Optional[float] = None) -> Dict[str, Message]:
+    now is time.monotonic(); hour is the player's local hour (for the
+    day/night fallback).
+    """
     now = time.monotonic() if now is None else now
-    return {"temperature": temperature_message(r, cfg, now), "wind": wind_message(r, cfg, now)}
+    hour = time.localtime().tm_hour if hour is None else hour
+    t = {**DEFAULTS["temperature"], **(cfg.get("temperature") or {})}
+    w = {**DEFAULTS["wind"], **(cfg.get("wind") or {})}
+    sym = {**DEFAULTS["symbol"], **(cfg.get("symbol") or {})}
+    stale_s = _stale_s(r, cfg)
+
+    temp = ""
+    if t.get("enabled") and r.temp_c is not None and _fresh(r.temp_at, now, stale_s):
+        temp = f"{round(c_to_f(r.temp_c))}°F"
+
+    wind_fresh = r.wind_ms is not None and _fresh(r.wind_at, now, stale_s)
+    gust_fresh = r.gust_ms is not None and _fresh(r.gust_at, now, stale_s)
+    mph = ms_to_mph(r.wind_ms) if wind_fresh else None
+    gust_mph = ms_to_mph(r.gust_ms) if gust_fresh else None
+    wind = gust = ""
+    if w.get("enabled") and mph is not None:
+        if mph < 1:
+            wind = str(w.get("calm_text") or "Calm").strip() or "Calm"
+        else:
+            wind = f"{round(mph)} mph"
+            if w.get("direction") and r.wind_dir is not None:
+                wind += " " + compass(r.wind_dir)
+        if (w.get("gusts") and gust_mph is not None and gust_mph >= 1
+                and gust_mph - mph >= float(w.get("gust_min_diff_mph", 5))):
+            label = str(w.get("gust_label") or "").strip()
+            gust = f"{label} {round(gust_mph)}".strip()
+    if not temp and not wind:
+        return None
+
+    is_day, day_from = day_or_night(r, now, stale_s, hour)
+    windy = ((mph is not None and mph >= float(sym.get("wind_mph", 15)))
+             or (gust_mph is not None and gust_mph >= float(sym.get("gust_mph", 25))))
+    symbol = "wind" if windy else ("sun" if is_day else "moon")
+    return WeatherPage(symbol, temp, wind, gust, is_day, day_from)

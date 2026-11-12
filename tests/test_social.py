@@ -165,11 +165,11 @@ class Drawing(unittest.TestCase):
         self.assertFalse(fits)
 
     def test_cache_redraws_on_new_size(self):
-        from countdown.social import ScreenCache
-        c, s = ScreenCache(), Screen(("instagram",), "me")
-        a = c.get(s, 64, 32, self.style)
-        self.assertIs(c.get(s, 64, 32, self.style), a)
-        self.assertEqual(c.get(s, 128, 64, self.style).size, (128, 64))
+        from countdown.still import StillCache
+        c, s = StillCache(), Screen(("instagram",), "me")
+        a = c.get(s, 64, 32, self.style, self.style)
+        self.assertIs(c.get(s, 64, 32, self.style, self.style), a)
+        self.assertEqual(c.get(s, 128, 64, self.style, self.style).size, (128, 64))
 
 
 @unittest.skipUnless(HAVE_PIL, "Pillow not installed")

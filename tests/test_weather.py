@@ -1,4 +1,4 @@
-"""Tempest weather: packets, messages, layout, and taking turns with the countdown.
+"""Tempest weather: packets, the weather page, its layout, and taking turns with the countdown.
 
 Run: .venv/bin/python -m unittest discover -s tests  (layout/loop tests need Pillow)
 """
@@ -16,9 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 
-from countdown.message import NUMBER, TEXT  # noqa: E402
-from countdown.weather import (Reading, TempestListener, compass, temperature_message,  # noqa: E402
-                               weather_messages, wind_message)
+from countdown.weather import Reading, TempestListener, WeatherPage, compass, weather_page  # noqa: E402
 
 try:
     import PIL  # noqa: F401
@@ -35,11 +33,11 @@ def rapid(epoch, mph, deg, serial=ST):
                        "ob": [epoch, mph * MPH, deg]}).encode()
 
 
-def obs(epoch, temp_f, avg_mph=0.0, gust_mph=0.0, deg=0, serial=ST):
+def obs(epoch, temp_f, avg_mph=0.0, gust_mph=0.0, deg=0, serial=ST, lux=0, solar=0):
     c = (temp_f - 32) * 5 / 9
     return json.dumps({"serial_number": serial, "type": "obs_st", "hub_sn": HUB, "firmware_revision": 172,
                        "obs": [[epoch, 0.0, avg_mph * MPH, gust_mph * MPH, deg, 3, 837.0, c, 40.0,
-                                0, 0.0, 0, 0.0, 0, 0, 0, 2.68, 1]]}).encode()
+                                lux, 0.0, solar, 0.0, 0, 0, 0, 2.68, 1]]}).encode()
 
 
 class Packets(unittest.TestCase):
@@ -84,6 +82,12 @@ class Packets(unittest.TestCase):
         lst.handle(obs(160, 50, avg_mph=2, deg=0), now=10)   # rapid_wind is fresh: keep it
         self.assertAlmostEqual(lst.reading().wind_ms / MPH, 9, places=3)
 
+    def test_light_level_is_kept(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 50, lux=12000, solar=95), now=7)
+        r = lst.reading()
+        self.assertEqual((r.lux, r.solar_wm2, r.light_at), (12000, 95, 7))
+
     def test_compass(self):
         self.assertEqual([compass(d) for d in (0, 11, 12, 45, 200, 227, 315, 359)],
                          ["N", "N", "NNE", "NE", "SSW", "SW", "NW", "N"])
@@ -119,60 +123,132 @@ def reading(temp_f=None, mph=None, deg=None, gust=None, at=100.0):
                    gust_ms=None if gust is None else gust * MPH, gust_at=at)
 
 
-class Messages(unittest.TestCase):
+class Page(unittest.TestCase):
     CFG = {"stale_minutes": 5}
 
-    def test_temperature(self):
-        m = temperature_message(reading(temp_f=72.4), self.CFG, 100)
-        self.assertEqual(m.pieces, ((TEXT, "Temp"), (NUMBER, "72°F")))
-        m = temperature_message(reading(temp_f=-3.6), {"temperature": {"label": ""}}, 100)
-        self.assertEqual(m.pieces, ((NUMBER, "-4°F"),))
+    def page(self, r, cfg=None, now=100, hour=12):
+        return weather_page(r, self.CFG if cfg is None else cfg, now, hour)
 
-    def test_wind_with_direction_and_gusts(self):
-        m = wind_message(reading(mph=8.2, deg=315, gust=15), self.CFG, 100)
-        self.assertEqual(m.plain, "Wind 8 mph NW gusts 15")
-        self.assertEqual(m.pieces[1], (NUMBER, "8 mph NW"))
-        self.assertEqual(m.lines, ((0, 1), (2, 3)))
+    def test_lines(self):
+        p = self.page(reading(temp_f=72.4, mph=8.2, deg=315, gust=15))
+        self.assertEqual(p.lines, ("72°F", "8 mph NW", "gusts 15"))
+        self.assertEqual(p.plain, "[Sun] 72°F 8 mph NW gusts 15")
+        self.assertEqual(self.page(reading(temp_f=-3.6)).lines, ("-4°F",))
 
     def test_gusts_only_when_well_above_the_average(self):
-        self.assertEqual(wind_message(reading(mph=8, deg=0, gust=12.9), self.CFG, 100).plain, "Wind 8 mph N")
-        self.assertEqual(wind_message(reading(mph=8, deg=0, gust=13), self.CFG, 100).plain, "Wind 8 mph N gusts 13")
+        self.assertEqual(self.page(reading(mph=8, deg=0, gust=12.9)).lines, ("8 mph N",))
+        self.assertEqual(self.page(reading(mph=8, deg=0, gust=13)).lines, ("8 mph N", "gusts 13"))
         cfg = {"wind": {"gust_min_diff_mph": 0, "gust_label": ""}}
-        self.assertEqual(wind_message(reading(mph=8, deg=0, gust=9), cfg, 100).plain, "Wind 8 mph N 9")
+        self.assertEqual(self.page(reading(mph=8, deg=0, gust=9), cfg).lines, ("8 mph N", "9"))
 
     def test_calm(self):
-        m = wind_message(reading(mph=0.6, deg=227, gust=1), self.CFG, 100)
-        self.assertEqual(m.pieces, ((TEXT, "Wind"), (NUMBER, "Calm")))
-        self.assertEqual(m.lines, ((0, 1),))
-        m = wind_message(reading(mph=0.2, deg=227, gust=9), {"wind": {"calm_text": "Still"}}, 100)
-        self.assertEqual(m.plain, "Wind Still gusts 9")
+        self.assertEqual(self.page(reading(mph=0.6, deg=227, gust=1)).lines, ("Calm",))
+        self.assertEqual(self.page(reading(mph=0.2, deg=227, gust=9), {"wind": {"calm_text": "Still"}}).lines,
+                         ("Still", "gusts 9"))
 
     def test_options_off(self):
         cfg = {"wind": {"direction": False, "gusts": False}}
-        self.assertEqual(wind_message(reading(mph=8, deg=315, gust=30), cfg, 100).plain, "Wind 8 mph")
-        self.assertTrue(wind_message(reading(mph=8), {"wind": {"enabled": False}}, 100).blank)
-        self.assertTrue(temperature_message(reading(temp_f=70), {"temperature": {"enabled": False}}, 100).blank)
+        self.assertEqual(self.page(reading(temp_f=50, mph=8, deg=315, gust=30), cfg).lines, ("50°F", "8 mph"))
+        self.assertEqual(self.page(reading(temp_f=50, mph=8), {"wind": {"enabled": False}}).lines, ("50°F",))
+        self.assertEqual(self.page(reading(temp_f=70, mph=3), {"temperature": {"enabled": False}}).lines, ("3 mph",))
+        both_off = {"temperature": {"enabled": False}, "wind": {"enabled": False}}
+        self.assertIsNone(self.page(reading(temp_f=70, mph=3), both_off))
 
     def test_stale_and_missing_readings_are_skipped(self):
         r = reading(temp_f=70, mph=5, deg=0, at=0)
-        self.assertFalse(weather_messages(r, self.CFG, now=299)["temperature"].blank)
-        msgs = weather_messages(r, self.CFG, now=301)
-        self.assertTrue(msgs["temperature"].blank and msgs["wind"].blank)
-        self.assertTrue(weather_messages(Reading(), self.CFG, now=0)["wind"].blank)
+        self.assertEqual(self.page(r, now=299).temp, "70°F")
+        self.assertIsNone(self.page(r, now=301))
+        self.assertIsNone(self.page(Reading(), now=0))
+
+    def test_wind_symbol_by_speed_or_gusts(self):
+        self.assertEqual(self.page(reading(temp_f=50, mph=14.4)).symbol, "sun")
+        self.assertEqual(self.page(reading(temp_f=50, mph=15)).symbol, "wind")
+        self.assertEqual(self.page(reading(temp_f=50, mph=5, gust=25)).symbol, "wind")
+        self.assertEqual(self.page(reading(temp_f=50, mph=5, gust=24)).symbol, "sun")
+        cfg = {"symbol": {"wind_mph": 5, "gust_mph": 99}}
+        self.assertEqual(self.page(reading(temp_f=50, mph=5), cfg).symbol, "wind")
+        # windy even when the wind line is switched off
+        self.assertEqual(self.page(reading(temp_f=50, mph=20), {"wind": {"enabled": False}}).symbol, "wind")
+
+    def test_day_and_night_from_the_tempest_light(self):
+        r = reading(temp_f=50, mph=2)
+        r.solar_wm2, r.lux, r.light_at = 120, 9000, 100
+        self.assertEqual(self.page(r, hour=2).symbol, "sun")         # light wins over the clock
+        r.solar_wm2, r.lux = 0, 0
+        p = self.page(r, hour=12)
+        self.assertEqual((p.symbol, p.day_from), ("moon", "tempest"))
+        r.solar_wm2, r.lux = None, 400                                 # no solar: lux decides
+        self.assertEqual(self.page(r, hour=2).symbol, "sun")
+
+    def test_day_and_night_from_the_clock_when_unknown(self):
+        r = reading(temp_f=50, mph=2)
+        self.assertEqual([self.page(r, hour=h).symbol for h in (6, 7, 18, 19)], ["moon", "sun", "sun", "moon"])
+        r.solar_wm2, r.light_at = 300, -1000                            # stale light reading: clock again
+        self.assertEqual(self.page(r, hour=22).day_from, "clock")
+
+    def test_open_meteo_is_day(self):
+        r = reading(temp_f=50, mph=2)
+        r.is_day, r.is_day_at = False, 100
+        self.assertEqual(self.page(r, hour=12).symbol, "moon")
 
 
 @unittest.skipUnless(HAVE_PIL, "Pillow not installed")
 class Layout(unittest.TestCase):
+    F = None
 
-    def test_wind_splits_into_its_two_lines(self):
-        from countdown.render import Style, layout_strip
-        red, green = Style(None, 12, (255, 0, 0), False), Style(None, 12, (0, 255, 0), False)
-        m = wind_message(reading(mph=8, deg=315, gust=15), {}, 100)
-        one = layout_strip(m, red, green, 400, "static")
-        two = layout_strip(m, red, green, 96, "static")
-        self.assertLessEqual(two.width, 96)
-        self.assertGreater(two.height, one.height * 1.6)   # two lines, not four
-        self.assertLess(two.height, one.height * 2.6)
+    def styles(self, size=10):
+        from countdown.render import Style
+        return Style(None, size, (0, 255, 0), False), Style(None, size, (255, 0, 0), False)
+
+    def test_symbol_at_most_40_percent_and_lines_fit(self):
+        from countdown.still import weather_layout
+        num, txt = self.styles()
+        page = WeatherPage("wind", "38°F", "18 mph NW", "gusts 27")
+        for w, h in ((64, 32), (128, 64), (192, 96)):
+            sym, gap, lines = weather_layout(page, w, h, num, txt)
+            self.assertLessEqual(sym, w * 0.4)
+            self.assertLessEqual(sym, h)
+            for text, style, size in lines:
+                l, _t, r, _b = style.font(size).getbbox(text, anchor="ls")
+                self.assertLessEqual(r - l, w - sym - gap, (w, h, text))
+
+    def test_wind_and_gust_lines_share_a_size(self):
+        from countdown.still import weather_layout
+        num, txt = self.styles(12)
+        _s, _g, lines = weather_layout(WeatherPage("wind", "38°F", "18 mph NW", "gusts 27"), 128, 64, num, txt)
+        self.assertEqual(lines[1][2], lines[2][2])
+
+    def test_short_panel_drops_the_gust_line(self):
+        from countdown.still import weather_layout
+        num, txt = self.styles()
+        _s, _g, lines = weather_layout(WeatherPage("wind", "38°F", "18 mph NW", "gusts 27"), 64, 16, num, txt)
+        self.assertNotIn("gusts 27", [t for t, _st, _z in lines])
+        self.assertTrue(all(z >= 8 for _t, _st, z in lines))
+
+    def test_page_variants(self):
+        from countdown.still import page_variants
+        self.assertEqual(page_variants(WeatherPage("wind", "38°F", "18 mph NW", "gusts 27")),
+                         [("38°F", "18 mph NW", "gusts 27"), ("38°F", "18 mph NW"), ("38°F", "18 mph"), ("38°F",)])
+        self.assertEqual(page_variants(WeatherPage("sun", "", "Calm")), [("Calm",)])
+
+    def test_drawing(self):
+        from countdown.still import draw_weather_page
+        num, txt = self.styles()
+        img = draw_weather_page(WeatherPage("sun", "72°F", "3 mph"), 64, 32, num, txt)
+        self.assertEqual(img.size, (64, 32))
+        px = img.load()
+        sun_cols = [x for x in range(64) for y in range(32) if px[x, y][0] > 200 and 150 < px[x, y][1] < 230]
+        green_cols = [x for x in range(64) for y in range(32) if px[x, y] == (0, 255, 0)]
+        self.assertTrue(sun_cols and green_cols)
+        self.assertLess(max(sun_cols), min(green_cols))      # symbol left of the text
+
+    def test_symbols(self):
+        from countdown.symbols import SYMBOLS, draw_symbol
+        for name in SYMBOLS:
+            for size in (8, 26, 64):
+                img = draw_symbol(name, size)
+                self.assertEqual((img.mode, img.size), ("RGBA", (size, size)))
+                self.assertGreater(img.getchannel("A").getextrema()[1], 0)
 
 
 @unittest.skipUnless(HAVE_PIL, "Pillow not installed")
@@ -197,8 +273,10 @@ class PreviewSequence(unittest.TestCase):
 
     def test_weather_on_without_data_uses_a_sample(self):
         r, slots = self.slots({"weather": {"enabled": True}})
-        self.assertEqual(slots, ["countdown", "temperature", "wind"])
-        self.assertEqual([x["message"] for x in r["strips"]][1:], ["Temp 72\u00b0F", "Wind 8 mph NW gusts 15"])
+        self.assertEqual(slots, ["countdown", "weather"])
+        self.assertTrue(r["strips"][1]["message"].endswith("72\u00b0F 8 mph NW gusts 15"))
+        self.assertEqual((r["strips"][1]["still"], r["strips"][1]["seconds"]), (True, 5))
+        self.assertEqual((r["strips"][1]["strip_width"], r["strips"][1]["strip_height"]), (192, 96))
         self.assertIn("sample", r["note"])
 
     def test_live_reading_and_switched_off_messages(self):
@@ -207,16 +285,44 @@ class PreviewSequence(unittest.TestCase):
         lst.handle(rapid(101, 2, 20), now=time.monotonic())
         self.d._listener = lst
         r, slots = self.slots({"weather": {"enabled": True, "temperature": {"enabled": False}}})
-        self.assertEqual(slots, ["countdown", "wind"])
-        self.assertEqual(r["strips"][1]["message"], "Wind 2 mph NNE")
+        self.assertEqual(slots, ["countdown", "weather"])
+        self.assertTrue(r["strips"][1]["message"].endswith("] 2 mph NNE"), r["strips"][1]["message"])
         self.assertNotIn("note", r)
 
     def test_weather_only(self):
         _, slots = self.slots({"countdown": {"enabled": False}, "weather": {"enabled": True}})
-        self.assertEqual(slots, ["temperature", "wind"])
+        self.assertEqual(slots, ["weather"])
+
+    def test_settings_from_before_the_page_load_with_its_defaults(self):
+        os.makedirs(os.path.dirname(self.mc.CONFIG_PATH), exist_ok=True)
+        with open(self.mc.CONFIG_PATH, "w") as f:
+            json.dump({"global": {"schema_version": 3},
+                       "weather": {"enabled": True, "source": "tempest",
+                                   "temperature": {"enabled": True, "label": "Temp"},
+                                   "wind": {"label": "Wind", "gusts": False}}}, f)
+        cfg = self.mc.load_config()
+        w = cfg["weather"]
+        self.assertNotIn("label", w["temperature"])
+        self.assertNotIn("label", w["wind"])
+        self.assertFalse(w["wind"]["gusts"])                      # kept
+        self.assertEqual((w["screen_seconds"], w["symbol"]), (5, {"wind_mph": 15, "gust_mph": 25}))
+        self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
+        with open(self.mc.CONFIG_PATH) as f:
+            self.assertNotIn("label\": \"Temp", f.read())
+
+    def test_new_settings_are_checked(self):
+        self.assertTrue(self.d.update_config({"weather": {"screen_seconds": 0}}))
+        self.assertTrue(self.d.update_config({"weather": {"symbol": {"wind_mph": -1}}}))
+        self.assertTrue(self.d.update_config({"weather": {"symbol": {"gust_mph": "lots"}}}))
+        self.assertEqual(self.d.update_config({"weather": {"screen_seconds": 8, "symbol": {"wind_mph": 10}}}), [])
+
+    def test_weather_mode_with_both_off_says_so(self):
+        r = self.d.preview({"config": {"weather": {"temperature": {"enabled": False}, "wind": {"enabled": False}}},
+                            "width": 64, "height": 32, "as": "weather"})
+        self.assertIn("both off", r["error"])
 
     def test_other_modes_show_one_message(self):
-        for mode in ("days", "under_day", "temperature", "wind"):
+        for mode in ("days", "under_day", "weather"):
             r, slots = self.slots({"weather": {"enabled": True}}, **{"as": mode})
             self.assertEqual(len(slots), 1, mode)
 
@@ -276,7 +382,7 @@ class TakingTurns(unittest.TestCase):
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "motion": {"direction": direction, "pixels_per_second": 400, **motion},
                           "text_style": {"font": "", "size": 6}, "number_style": {"font": "", "size": 6}},
-            "weather": {"enabled": weather, "source": "tempest", "port": self.port},
+            "weather": {"enabled": weather, "source": "tempest", "port": self.port, "screen_seconds": 1},
         })
         self.assertEqual(errors, [])
 
@@ -289,18 +395,40 @@ class TakingTurns(unittest.TestCase):
             time.sleep(0.01)
         return seen
 
-    def test_scrolling_takes_turns_in_order(self):
+    def test_countdown_and_weather_page_take_turns(self):
         self.configure()
         self.thread.start()
         self.assertTrue(self.fpp.wait_for(lambda: self.d.get_status()["weather"].get("temp_f") is not None, 5))
         seen = self.slots_seen(4)
         self.assertGreaterEqual(len(seen), 4, seen)
-        cycle = ["countdown", "temperature", "wind"]
+        cycle = ["countdown", "weather"]
         start = cycle.index(seen[0])
-        self.assertEqual(seen, [cycle[(start + i) % 3] for i in range(len(seen))])
+        self.assertEqual(seen, [cycle[(start + i) % 2] for i in range(len(seen))])
         st = self.d.get_status()
-        self.assertEqual(st["weather"]["messages"], {"temperature": "Temp 72°F", "wind": "Wind 8 mph NW gusts 20"})
+        # the fed packets have no daylight (solar 0): the moon, from the Tempest
+        self.assertEqual(st["weather"]["page"]["lines"], ["72°F", "8 mph NW", "gusts 20"])
+        self.assertEqual((st["weather"]["page"]["symbol"], st["weather"]["day_from"]), ("moon", "tempest"))
         self.assertEqual(st["weather"]["hub"], HUB)
+
+    def test_weather_page_holds_still_for_its_seconds(self):
+        self.configure()
+        self.thread.start()
+        self.assertTrue(self.fpp.wait_for(lambda: self.d.get_status()["weather"].get("temp_f") is not None, 5))
+        visits, end = [], time.monotonic() + 5         # [slot, started, {frames seen}]
+        while time.monotonic() < end:
+            slot = self.d.get_status()["showing"]["slot"]
+            if not visits or visits[-1][0] != slot:
+                visits.append([slot, time.monotonic(), set()])
+            frame = self.fpp.last_frame.get("P5 Panel")
+            if frame is not None:
+                visits[-1][2].add(bytes(frame))
+            time.sleep(0.01)
+        held = [b[1] - a[1] for a, b in zip(visits, visits[1:]) if a[0] == "weather"]
+        self.assertTrue(held, [v[:2] for v in visits])
+        self.assertTrue(all(x > 0.8 for x in held), held)
+        # each visit is one picture (plus a frame caught as it switched in or out), not a scroll
+        self.assertTrue(all(len(v[2]) <= 3 for v in visits if v[0] == "weather"),
+                        [len(v[2]) for v in visits])
 
     def test_static_holds_each_message(self):
         self.configure(direction="static", static_hold=1)
@@ -314,7 +442,7 @@ class TakingTurns(unittest.TestCase):
         self.configure(countdown=False)
         self.thread.start()
         seen = self.slots_seen(3)
-        self.assertTrue(seen and set(seen) <= {"temperature", "wind"}, seen)
+        self.assertEqual(seen, ["weather"])
         self.assertEqual(self.fpp.state["P5 Panel"], 1)
 
     def test_no_weather_yet_shows_only_the_countdown(self):

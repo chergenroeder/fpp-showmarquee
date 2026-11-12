@@ -46,11 +46,13 @@
         "port": 50222,
         "device": "",
         "stale_minutes": 5,
-        "temperature": { "enabled": true, "label": "Temp" },
+        "screen_seconds": 5,
+        "temperature": { "enabled": true },
         "wind": {
-            "enabled": true, "label": "Wind", "direction": true,
+            "enabled": true, "direction": true,
             "gusts": true, "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"
-        }
+        },
+        "symbol": { "wind_mph": 15, "gust_mph": 25 }
     },
     "social": {
         "enabled": false,

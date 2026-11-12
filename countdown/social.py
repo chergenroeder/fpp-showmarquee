@@ -299,20 +299,3 @@ def draw_screen(screen: Screen, panel_w: int, panel_h: int, style):
     draw.fontmode = "L" if style.antialias else "1"
     draw.text(((panel_w - text_w) // 2 - left, y - top), text, fill=style.color, font=font, anchor="ls")
     return img, fits
-
-
-class ScreenCache:
-    """Draws each screen once per panel size and style."""
-
-    def __init__(self):
-        self._key = None
-        self._images: Dict[Screen, "object"] = {}
-
-    def get(self, screen: Screen, panel_w: int, panel_h: int, style):
-        key = (panel_w, panel_h, style)
-        if key != self._key:
-            self._key, self._images = key, {}
-        img = self._images.get(screen)
-        if img is None:
-            img = self._images[screen] = draw_screen(screen, panel_w, panel_h, style)[0]
-        return img

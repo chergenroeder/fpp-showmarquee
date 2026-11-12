@@ -133,7 +133,7 @@
             <label class="form-check-label" for="mc-w-on">Show weather</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
-          <div class="small text-muted mb-2">Takes turns with the countdown: one pass each (or the hold time when Static). °F and mph.</div>
+          <div class="small text-muted mb-2">One page, held still (never scrolled): a sun, moon or wind symbol beside the temperature and wind. Takes turns with the countdown and social media. °F and mph.</div>
           <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
             <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
@@ -159,25 +159,29 @@
               <div class="small text-muted mt-1">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).</div>
             </div>
           </fieldset>
+          <div class="row g-2 mb-2">
+            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-w-secs">Seconds on screen</label>
+              <input type="number" class="form-control form-control-sm" id="mc-w-secs" min="1" max="600" step="1" data-path="weather.screen_seconds" data-type="number"></div>
+          </div>
           <div class="row g-2 align-items-end">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
               <label class="form-check-label" for="mc-w-t-on">Temperature <span class="mc-example" id="mc-ex-temp"></span></label></div></div>
-            <div class="col-5 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-w-t-label">Label</label>
-              <input type="text" class="form-control form-control-sm" id="mc-w-t-label" maxlength="20" data-path="weather.temperature.label"></div>
           </div>
           <div class="row g-2 align-items-end mt-1">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-w-on" data-path="weather.wind.enabled">
               <label class="form-check-label" for="mc-w-w-on">Wind <span class="mc-example" id="mc-ex-wind"></span></label></div></div>
-            <div class="col-5 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-w-w-label">Label</label>
-              <input type="text" class="form-control form-control-sm" id="mc-w-w-label" maxlength="20" data-path="weather.wind.label"></div>
             <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-dir" data-path="weather.wind.direction">
               <label class="form-check-label" for="mc-w-dir">Direction</label></div></div>
             <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-gust" data-path="weather.wind.gusts">
               <label class="form-check-label" for="mc-w-gust">Gusts</label></div></div>
           </div>
           <details class="mt-3">
-            <summary class="small">More wind and source options</summary>
+            <summary class="small">More wind, symbol and source options</summary>
             <div class="row g-2 mt-1">
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Wind symbol when wind is at least (mph)</label>
+                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.wind_mph" data-type="number"></div>
+              <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">… or gusts are at least (mph)</label>
+                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.gust_mph" data-type="number"></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Calm wind (under 1 mph)</label>
                 <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.calm_text"></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Gust label</label>
@@ -193,6 +197,7 @@
               <div class="col-12 small text-muted mc-w-om-only">Open-Meteo readings are hidden once 45 minutes old (three missed updates).</div>
             </div>
           </details>
+          <div class="small text-muted mt-2">The symbol is the <strong>wind</strong> when it's windy (above), otherwise the <strong>sun</strong> by day and the <strong>moon</strong> at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor; until either says, 7:00–19:00 on this player's clock is day. The temperature uses the Number style, wind and gusts the Text style.</div>
           <div class="small mt-2" id="mc-w-live"></div>
         </div>
       </div>
@@ -238,7 +243,7 @@
               <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
             <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
               <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
-            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show each message (s)</label>
+            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show the countdown (s)</label>
               <input type="number" class="form-control form-control-sm" id="mc-hold" min="1" max="600" step="1" data-path="countdown.motion.static_hold" data-type="number"></div>
           </div>
           <div class="small text-muted mt-2" id="mc-dir-note"></div>
@@ -288,10 +293,8 @@
             <label class="btn btn-outline-secondary" for="mc-as-days">8 days out</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-under" value="under_day">
             <label class="btn btn-outline-secondary" for="mc-as-under">Under a day</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-temp" value="temperature">
-            <label class="btn btn-outline-secondary" for="mc-as-temp">Temp</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-wind" value="wind">
-            <label class="btn btn-outline-secondary" for="mc-as-wind">Wind</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-weather" value="weather">
+            <label class="btn btn-outline-secondary" for="mc-as-weather">Weather</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-social" value="social">
             <label class="btn btn-outline-secondary" for="mc-as-social">Social</label>
           </div>
@@ -512,7 +515,7 @@
     const dir = cfg.countdown.motion.direction;
     $$('.mc-moving').forEach(el => el.classList.toggle('mc-hidden', dir === 'static'));
     $$('.mc-static').forEach(el => el.classList.toggle('mc-hidden', dir !== 'static'));
-    const W = cfg.weather || {}, WT = W.temperature || {}, WW = W.wind || {};
+    const W = cfg.weather || {}, WW = W.wind || {};
     $('#mc-weather-body').style.opacity = W.enabled ? '' : '.55';
     const src = W.source || '', OM = W.open_meteo || {};
     const needSrc = !!W.enabled && !src;
@@ -523,11 +526,11 @@
     $$('.mc-w-tempest').forEach(el => el.classList.toggle('mc-hidden', src !== 'tempest'));
     $$('.mc-w-om-only').forEach(el => el.classList.toggle('mc-hidden', src !== 'open-meteo'));
     showLocation();
-    $('#mc-ex-temp').textContent = join(WT.label, '72°F');
-    $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
+    $('#mc-ex-temp').textContent = '72°F';
+    $('#mc-ex-wind').textContent = join('8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
     $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
-      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide). Social media screens never scroll.'
-      : 'Social media screens never scroll: they are held still for their seconds.';
+      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide). Motion is for the countdown: weather and social media pages never scroll.'
+      : 'Motion is for the countdown: weather and social media pages never scroll, they are held still for their seconds.';
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
@@ -594,7 +597,7 @@
     const items = r.strips || [];
     Promise.all(items.map(x => new Promise(res => {
       const img = new Image();
-      img.onload = () => res({ slot: x.slot, message: x.message, still: !!x.still, img });
+      img.onload = () => res({ slot: x.slot, message: x.message, still: !!x.still, seconds: x.seconds, img });
       img.onerror = () => res(null);
       img.src = 'data:image/png;base64,' + x.strip;
     }))).then(loaded => {
@@ -656,7 +659,7 @@
       // after each pass, or after the hold time when static
       if (strips.length > 1) {
         const static_ = preview.direction === 'static';
-        const done = cur.still ? t - slotStarted >= (preview.screen_seconds || 5)
+        const done = cur.still ? t - slotStarted >= (cur.seconds || 5)
                    : static_ ? t - slotStarted >= (preview.static_hold || 5)
                    : mover.passes !== slotPasses;
         if (done) {
@@ -801,6 +804,8 @@
         const age = w.last_packet_age_s;
         wt = 'Tempest: ' + parts.join(', ') + (age != null ? ` · heard ${age} s ago` : '') + (w.hub ? ` · ${w.hub}${w.device ? ' / ' + w.device : ''}` : '');
       }
+      if (w.page) wt += ` · showing the ${w.page.symbol}`
+        + (w.page.symbol !== 'wind' ? ` (${w.is_day ? 'day' : 'night'}: ${w.day_from === 'clock' ? "player's clock" : w.day_from === 'tempest' ? "Tempest's light sensor" : 'Open-Meteo'})` : ' (windy)');
       if (w.error) wt += ' · last update failed: ' + w.error;
     }
     $('#mc-s-weather').textContent = wt;

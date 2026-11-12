@@ -1,11 +1,10 @@
 # fpp-matrixcountdown — Matrix Countdown Clock
 
-An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center. It can also show the **temperature and wind**, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station, and your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo. The three take turns on the matrix.
+An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour, and the message scrolls in any direction or holds still in the center. It can also show the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station, and your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo. The three take turns on the matrix.
 
 ```
 8 Days to Christmas          Christmas in 8 Days
 08:14:32 to Christmas        Christmas in 9 Hours
-Temp 37°F                    Wind 8 mph NW gusts 15
 ```
 
 ## Features
@@ -18,7 +17,7 @@ Temp 37°F                    Wind 8 mph NW gusts 15
 - **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
 - **Five directions:** Right to Left, Left to Right, Bottom to Top, Top to Bottom, and Static (centered). Speed and a pause between passes. For vertical and static, a message wider than the panel goes on two lines.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
-- **Weather** (optional): temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source. The countdown, temperature and wind take turns, one pass each.
+- **Weather** (optional): one still page with a **sun**, **moon** or **wind** symbol beside the temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source.
 - **Social media** (optional): each site's logo above your `@handle`, held still (never scrolled). Sites with the same handle share one screen; different handles get a screen each, shown one after another for the number of seconds you choose.
 - **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, or change the target.
 - **REST API** for Home Assistant and scripts ([API.md](API.md)).
@@ -59,10 +58,10 @@ rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
 | Message | Number first / last, Countdown timer / Hours only, and (folded) the joining and unit words. Each choice shows an example in your own words. |
 | Motion | Direction, speed (pixels per second) and pause between passes; for Static, how long each message shows. |
 | Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
-| Weather | **Show weather**; where the weather comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off and their labels; wind direction and gusts. More options: calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and where it came from. |
+| Weather | **Show weather**; where the weather comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; **Seconds on screen**; Temperature and Wind on/off; wind direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading, where it came from and which symbol is up. |
 | Social Media | **Show social media**, **Seconds per screen**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
 | Matrix | Overlay model, **Output enabled**; frame rate under Advanced. |
-| Preview | The message at the model's size, moving as it will on the matrix. With Show weather on, **Now** plays the countdown, temperature and wind in turn, as the matrix will. With Show social media on it also holds each social screen still for its seconds. Preview as Now, 8 days out, Under a day, Temp or Wind (live weather, or a sample if none has arrived), or Social (every social screen, even before Show social media is on). |
+| Preview | The matrix at the model's size, as it will look. **Now** plays the countdown, the weather page and the social screens in turn, holding each page still for its seconds. Preview as Now, 8 days out, Under a day, Weather (live weather, or a sample if none has arrived), or Social (every social screen, even before Show social media is on). |
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 
@@ -71,6 +70,22 @@ Changes take effect when you click **Save**. The button shows `Save *` while the
 ## Weather
 
 Turn on **Show weather**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
+
+```
+ calm day                      windy                         calm night
+ +----------------------+      +----------------------+      +----------------------+
+ |  \ | /    72°F       |      |  ~~~~     38°F       |      |   (      41°F        |
+ | -- O --   3 mph SW   |      | ~~~~~~   18 mph NW   |      |    (     Calm        |
+ |  / | \               |      |  ~~~~   gusts 27     |      |                      |
+ +----------------------+      +----------------------+      +----------------------+
+```
+
+- **One page, held still.** The weather never scrolls, whatever the Motion direction. It shows for **Seconds on screen** (default 5), taking turns with the countdown and social media: countdown → weather → social screens → countdown again.
+- **The symbol:** the **wind** when the wind is at least 15 mph or the gusts at least 25 mph (both under "More wind, symbol and source options"); otherwise the **sun** by day and the **moon** at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor (day above 5 W/m² of sunlight). Until either says, 7:00–19:00 on the player's clock counts as day.
+- **The lines:** the temperature (`72°F`, whole degrees) in the **Number style**; the wind (`8 mph NW`, or `Calm` under 1 mph) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol. On a small panel the page drops the gust line, then the wind direction, rather than use text too small to read.
+- **Temperature or wind off:** the page shows only the other one. With both off there is no weather page.
+- **Old readings** are left off the page; with nothing fresh, the page is skipped and the countdown just shows more often.
+- **Weather only:** turn **Countdown on** off and leave **Show weather** on.
 
 ### Open-Meteo (internet)
 
@@ -89,11 +104,8 @@ For Tempest owners whose Tempest hub is on the same network as the FPP player (t
 python3 /home/fpp/media/plugins/fpp-matrixcountdown/scripts/tempest_listen.py
 ```
 
-- **Temperature:** `Temp 72°F`, in whole degrees, updated about once a minute.
-- **Wind:** `Wind 8 mph NW`, updated every 3 seconds. `gusts 15` is added when the gust is at least 5 mph above the wind, and under 1 mph shows `Wind Calm`. When Top/Bottom or Static needs two lines, the wind goes "Wind 8 mph NW" over "gusts 15".
-- **Styles:** readings use the Number style and words the Text style.
-- **Old readings:** a Tempest reading older than 5 minutes is skipped, so the countdown just shows more often.
-- **Weather only:** turn **Countdown on** off and leave **Show weather** on.
+- **Updates:** temperature and sunlight about once a minute, wind every 3 seconds. A page that's up shows new readings as they arrive.
+- **Old readings:** a Tempest reading older than 5 minutes is skipped.
 - **Several stations:** set **Only this sensor** to your Tempest's serial number (ST-...), shown on the live line.
 
 ## Social media
@@ -111,7 +123,7 @@ Turn on **Show social media**, then switch on each site you use and type its han
 - **Logos on top, handle below.** No other words. The logos are as large as the panel allows once the handle fits underneath.
 - **Same handle, one screen.** Sites whose handles match (ignoring upper/lower case and the `@`) share a screen, logos side by side. Different handles get a screen each, in the order Facebook, Instagram, TikTok, YouTube.
 - **Held still.** Social screens never scroll, whatever the Motion direction. Each shows for **Seconds per screen** (default 5), then the next message comes on. After the last screen the countdown starts a fresh pass from the edge.
-- **Taking turns:** countdown → temperature → wind → each social screen → countdown again. Turn **Countdown on** off for social media only.
+- **Taking turns:** countdown → weather page → each social screen → countdown again. Turn **Countdown on** off for social media only.
 - **Style:** the handle uses the **Text style**'s font and colour. It starts at that size and shrinks if it's too wide; if it still doesn't fit at the smallest size the preview warns you and its ends are cut off, so pick a narrower font.
 - **Handles:** up to 30 letters, digits, dots, underscores and dashes. A site that's on with no handle is skipped, and the page says so.
 - Nothing is sent anywhere: the plugin only draws what you type. Facebook, Instagram, TikTok and YouTube logos are trademarks of their owners, shown only to point people to your own profiles.
@@ -168,7 +180,9 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0
 | `countdown/render.py` | Pillow drawing and motion. |
 | `countdown/output.py` | Writing frames into the overlay model's buffer (`/dev/shm`). |
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
-| `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener and the temperature/wind messages. |
+| `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener, day or night, and what goes on the weather page. |
+| `countdown/symbols.py` | The sun, moon and wind symbols (drawn in code). |
+| `countdown/still.py` | Still pages: the weather page layout, how long each page holds, and the cache shared with the social screens. |
 | `countdown/social.py` | Social media screens: handles, grouping by handle, the logos (drawn in code) and the screen layout. |
 | `matrixcountdown.html` | The settings page. |
 | `commands/` | FPP commands. |
