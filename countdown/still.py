@@ -1,12 +1,13 @@
-"""Still pages: drawn once, held on the matrix for their seconds, never scrolled.
+"""Still pages: drawn once, held on the matrix for the seconds per page, never scrolled.
 
-Two kinds take turns with the scrolling countdown:
+Two kinds take turns with the countdown (also held still, see render.py):
   social.Screen        logos above an @handle (drawn by social.draw_screen)
   weather.WeatherPage  a sun/moon/wind symbol beside the temperature, wind and
                        gust lines (drawn here)
 
-is_still() tells the drawing loop which items are still pages, hold_seconds()
-how long each shows, and StillCache draws each page once per panel and style.
+is_still() tells the drawing loop which items are drawn here (the countdown is
+drawn by render.Renderer, centered), page_seconds() how long every page shows,
+and StillCache draws each page once per panel and style.
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -23,10 +24,12 @@ def is_still(item) -> bool:
     return isinstance(item, (Screen, WeatherPage))
 
 
-def hold_seconds(item, cfg: dict) -> float:
-    """How long a still page stays up, from its section's settings."""
-    section = "social" if isinstance(item, Screen) else "weather"
-    return float((cfg.get(section) or {}).get("screen_seconds", 5) or 5)
+def page_seconds(cfg: dict) -> float:
+    """How long each page (countdown, weather, each social screen) stays up."""
+    try:
+        return min(600.0, max(1.0, float((cfg.get("global") or {}).get("screen_seconds", 5) or 5)))
+    except (TypeError, ValueError):
+        return 5.0
 
 
 # ── Weather page layout ───────────────────────────────────────────────────────

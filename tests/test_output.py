@@ -151,14 +151,13 @@ class DaemonLoop(OutputBase):
         self.thread.join(3)
         super().tearDown()
 
-    def configure(self, when, direction="static", model="P5 Panel"):
+    def configure(self, when, model="P5 Panel"):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host},
             "countdown": {
                 "model": model,
                 "target": {"type": "custom", "custom_date": when.strftime("%Y-%m-%d"),
                            "custom_time": when.strftime("%H:%M")},
-                "motion": {"direction": direction},
                 "text_style": {"font": "", "size": 6, "color": "#ff0000"},
                 "number_style": {"font": "", "size": 6, "color": "#00ff00"},
             }})
@@ -207,7 +206,7 @@ class DaemonLoop(OutputBase):
         self.assertEqual(self.fpp.state["P5 Panel"], 0)
 
     def test_reopens_after_fppd_restart(self):
-        self.configure(datetime.now() + timedelta(days=3), direction="R2L")
+        self.configure(datetime.now() + timedelta(days=3))
         self.thread.start()
         self.assertTrue(self.fpp.wait_for(lambda: self.fpp.frames["P5 Panel"] >= 3))
         self.fpp.create_buffer("P5 Panel", force=True)   # fppd restarted: new buffer...

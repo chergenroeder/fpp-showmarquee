@@ -133,7 +133,7 @@
             <label class="form-check-label" for="mc-w-on">Show weather</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
-          <div class="small text-muted mb-2">One page, held still (never scrolled): a sun, moon or wind symbol beside the temperature and wind. Takes turns with the countdown and social media. °F and mph.</div>
+          <div class="small text-muted mb-2">One page: a sun, moon or wind symbol beside the temperature and wind. °F and mph.</div>
           <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
             <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
@@ -159,10 +159,6 @@
               <div class="small text-muted mt-1">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).</div>
             </div>
           </fieldset>
-          <div class="row g-2 mb-2">
-            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-w-secs">Seconds on screen</label>
-              <input type="number" class="form-control form-control-sm" id="mc-w-secs" min="1" max="600" step="1" data-path="weather.screen_seconds" data-type="number"></div>
-          </div>
           <div class="row g-2 align-items-end">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
               <label class="form-check-label" for="mc-w-t-on">Temperature <span class="mc-example" id="mc-ex-temp"></span></label></div></div>
@@ -212,11 +208,7 @@
             <label class="form-check-label" for="mc-so-on">Show social media</label></div>
         </div>
         <div class="card-body" id="mc-social-body">
-          <div class="small text-muted mb-2">Logos on top, <code>@handle</code> below, held still (never scrolled). Sites with the same handle share one screen; different handles get a screen each, shown one after another. Takes turns with the countdown and weather.</div>
-          <div class="row g-2 mb-2">
-            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-so-secs">Seconds per screen</label>
-              <input type="number" class="form-control form-control-sm" id="mc-so-secs" min="1" max="600" step="1" data-path="social.screen_seconds" data-type="number"></div>
-          </div>
+          <div class="small text-muted mb-2">Logos on top, <code>@handle</code> below, held still (never scrolled). Sites with the same handle share one screen; different handles get a screen each, shown one after another. Each screen is a page of its own, shown for the seconds per page.</div>
           <div id="mc-so-sites"></div>
           <div class="small mt-2" id="mc-so-plan"></div>
           <div class="small mc-warn" id="mc-so-warn"></div>
@@ -226,27 +218,15 @@
 
       <div class="mc-section">Shared by all three</div>
 
-      <!-- Motion -->
+      <!-- Pages -->
       <div class="card mb-3">
-        <div class="card-header"><strong>Motion</strong></div>
+        <div class="card-header"><strong>Pages</strong></div>
         <div class="card-body">
           <div class="row g-2">
-            <div class="col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-dir">Direction</label>
-              <select class="form-select form-select-sm" id="mc-dir" data-path="countdown.motion.direction">
-                <option value="R2L">Right to Left</option>
-                <option value="L2R">Left to Right</option>
-                <option value="B2T">Bottom to Top</option>
-                <option value="T2B">Top to Bottom</option>
-                <option value="static">Static (centered)</option>
-              </select></div>
-            <div class="col-6 col-sm-3 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-pps">Speed (px/s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-pps" min="1" max="500" step="1" data-path="countdown.motion.pixels_per_second" data-type="number"></div>
-            <div class="col-6 col-sm-4 mc-moving"><label class="form-label form-label-sm mb-0" for="mc-delay">Pause between passes (s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-delay" min="0" max="600" step="0.5" data-path="countdown.motion.repeat_delay" data-type="number"></div>
-            <div class="col-6 col-sm-4 mc-static"><label class="form-label form-label-sm mb-0" for="mc-hold">Show the countdown (s)</label>
-              <input type="number" class="form-control form-control-sm" id="mc-hold" min="1" max="600" step="1" data-path="countdown.motion.static_hold" data-type="number"></div>
+            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
+              <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
           </div>
-          <div class="small text-muted mt-2" id="mc-dir-note"></div>
+          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page and each social media screen show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
         </div>
       </div>
 
@@ -364,7 +344,7 @@
   let preview = null;      // last preview response
   let strips = [];         // [{slot, message, img}] that take turns, as on the matrix
   let slotIdx = 0;         // which one is up
-  let slotPasses = 0, slotStarted = 0;
+  let slotStarted = 0;
   let previewSeq = 0;
 
   // ── helpers ──
@@ -433,7 +413,7 @@
     const desc = sc => sc.sites.join(' + ') + ' @' + sc.handle;
     $('#mc-so-plan').textContent = !screens.length ? 'Turn on a site and enter its handle.'
       : (screens.length === 1 ? '1 screen: ' : screens.length + ' screens: ') + screens.map(desc).join(', then ')
-        + ` · ${Number(S.screen_seconds) || 5} s each`;
+        + ` · ${Number((cfg.global || {}).screen_seconds) || 5} s each`;
     $('#mc-so-warn').textContent = problems.join(' ');
   }
 
@@ -512,9 +492,6 @@
     const ordered = (num) => first ? join(num, L.connector_first, name) : join(name, L.connector_last, num);
     $('#mc-ex-hms').textContent = ordered('08:14:32');
     $('#mc-ex-hours').textContent = ordered(join('9', U.hours));
-    const dir = cfg.countdown.motion.direction;
-    $$('.mc-moving').forEach(el => el.classList.toggle('mc-hidden', dir === 'static'));
-    $$('.mc-static').forEach(el => el.classList.toggle('mc-hidden', dir !== 'static'));
     const W = cfg.weather || {}, WW = W.wind || {};
     $('#mc-weather-body').style.opacity = W.enabled ? '' : '.55';
     const src = W.source || '', OM = W.open_meteo || {};
@@ -528,9 +505,6 @@
     showLocation();
     $('#mc-ex-temp').textContent = '72°F';
     $('#mc-ex-wind').textContent = join('8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
-    $('#mc-dir-note').textContent = (dir === 'T2B' || dir === 'B2T' || dir === 'static')
-      ? 'If the message is wider than the matrix, the number and text go on two lines (and shrink if still too wide). Motion is for the countdown: weather and social media pages never scroll.'
-      : 'Motion is for the countdown: weather and social media pages never scroll, they are held still for their seconds.';
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
@@ -578,10 +552,7 @@
       warnEl.textContent = '';
       return;
     }
-    const restart = !preview || !preview.strip || preview.direction !== r.direction ||
-                    preview.pixels_per_second !== r.pixels_per_second || preview.width !== r.width;
     preview = r;
-    if (restart) mover.reset();
     const list = (r.strips || []).map(x => x.message);
     $('#mc-preview-text').textContent = list.length
       ? list.map(m => '“' + m + '”').join(list.length > 1 ? '  →  ' : '') + (list.length > 1 ? '  (taking turns)' : '')
@@ -597,7 +568,7 @@
     const items = r.strips || [];
     Promise.all(items.map(x => new Promise(res => {
       const img = new Image();
-      img.onload = () => res({ slot: x.slot, message: x.message, still: !!x.still, seconds: x.seconds, img });
+      img.onload = () => res({ slot: x.slot, message: x.message, img });
       img.onerror = () => res(null);
       img.src = 'data:image/png;base64,' + x.strip;
     }))).then(loaded => {
@@ -606,37 +577,9 @@
       strips = loaded.filter(Boolean);
       const keep = strips.findIndex(x => x.slot === current);
       if (keep >= 0) slotIdx = keep;
-      else { slotIdx = 0; slotPasses = mover.passes; slotStarted = performance.now() / 1000; }
+      else { slotIdx = 0; slotStarted = performance.now() / 1000; }
     });
   }
-
-  // Same motion as countdown/render.py Mover
-  const mover = {
-    start: null, doneAt: null, passes: 0,
-    reset() { this.start = null; this.doneAt = null; },
-    position(t, W, H, sw, sh, dir, pps, delay) {
-      const cx = Math.floor((W - sw) / 2), cy = Math.floor((H - sh) / 2);
-      if (dir === 'static') return [cx, cy];
-      if (this.start === null) this.start = t;
-      if (this.doneAt !== null) {
-        if (t - this.doneAt < delay) return null;
-        this.start = t; this.doneAt = null;
-      }
-      let travel = (t - this.start) * pps;
-      const horiz = dir === 'L2R' || dir === 'R2L';
-      const span = horiz ? W + sw : H + sh;
-      if (travel >= span) {
-        this.passes++;
-        if (delay > 0) { this.doneAt = t; return null; }
-        this.start = t - (travel - span) / pps; travel -= span;
-      }
-      const s = Math.floor(travel);
-      if (dir === 'R2L') return [W - s, cy];
-      if (dir === 'L2R') return [s - sw, cy];
-      if (dir === 'T2B') return [cx, s - sh];
-      return [cx, H - s];
-    }
-  };
 
   const panel = document.createElement('canvas');
   function draw() {
@@ -650,28 +593,12 @@
     if (strips.length) {
       const t = performance.now() / 1000;
       if (slotIdx >= strips.length) slotIdx = 0;
-      // Social screens are held still at 0,0; everything else moves like the matrix
-      const at = item => item.still ? [0, 0] : mover.position(t, W, H, item.img.width, item.img.height,
-                                       preview.direction, preview.pixels_per_second, preview.repeat_delay);
-      let cur = strips[slotIdx];
-      let p = at(cur);
-      // Take turns like the matrix: a social screen after its seconds; otherwise
-      // after each pass, or after the hold time when static
-      if (strips.length > 1) {
-        const static_ = preview.direction === 'static';
-        const done = cur.still ? t - slotStarted >= (cur.seconds || 5)
-                   : static_ ? t - slotStarted >= (preview.static_hold || 5)
-                   : mover.passes !== slotPasses;
-        if (done) {
-          const wasStill = cur.still;
-          slotIdx = (slotIdx + 1) % strips.length;
-          cur = strips[slotIdx];
-          if (wasStill && !cur.still) mover.reset();   // a fresh pass from the edge
-          slotPasses = mover.passes; slotStarted = t;
-          p = at(cur);
-        }
+      // Every page is a panel-sized picture, shown on its own for the seconds per page
+      if (strips.length > 1 && t - slotStarted >= (preview.seconds || 5)) {
+        slotIdx = (slotIdx + 1) % strips.length;
+        slotStarted = t;
       }
-      if (p) pctx.drawImage(cur.img, p[0], p[1]);
+      pctx.drawImage(strips[slotIdx].img, 0, 0);
     }
     const avail = canvas.parentElement.clientWidth - 16;
     const scale = Math.max(1, Math.min(6, Math.floor(avail / W)));
@@ -835,7 +762,7 @@
   loadLogos();
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);
-  $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => { mover.reset(); schedulePreview(0); }));
+  $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => schedulePreview(0)));
   $('#mc-upload').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) mcUpload(f); });
   window.addEventListener('beforeunload', e => { if (cfg && JSON.stringify(cfg) !== saved) { e.preventDefault(); e.returnValue = ''; } });
 

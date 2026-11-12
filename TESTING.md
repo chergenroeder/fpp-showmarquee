@@ -22,22 +22,19 @@ curl -s $API/config > /tmp/mc-before.json
 - [ ] Status shows **Online**, Output **drawing at ~20 fps**, and FPP local time is right and **synced to internet time**.
 - [ ] The preview shows no "font isn't on this player" warning (or names the font it uses instead).
 
-## 1. Directions and order (days)
+## 1. Number order (days)
 
-Set Christmas, then each combination. Check both the matrix and the page preview.
+Set Christmas, then each order. Check both the matrix and the page preview.
 
 ```bash
-for dir in R2L L2R T2B B2T static; do for pos in first last; do
-  set "{\"countdown\":{\"model\":\"P5 Panel\",\"target\":{\"type\":\"christmas\"},\"layout\":{\"number_position\":\"$pos\"},\"motion\":{\"direction\":\"$dir\"}}}"
-  echo "$dir / number $pos"; read -p "Enter for next " _
-done; done
+for pos in first last; do
+  set "{\"countdown\":{\"model\":\"P5 Panel\",\"target\":{\"type\":\"christmas\"},\"layout\":{\"number_position\":\"$pos\"}}}"
+  echo "number $pos"; read -p "Enter for next " _
+done
 ```
 
-- [ ] Right to Left / Left to Right enter fully from one edge and leave fully past the other.
-- [ ] Top to Bottom / Bottom to Top: same, vertically. A message wider than the panel goes on two lines.
-- [ ] Static: centered and steady.
+- [ ] Centered and still; nothing scrolls. A message wider than the panel goes on two lines.
 - [ ] Number first reads "N Days to Christmas", number last "Christmas in N Days", each part in its own font and colour.
-- [ ] A pause between passes (set `"repeat_delay": 3`) leaves the panel blank for 3 s between passes.
 
 ## 2. Under a day: HH:MM:SS
 
@@ -45,7 +42,7 @@ A custom target **5 minutes** from now (the time is whole minutes):
 
 ```bash
 T=$(date -d '+5 min' '+%Y-%m-%d %H:%M'); D=${T% *}; H=${T#* }
-set "{\"countdown\":{\"target\":{\"type\":\"custom\",\"custom_date\":\"$D\",\"custom_time\":\"$H\",\"custom_repeat_yearly\":false,\"event_name\":{\"custom\":\"Test\"}},\"layout\":{\"under_one_day\":\"hms\"},\"motion\":{\"direction\":\"static\"}}}"
+set "{\"countdown\":{\"target\":{\"type\":\"custom\",\"custom_date\":\"$D\",\"custom_time\":\"$H\",\"custom_repeat_yearly\":false,\"event_name\":{\"custom\":\"Test\"}},\"layout\":{\"under_one_day\":\"hms\"}}}"
 ```
 
 - [ ] Shows `00:04:xx to Test`, ticking once a second without the text jiggling.
@@ -84,10 +81,10 @@ From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 Choose Open-Meteo (or the Tempest) in the Weather card, then:
 
 ```bash
-set '{"countdown":{"motion":{"direction":"R2L"}},"weather":{"enabled":true,"screen_seconds":5},"social":{"enabled":false}}'
+set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enabled":false}}'
 ```
 
-- [ ] After the countdown's pass, **one weather page** is held still for 5 s: a symbol on the left, the temperature over the wind (and gusts) on the right; then the countdown scrolls in fresh from the edge.
+- [ ] The countdown and **the weather page** take turns, 5 s each, both held still: a symbol on the left, the temperature over the wind (and gusts) on the right.
 - [ ] By day it's the **sun**, after dark the **moon** (the status line says which, and whether Open-Meteo, the Tempest or the clock decided).
 - [ ] Lower the wind symbol limit to see the **wind** symbol on a calm day:
   ```bash
@@ -100,18 +97,17 @@ set '{"countdown":{"motion":{"direction":"R2L"}},"weather":{"enabled":true,"scre
 ## 7. Social media
 
 ```bash
-set '{"countdown":{"motion":{"direction":"R2L"}},"social":{"enabled":true,"screen_seconds":5,"sites":{"facebook":{"enabled":true,"handle":"SmithFamilyLights"},"instagram":{"enabled":true,"handle":"SmithFamilyLights"},"tiktok":{"enabled":true,"handle":"SmithFamilyLights"},"youtube":{"enabled":true,"handle":"SmithFamilyLights"}}}}'
+set '{"global":{"screen_seconds":5},"social":{"enabled":true,"sites":{"facebook":{"enabled":true,"handle":"SmithFamilyLights"},"instagram":{"enabled":true,"handle":"SmithFamilyLights"},"tiktok":{"enabled":true,"handle":"SmithFamilyLights"},"youtube":{"enabled":true,"handle":"SmithFamilyLights"}}}}'
 ```
 
-- [ ] After the countdown's pass, **one screen** shows all four logos side by side with `@SmithFamilyLights` underneath, held still for 5 s; then the countdown scrolls in fresh from the edge.
+- [ ] After the countdown (5 s), **one screen** shows all four logos side by side with `@SmithFamilyLights` underneath for 5 s, then the countdown again.
 - [ ] The logos are recognisable and in colour from across the yard.
 
 ```bash
-set '{"social":{"screen_seconds":3,"sites":{"instagram":{"handle":"smith_lights"},"tiktok":{"handle":"@Smith_Lights"}}}}'
+set '{"global":{"screen_seconds":3},"social":{"sites":{"instagram":{"handle":"smith_lights"},"tiktok":{"handle":"@Smith_Lights"}}}}'
 ```
 
-- [ ] **Two screens**, 3 s each: Facebook + YouTube `@SmithFamilyLights`, then Instagram + TikTok `@smith_lights` (case and `@` ignored when matching).
-- [ ] With `"direction":"static"` the countdown holds for its time, then each screen for 3 s.
+- [ ] The countdown, then **two screens**, 3 s each: Facebook + YouTube `@SmithFamilyLights`, then Instagram + TikTok `@smith_lights` (case and `@` ignored when matching).
 - [ ] Turn **Countdown on** off: only the social screens take turns.
 - [ ] The page's **Social media** status line names the screens; switching a site on with an empty handle shows a warning there and in the card.
 

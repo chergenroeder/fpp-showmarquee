@@ -3,7 +3,8 @@
         "schema_version": 1,
         "enable_output": true,
         "fpp_host": "localhost",
-        "fps": 20
+        "fps": 20,
+        "screen_seconds": 5
     },
     "countdown": {
         "enabled": true,
@@ -30,12 +31,6 @@
             },
             "under_one_day": "hms"
         },
-        "motion": {
-            "direction": "R2L",
-            "pixels_per_second": 15,
-            "repeat_delay": 0,
-            "static_hold": 5
-        },
         "text_style":   { "font": "DejaVuSans-Bold", "size": 10, "color": "#ff0000", "antialias": false },
         "number_style": { "font": "DejaVuSans-Bold", "size": 10, "color": "#00ff00", "antialias": false }
     },
@@ -46,7 +41,6 @@
         "port": 50222,
         "device": "",
         "stale_minutes": 5,
-        "screen_seconds": 5,
         "temperature": { "enabled": true },
         "wind": {
             "enabled": true, "direction": true,
@@ -56,7 +50,6 @@
     },
     "social": {
         "enabled": false,
-        "screen_seconds": 5,
         "sites": {
             "facebook":  { "enabled": false, "handle": "" },
             "instagram": { "enabled": false, "handle": "" },

@@ -275,7 +275,7 @@ class PreviewSequence(unittest.TestCase):
         r, slots = self.slots({"weather": {"enabled": True}})
         self.assertEqual(slots, ["countdown", "weather"])
         self.assertTrue(r["strips"][1]["message"].endswith("72\u00b0F 8 mph NW gusts 15"))
-        self.assertEqual((r["strips"][1]["still"], r["strips"][1]["seconds"]), (True, 5))
+        self.assertEqual(r["seconds"], 5)
         self.assertEqual((r["strips"][1]["strip_width"], r["strips"][1]["strip_height"]), (192, 96))
         self.assertIn("sample", r["note"])
 
@@ -305,16 +305,47 @@ class PreviewSequence(unittest.TestCase):
         self.assertNotIn("label", w["temperature"])
         self.assertNotIn("label", w["wind"])
         self.assertFalse(w["wind"]["gusts"])                      # kept
-        self.assertEqual((w["screen_seconds"], w["symbol"]), (5, {"wind_mph": 15, "gust_mph": 25}))
+        self.assertEqual(w["symbol"], {"wind_mph": 15, "gust_mph": 25})
+        self.assertNotIn("screen_seconds", w)
+        self.assertEqual(cfg["global"]["screen_seconds"], 5)
         self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
         with open(self.mc.CONFIG_PATH) as f:
             self.assertNotIn("label\": \"Temp", f.read())
 
+    def test_settings_from_before_one_seconds_per_page(self):
+        os.makedirs(os.path.dirname(self.mc.CONFIG_PATH), exist_ok=True)
+        cases = [
+            # Static countdown: its hold time wins
+            ({"countdown": {"motion": {"direction": "static", "static_hold": 8}},
+              "weather": {"screen_seconds": 3}, "social": {"screen_seconds": 4}}, 8),
+            # Scrolling countdown: the first section's seconds
+            ({"countdown": {"motion": {"direction": "R2L", "static_hold": 8}},
+              "weather": {"screen_seconds": 3}, "social": {"screen_seconds": 4}}, 3),
+            ({"social": {"screen_seconds": 12}}, 12),
+            ({"countdown": {"motion": {"direction": "R2L"}}}, 5),
+        ]
+        for saved, want in cases:
+            with open(self.mc.CONFIG_PATH, "w") as f:
+                json.dump({"global": {"schema_version": 4}, **saved}, f)
+            cfg = self.mc.load_config()
+            self.assertEqual(cfg["global"]["screen_seconds"], want, saved)
+            self.assertNotIn("motion", cfg["countdown"])
+            self.assertNotIn("screen_seconds", cfg["weather"])
+            self.assertNotIn("screen_seconds", cfg["social"])
+
+    def test_an_old_settings_upload_loses_its_scroll_keys(self):
+        self.assertEqual(self.d.update_config({"countdown": {"motion": {"direction": "R2L"}},
+                                               "weather": {"screen_seconds": 9}}), [])
+        cfg = self.d.get_config()
+        self.assertNotIn("motion", cfg["countdown"])
+        self.assertNotIn("screen_seconds", cfg["weather"])
+
     def test_new_settings_are_checked(self):
-        self.assertTrue(self.d.update_config({"weather": {"screen_seconds": 0}}))
+        self.assertTrue(self.d.update_config({"global": {"screen_seconds": 0}}))
+        self.assertTrue(self.d.update_config({"global": {"screen_seconds": 601}}))
         self.assertTrue(self.d.update_config({"weather": {"symbol": {"wind_mph": -1}}}))
         self.assertTrue(self.d.update_config({"weather": {"symbol": {"gust_mph": "lots"}}}))
-        self.assertEqual(self.d.update_config({"weather": {"screen_seconds": 8, "symbol": {"wind_mph": 10}}}), [])
+        self.assertEqual(self.d.update_config({"global": {"screen_seconds": 8}, "weather": {"symbol": {"wind_mph": 10}}}), [])
 
     def test_weather_mode_with_both_off_says_so(self):
         r = self.d.preview({"config": {"weather": {"temperature": {"enabled": False}, "wind": {"enabled": False}}},
@@ -375,14 +406,13 @@ class TakingTurns(unittest.TestCase):
         import shutil
         shutil.rmtree(self.dir, ignore_errors=True)
 
-    def configure(self, direction="R2L", countdown=True, weather=True, **motion):
+    def configure(self, countdown=True, weather=True):
         errors = self.d.update_config({
-            "global": {"fpp_host": self.fpp.host},
+            "global": {"fpp_host": self.fpp.host, "screen_seconds": 1},
             "countdown": {"model": "P5 Panel", "enabled": countdown,
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
-                          "motion": {"direction": direction, "pixels_per_second": 400, **motion},
                           "text_style": {"font": "", "size": 6}, "number_style": {"font": "", "size": 6}},
-            "weather": {"enabled": weather, "source": "tempest", "port": self.port, "screen_seconds": 1},
+            "weather": {"enabled": weather, "source": "tempest", "port": self.port},
         })
         self.assertEqual(errors, [])
 
@@ -429,14 +459,6 @@ class TakingTurns(unittest.TestCase):
         # each visit is one picture (plus a frame caught as it switched in or out), not a scroll
         self.assertTrue(all(len(v[2]) <= 3 for v in visits if v[0] == "weather"),
                         [len(v[2]) for v in visits])
-
-    def test_static_holds_each_message(self):
-        self.configure(direction="static", static_hold=1)
-        self.thread.start()
-        self.assertTrue(self.fpp.wait_for(lambda: self.d.get_status()["weather"].get("temp_f") is not None, 5))
-        seen = self.slots_seen(3.6)
-        self.assertGreaterEqual(len(seen), 3, seen)
-        self.assertLessEqual(len(seen), 5, seen)
 
     def test_weather_only(self):
         self.configure(countdown=False)

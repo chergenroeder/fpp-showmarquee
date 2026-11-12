@@ -1,14 +1,13 @@
-"""Draw the countdown message and move it across the panel (Pillow).
+"""Draw the countdown message, held still in the center of the panel (Pillow).
 
   layout_strip()  the message drawn once into a "strip" image: the number piece
                   in the number style, the text piece in the text style, on one
-                  baseline; or on two lines when a vertical/static message is
-                  wider than the panel (each line shrunk further if needed).
-  Mover           where the strip sits at a given time, for L2R, R2L, T2B, B2T
-                  (enter fully from one edge, leave fully past the other, then
-                  the repeat delay) or static (centered, no motion).
-  Renderer        ties them together: caches the strip until the message
-                  changes, returns one panel-sized RGB frame per call.
+                  baseline; or on two lines when it is wider than the panel
+                  (each line shrunk further if needed).
+  Renderer        caches the strip until the message changes and returns one
+                  panel-sized RGB frame with it centered. Nothing scrolls: the
+                  countdown, the weather page and the social screens each show
+                  on their own for the global seconds per page.
 
 Digits in the number piece sit in fixed-width boxes (the widest digit of the
 font), so "08:14:32" keeps one width as it ticks and nothing beside it jitters.
@@ -24,7 +23,6 @@ from .message import NUMBER, Message
 
 MIN_FONT_SIZE = 4
 LINE_GAP = 1          # pixels between the two lines in two-line layout
-DIRECTIONS = ("L2R", "R2L", "T2B", "B2T", "static")
 
 FontResolver = Callable[[str], Optional[str]]   # font name -> file path (None if unknown)
 
@@ -145,7 +143,7 @@ class _Placed:
 
 
 def layout_strip(message: Message, text_style: Style, number_style: Style,
-                 panel_w: int, direction: str) -> Optional[Image.Image]:
+                 panel_w: int) -> Optional[Image.Image]:
     """The whole message drawn once, or None for a blank message."""
     if message.blank:
         return None
@@ -155,8 +153,7 @@ def layout_strip(message: Message, text_style: Style, number_style: Style,
     gap = text_style.font().getlength(" ")
     one_line_w = sum(p.width for p in placed) + gap * (len(placed) - 1)
 
-    vertical = direction in ("T2B", "B2T", "static")
-    if not vertical or one_line_w <= panel_w:
+    if one_line_w <= panel_w:
         return _draw_one_line(placed, gap)
     groups = message.lines or tuple((i,) for i in range(len(placed)))
     lines = [_fit_line([placed[i] for i in g], gap, panel_w) for g in groups if g]
@@ -216,96 +213,28 @@ def _draw_lines(lines: List[List[_Placed]], gap: float) -> Image.Image:
     return img
 
 
-# ── Motion ────────────────────────────────────────────────────────────────────
-
-class Mover:
-    """Strip position over time. Positions are the strip's top-left on the panel.
-
-    A pass runs from fully off one edge to fully off the other at pps; then the
-    panel stays blank for repeat_delay seconds and the next pass starts. The
-    strip may change size between frames (the number changes); each frame uses
-    the current size, and a pass ends once the current strip is fully past.
-    """
-
-    def __init__(self, panel_w: int, panel_h: int, direction: str, pps: float, repeat_delay: float):
-        self.w, self.h = panel_w, panel_h
-        self.direction = direction if direction in DIRECTIONS else "R2L"
-        self.pps = max(0.1, float(pps))
-        self.delay = max(0.0, float(repeat_delay))
-        self.passes = 0          # completed passes, so callers can switch messages between them
-        self.reset()
-
-    def reset(self, t: Optional[float] = None):
-        self._pass_start = t
-        self._done_at: Optional[float] = None
-
-    def position(self, t: float, strip_w: int, strip_h: int) -> Optional[Tuple[int, int]]:
-        """Top-left of the strip at time t, or None while blank (repeat delay)."""
-        cx = (self.w - strip_w) // 2
-        cy = (self.h - strip_h) // 2
-        if self.direction == "static":
-            return cx, cy
-        if self._pass_start is None:
-            self._pass_start = t
-        if self._done_at is not None:
-            if t - self._done_at < self.delay:
-                return None
-            self._pass_start, self._done_at = t, None
-
-        travel = (t - self._pass_start) * self.pps
-        horizontal = self.direction in ("L2R", "R2L")
-        span = (self.w + strip_w) if horizontal else (self.h + strip_h)
-        if travel >= span:
-            self.passes += 1
-            if self.delay > 0:
-                self._done_at = t
-                return None
-            # Start the next pass now, carrying over the overshoot so speed stays even
-            self._pass_start = t - (travel - span) / self.pps
-            travel -= span
-        step = int(travel)
-        if self.direction == "R2L":
-            return self.w - step, cy
-        if self.direction == "L2R":
-            return step - strip_w, cy
-        if self.direction == "T2B":
-            return cx, step - strip_h
-        return cx, self.h - step          # B2T
-
-
 # ── Renderer ──────────────────────────────────────────────────────────────────
 
 class Renderer:
-    """Panel-sized frames for the current message."""
+    """Panel-sized frames with the message centered."""
 
     def __init__(self, panel_w: int, panel_h: int, countdown_cfg: dict, resolve: FontResolver):
-        motion = countdown_cfg.get("motion") or {}
         self.w, self.h = panel_w, panel_h
-        self.direction = motion.get("direction", "R2L")
         self.text_style = Style.from_cfg(countdown_cfg.get("text_style") or {}, resolve)
         self.number_style = Style.from_cfg(countdown_cfg.get("number_style") or {}, resolve)
-        self.mover = Mover(panel_w, panel_h, self.direction,
-                           motion.get("pixels_per_second", 15), motion.get("repeat_delay", 0))
         self._key: Optional[tuple] = None
         self._strip: Optional[Image.Image] = None
 
     def strip_for(self, message: Message) -> Optional[Image.Image]:
         key = (message.pieces, message.lines)
         if key != self._key:
-            was_blank = self._key is None or not self._key[0]
-            self._strip = layout_strip(message, self.text_style, self.number_style, self.w, self.direction)
+            self._strip = layout_strip(message, self.text_style, self.number_style, self.w)
             self._key = key
-            if was_blank or self._strip is None:
-                self.mover.reset()   # start a fresh pass when text (re)appears
         return self._strip
 
-    def frame(self, message: Message, t: float) -> Image.Image:
-        """The frame at monotonic time t (seconds)."""
+    def frame(self, message: Message) -> Image.Image:
         img = Image.new("RGB", (self.w, self.h))
         strip = self.strip_for(message)
-        if strip is None:
-            return img
-        pos = self.mover.position(t, strip.width, strip.height)
-        if pos is not None:
-            img.paste(strip, pos)
+        if strip is not None:
+            img.paste(strip, ((self.w - strip.width) // 2, (self.h - strip.height) // 2))
         return img

@@ -57,7 +57,7 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "is_day": false, "day_from": "tempest"
   },
   "social": {
-    "enabled": true, "screen_seconds": 5.0,
+    "enabled": true,
     "screens": [
       { "sites": ["facebook", "youtube"], "handle": "SmithFamilyLights", "plain": "[Facebook] [YouTube] @SmithFamilyLights" },
       { "sites": ["instagram"], "handle": "smith_lights", "plain": "[Instagram] @smith_lights" }
@@ -91,7 +91,7 @@ The full settings:
 
 ```json
 {
-  "global": { "schema_version": 1, "enable_output": true, "fpp_host": "localhost", "fps": 20 },
+  "global": { "schema_version": 5, "enable_output": true, "fpp_host": "localhost", "fps": 20, "screen_seconds": 5 },
   "countdown": {
     "enabled": true,
     "model": "P5 Panel",
@@ -109,7 +109,6 @@ The full settings:
       "units": { "day": "Day", "days": "Days", "hour": "Hour", "hours": "Hours", "minute": "Minute", "minutes": "Minutes" },
       "under_one_day": "hms"
     },
-    "motion": { "direction": "R2L", "pixels_per_second": 15, "repeat_delay": 0, "static_hold": 5 },
     "text_style":   { "font": "DejaVuSans-Bold", "size": 10, "color": "#ff0000", "antialias": false },
     "number_style": { "font": "DejaVuSans-Bold", "size": 10, "color": "#00ff00", "antialias": false }
   },
@@ -120,7 +119,6 @@ The full settings:
     "port": 50222,
     "device": "",
     "stale_minutes": 5,
-    "screen_seconds": 5,
     "temperature": { "enabled": true },
     "wind": { "enabled": true, "direction": true, "gusts": true,
               "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm" },
@@ -128,7 +126,6 @@ The full settings:
   },
   "social": {
     "enabled": false,
-    "screen_seconds": 5,
     "sites": {
       "facebook":  { "enabled": false, "handle": "" },
       "instagram": { "enabled": false, "handle": "" },
@@ -145,10 +142,6 @@ The full settings:
 | `target.custom_date` / `custom_time` | `YYYY-MM-DD` / `HH:MM` (24-hour, player's local time) |
 | `layout.number_position` | `first`, `last` |
 | `layout.under_one_day` | `hms`, `hours` |
-| `motion.direction` | `R2L`, `L2R`, `T2B`, `B2T`, `static` |
-| `motion.pixels_per_second` | 1–500 |
-| `motion.repeat_delay` | seconds ≥ 0 |
-| `motion.static_hold` | 1–600 s: how long the countdown shows in Static when other pages take turns |
 | `weather.enabled` | show weather (from the chosen source) |
 | `weather.source` | `open-meteo`, `tempest`, or `""` (not chosen: nothing is shown or sent). Settings saved before 2.1 with Weather on become `tempest`. |
 | `weather.open_meteo.use_fpp_location` | `true`: FPP's Latitude/Longitude (Settings → General); `false`: the location below |
@@ -156,22 +149,21 @@ The full settings:
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
 | `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
-| `weather.screen_seconds` | 1–600: how long the weather page shows (it is always held still, whatever `motion.direction` is) |
 | `weather.symbol.wind_mph` / `gust_mph` | 0–200: show the wind symbol when the wind (or the gusts) is at least this; otherwise the sun by day, the moon at night |
 | `social.enabled` | show the social media screens |
-| `social.screen_seconds` | 1–600: how long each social media screen shows (screens are always held still, whatever `motion.direction` is) |
 | `social.sites.<site>.enabled` / `handle` | site is `facebook`, `instagram`, `tiktok` or `youtube`. Handle: up to 30 letters, digits, `.`, `_`, `-`; a leading `@` is accepted and removed when saved. A site that's on with no handle is skipped. |
 | `*_style.font` | a name from `GET fonts`; `""` = Pillow's built-in font. A missing font falls back to an installed bold sans font. |
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
 | `global.fps` | 1–60 (FPP's own output rate caps it) |
+| `global.screen_seconds` | 1–600, default 5: how long each page (the countdown, the weather page, each social media screen) shows before the next. Nothing scrolls. Settings from before schema 5 take their old Static hold time, else the weather's or social media's seconds. |
 
 ### `POST config`
 
 Send any part of the settings; it is laid over the current settings, so `{"countdown": {"model": "P5 Panel"}}` changes only the model. Saved at once and drawn within a frame.
 
 - OK: `{"status": "saved"}`
-- Invalid: `{"error": "Invalid config", "details": ["countdown.motion.direction must be one of ..."]}`. Nothing is saved.
+- Invalid: `{"error": "Invalid config", "details": ["global.screen_seconds must be from 1 to 600 seconds"]}`. Nothing is saved.
 
 ### `POST reload`
 
@@ -219,18 +211,17 @@ Draws a message the way the matrix would, from settings that don't have to be sa
   "target": { "when": "2026-12-25T00:00-05:00", "when_text": "Fri Dec 25 2026, 00:00", "name": "Christmas", "repeats": true },
   "display": "days",
   "message": "Christmas in 45 Days",
-  "direction": "R2L", "pixels_per_second": 15.0, "repeat_delay": 0.0,
-  "static_hold": 5.0, "screen_seconds": 5.0, "weather_seconds": 5.0,
-  "strip": "<base64 PNG of the drawn message>", "strip_width": 120, "strip_height": 13,
+  "seconds": 5.0,
+  "strip": "<base64 PNG of the first page>", "strip_width": 192, "strip_height": 96,
   "strips": [
-    { "slot": "countdown", "message": "Christmas in 45 Days", "strip": "<base64 PNG>", "strip_width": 120, "strip_height": 13 },
-    { "slot": "weather", "message": "[Moon] 37°F 2 mph NNE", "still": true, "seconds": 5.0, "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 }
+    { "slot": "countdown", "message": "Christmas in 45 Days", "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 },
+    { "slot": "weather", "message": "[Moon] 37°F 2 mph NNE", "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 }
   ],
   "warning": "Number font “X” isn't on this player; using “DejaVuSans-Bold” instead."
 }
 ```
 
-`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "still", "seconds", "strip", "strip_width", "strip_height"}`. For the weather page and social screens `still` is `true`, `strip` is the whole panel-sized picture held at 0,0, and `seconds` is how long it stays up; the countdown moves like the matrix (`seconds` is `null`). The top-level `strip` is the first. `static_hold` is how long the countdown shows in Static. `strip` is `null` when the message is blank. `warning` appears when a font was replaced, or when a handle is too wide for the panel even at the smallest size.
+`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, or when a handle is too wide for the panel even at the smallest size.
 
 ---
 

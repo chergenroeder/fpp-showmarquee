@@ -95,7 +95,6 @@ def social_status(cfg: dict) -> dict:
         elif handle_problem(s.get("handle")):
             problems[key] = f"{name} handle {handle_problem(s.get('handle'))}"
     return {"enabled": bool(cfg.get("enabled")),
-            "screen_seconds": float(cfg.get("screen_seconds", 5) or 5),
             "screens": [{"sites": list(sc.sites), "handle": sc.handle, "plain": sc.plain}
                         for sc in social_screens(cfg)],
             "problems": problems}

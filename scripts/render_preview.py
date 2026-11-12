@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Preview the renderer without a matrix: a contact sheet PNG and animated GIFs.
+"""Preview the renderer without a matrix: a contact sheet PNG and a ticking GIF.
 
     python3 scripts/render_preview.py --out /tmp/preview --font /path/to/Font.ttf
 
-  sheet.png        one mid-pass frame for each direction x number order, plus
-                   the two-line layout on a narrow panel, scaled up like LEDs
-  <direction>.gif  a few seconds of motion for each direction (HH:MM:SS ticking)
+  sheet.png   the countdown, centered, for each number order and under a day,
+              plus the two-line layout on a narrow panel, scaled up like LEDs
+  ticking.gif a few seconds of the HH:MM:SS timer ticking on Christmas Eve
 """
 
 import argparse
@@ -18,12 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from PIL import Image, ImageDraw  # noqa: E402
 
 from countdown.message import build_message  # noqa: E402
-from countdown.render import DIRECTIONS, Renderer  # noqa: E402
+from countdown.render import Renderer  # noqa: E402
 from countdown.timecalc import Target, compute_display  # noqa: E402
-
-LABELS = {"L2R": "Left to Right", "R2L": "Right to Left", "T2B": "Top to Bottom",
-          "B2T": "Bottom to Top", "static": "Static"}
-
 
 def leds(frame: Image.Image, scale: int) -> Image.Image:
     """Scale up and leave a dark gap between pixels, like an LED panel."""
@@ -37,10 +33,9 @@ def leds(frame: Image.Image, scale: int) -> Image.Image:
     return big
 
 
-def cfg(direction, order, args, under="hms"):
+def cfg(order, args, under="hms"):
     return {
         "layout": {"number_position": order, "under_one_day": under},
-        "motion": {"direction": direction, "pixels_per_second": args.pps, "repeat_delay": 0},
         "text_style": {"font": "t", "size": args.text_size, "color": args.text_color},
         "number_style": {"font": "n", "size": args.number_size, "color": args.number_color},
     }
@@ -58,7 +53,6 @@ def main():
     p.add_argument("--number-size", type=int, default=20)
     p.add_argument("--text-color", default="#ff2020")
     p.add_argument("--number-color", default="#20ff40")
-    p.add_argument("--pps", type=float, default=30)
     p.add_argument("--scale", type=int, default=3)
     args = p.parse_args()
     os.makedirs(args.out, exist_ok=True)
@@ -72,26 +66,20 @@ def main():
         layout = {"number_position": order, "under_one_day": under}
         return build_message(compute_display(xmas, now, layout), xmas, layout)
 
-    # Contact sheet: each direction x order, mid-pass
+    # Contact sheet: each number order, under a day, and the two-line layout
     tiles = []
-    for direction in DIRECTIONS:
-        for order in ("first", "last"):
-            r = Renderer(args.width, args.height, cfg(direction, order, args), resolve)
-            m = message(order, tz_now)
-            strip = r.strip_for(m)
-            horizontal = direction in ("L2R", "R2L")
-            span = (args.width + strip.width) if horizontal else (args.height + strip.height)
-            t = (span / 2) / args.pps
-            r.frame(m, 0)
-            tiles.append((f"{LABELS[direction]}, number {order}: \"{m.plain}\"", r.frame(m, t)))
+    for order in ("first", "last"):
+        r = Renderer(args.width, args.height, cfg(order, args), resolve)
+        m = message(order, tz_now)
+        tiles.append((f"Number {order}: \"{m.plain}\"", r.frame(m)))
     eve = datetime(2026, 12, 24, 15, 45, 28).astimezone()
     for under in ("hms", "hours"):
-        r = Renderer(args.width, args.height, cfg("static", "first", args, under), resolve)
+        r = Renderer(args.width, args.height, cfg("first", args, under), resolve)
         m = message("first", eve, under)
-        tiles.append((f"Under 1 day ({under}), static: \"{m.plain}\"", r.frame(m, 0)))
-    r = Renderer(args.narrow, args.height, cfg("static", "first", args), resolve)
+        tiles.append((f"Under 1 day ({under}): \"{m.plain}\"", r.frame(m)))
+    r = Renderer(args.narrow, args.height, cfg("first", args), resolve)
     m = message("first", tz_now)
-    tiles.append((f"Two-line fallback on a {args.narrow}x{args.height} panel: \"{m.plain}\"", r.frame(m, 0)))
+    tiles.append((f"Two-line fallback on a {args.narrow}x{args.height} panel: \"{m.plain}\"", r.frame(m)))
 
     pad, label_h = 10, 16
     tile_w = args.width * args.scale
@@ -107,18 +95,12 @@ def main():
         sheet.paste(leds(frame, args.scale), (x, y + label_h))
     sheet.save(os.path.join(args.out, "sheet.png"))
 
-    # GIFs: 4 s of each direction, number first, HH:MM:SS ticking on Christmas Eve
-    fps = 20
-    for direction in DIRECTIONS:
-        r = Renderer(args.width, args.height, cfg(direction, "first", args), resolve)
-        frames = []
-        for i in range(fps * 4):
-            t = i / fps
-            m = message("first", eve + timedelta(seconds=t))
-            frames.append(leds(r.frame(m, t), 2))
-        frames[0].save(os.path.join(args.out, f"{direction}.gif"), save_all=True,
-                       append_images=frames[1:], duration=1000 // fps, loop=0)
-    print(f"Wrote {args.out}/sheet.png and {len(DIRECTIONS)} GIFs")
+    # GIF: 4 s of the HH:MM:SS timer ticking on Christmas Eve
+    r = Renderer(args.width, args.height, cfg("first", args), resolve)
+    frames = [leds(r.frame(message("first", eve + timedelta(seconds=i))), 2) for i in range(4)]
+    frames[0].save(os.path.join(args.out, "ticking.gif"), save_all=True,
+                   append_images=frames[1:], duration=1000, loop=0)
+    print(f"Wrote {args.out}/sheet.png and {args.out}/ticking.gif")
 
 
 if __name__ == "__main__":

@@ -29,10 +29,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional
 
 from countdown.fonts import FontIndex
-from countdown.message import Message, build_message
+from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
 from countdown.social import SITES, Screen, clean_handle, handle_problem, social_screens, social_status
-from countdown.still import StillCache, hold_seconds, is_still
+from countdown.still import StillCache, is_still, page_seconds
 from countdown.timecalc import compute_display, local_now, resolve_target
 from countdown.weather import (NO_LOCATION, Location, OpenMeteoPoller, Reading, TempestListener, compass,
                                WeatherPage, c_to_f, make_location, ms_to_mph, parse_coord, weather_page)
@@ -55,7 +55,7 @@ API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
 API_PREFIX   = "/api/plugin/matrixcountdown"
 
-SCHEMA_VERSION = 4   # 2: weather.source (Open-Meteo or Tempest); 3: social media screens; 4: weather page
+SCHEMA_VERSION = 5   # 2: weather.source; 3: social media screens; 4: weather page; 5: one seconds per page, no scrolling
 
 
 def _get_git_commit() -> str:
@@ -232,6 +232,26 @@ def _migrate_user(user: dict) -> bool:
             if isinstance(w.get(part), dict) and "label" in w[part]:
                 del w[part]["label"]
                 changed = True
+    # Before 5 the countdown could scroll (countdown.motion) and each section
+    # had its own seconds. Now nothing scrolls and one global setting holds
+    # every page; it takes the first of the old values that was set.
+    cd, so = user.get("countdown"), user.get("social")
+    old = []
+    for section in (w, so):
+        if isinstance(section, dict) and "screen_seconds" in section:
+            old.append(section.pop("screen_seconds"))
+            changed = True
+    if isinstance(cd, dict) and "motion" in cd:
+        motion = cd.pop("motion")
+        if isinstance(motion, dict) and motion.get("direction") == "static" and "static_hold" in motion:
+            old.insert(0, motion["static_hold"])
+        changed = True
+    g = user.setdefault("global", {}) if old else user.get("global")
+    if old and isinstance(g, dict) and "screen_seconds" not in g:
+        try:
+            g["screen_seconds"] = min(600.0, max(1.0, float(old[0])))
+        except (TypeError, ValueError):
+            pass
     return changed
 
 
@@ -318,7 +338,6 @@ _VALID = {
     ("target", "type"): {"custom", "christmas", "newyear"},
     ("layout", "number_position"): {"first", "last"},
     ("layout", "under_one_day"): {"hms", "hours"},
-    ("motion", "direction"): {"L2R", "R2L", "T2B", "B2T", "static"},
 }
 
 
@@ -356,12 +375,11 @@ def validate_config(cfg: dict) -> List[str]:
         if not (len(color) == 7 and color.startswith("#")
                 and all(c in "0123456789abcdefABCDEF" for c in color[1:])):
             errors.append(f"countdown.{style}.color must look like #rrggbb")
-    m = cd.get("motion") or {}
     try:
-        if not 1 <= float(m.get("static_hold", 5)) <= 600:
+        if not 1 <= float((cfg.get("global") or {}).get("screen_seconds", 5)) <= 600:
             raise ValueError
     except (TypeError, ValueError):
-        errors.append("countdown.motion.static_hold must be from 1 to 600 seconds")
+        errors.append("global.screen_seconds must be from 1 to 600 seconds")
     w = cfg.get("weather") or {}
     if w.get("source", "") not in WEATHER_SOURCES:
         errors.append("weather.source must be \"open-meteo\", \"tempest\" or \"\" (not chosen)")
@@ -386,11 +404,6 @@ def validate_config(cfg: dict) -> List[str]:
             raise ValueError
     except (TypeError, ValueError):
         errors.append("weather.wind.gust_min_diff_mph must be 0 or more")
-    try:
-        if not 1 <= float(w.get("screen_seconds", 5)) <= 600:
-            raise ValueError
-    except (TypeError, ValueError):
-        errors.append("weather.screen_seconds must be from 1 to 600 seconds")
     for key in ("wind_mph", "gust_mph"):
         try:
             if not 0 <= float((w.get("symbol") or {}).get(key, 0)) <= 200:
@@ -400,11 +413,6 @@ def validate_config(cfg: dict) -> List[str]:
     so = cfg.get("social") or {}
     if not isinstance(so.get("enabled", False), bool):
         errors.append("social.enabled must be true or false")
-    try:
-        if not 1 <= float(so.get("screen_seconds", 5)) <= 600:
-            raise ValueError
-    except (TypeError, ValueError):
-        errors.append("social.screen_seconds must be from 1 to 600 seconds")
     for key, name in SITES:
         site = (so.get("sites") or {}).get(key) or {}
         if not isinstance(site.get("enabled", False), bool):
@@ -412,16 +420,6 @@ def validate_config(cfg: dict) -> List[str]:
         problem = handle_problem(site.get("handle"))
         if problem:
             errors.append(f"social.sites.{key}.handle: the {name} handle {problem}")
-    try:
-        if not 1 <= float(m.get("pixels_per_second")) <= 500:
-            raise ValueError
-    except (TypeError, ValueError):
-        errors.append("countdown.motion.pixels_per_second must be from 1 to 500")
-    try:
-        if float(m.get("repeat_delay")) < 0:
-            raise ValueError
-    except (TypeError, ValueError):
-        errors.append("countdown.motion.repeat_delay must be 0 or more seconds")
     return errors
 
 
@@ -493,6 +491,11 @@ class CountdownDaemon:
             if isinstance(om_new, dict) else {}
         merged = _deep_merge(_deep_merge(load_defaults(), self.get_config()), new_cfg)
         _migrate_config(merged)
+        # Settings from before 5 (an uploaded file): nothing scrolls now and one
+        # global setting holds every page, so these are dropped
+        (merged.get("countdown") or {}).pop("motion", None)
+        for section in ("weather", "social"):
+            (merged.get(section) or {}).pop("screen_seconds", None)
         check = copy.deepcopy(merged)
         check.setdefault("weather", {}).setdefault("open_meteo", {}).update(coords)
         errors = validate_config(check)
@@ -606,7 +609,7 @@ class CountdownDaemon:
         animate it the same way the daemon moves it.
         """
         try:
-            from countdown.render import Style, layout_strip
+            from countdown.render import Renderer
             from countdown.social import draw_screen
             from countdown.still import draw_weather_page
         except ImportError:
@@ -680,7 +683,6 @@ class CountdownDaemon:
                 shown = [Screen(tuple(k for k, _ in SITES), "YourHandle")]
                 weather_note = "sample handle (no site is on with a handle)"
             sequence = [(sc.slot, sc) for sc in shown]
-        motion = cd.get("motion") or {}
         result = {
             "width": w, "height": h,
             "target": {"when": target.when.isoformat(timespec="minutes"),
@@ -688,35 +690,29 @@ class CountdownDaemon:
                        "name": target.name, "repeats": target.repeats},
             "display": display.kind if display is not None else mode,
             "message": message.plain,
-            "direction": motion.get("direction", "R2L"),
-            "pixels_per_second": float(motion.get("pixels_per_second", 15)),
-            "repeat_delay": float(motion.get("repeat_delay", 0)),
-            "static_hold": float(motion.get("static_hold", 5)),
-            "screen_seconds": float((cfg.get("social") or {}).get("screen_seconds", 5) or 5),
-            "weather_seconds": float((cfg.get("weather") or {}).get("screen_seconds", 5) or 5),
+            "seconds": page_seconds(cfg),
             "strip": None,
             "strips": [],
         }
-        text_style = Style.from_cfg(cd.get("text_style") or {}, font_path)
-        number_style = Style.from_cfg(cd.get("number_style") or {}, font_path)
+        renderer = Renderer(w, h, cd, font_path)
+        text_style, number_style = renderer.text_style, renderer.number_style
         notes = []
         for slot, msg in sequence:
-            still = is_still(msg)
+            # Every page is a panel-sized picture, held still on the matrix
             if isinstance(msg, WeatherPage):
                 strip = draw_weather_page(msg, w, h, number_style, text_style)
-            elif still:
+            elif is_still(msg):
                 strip, fits = draw_screen(msg, w, h, text_style)
                 if not fits:
                     notes.append(f"@{msg.handle} is too wide for a {w}-pixel matrix even at the smallest size,"
                                  " so its ends are cut off. Use a smaller Text font.")
             else:
-                strip = layout_strip(msg, text_style, number_style, w, result["direction"])
-            if strip is None:
-                continue
+                if msg.blank:
+                    continue
+                strip = renderer.frame(msg)
             buf = io.BytesIO()
             strip.save(buf, format="PNG")
-            result["strips"].append({"slot": slot, "message": msg.plain, "still": still,
-                                     "seconds": hold_seconds(msg, cfg) if still else None,
+            result["strips"].append({"slot": slot, "message": msg.plain,
                                      "strip": base64.b64encode(buf.getvalue()).decode(),
                                      "strip_width": strip.width, "strip_height": strip.height})
         if result["strips"]:   # the first one also at the top level, as before
@@ -903,7 +899,6 @@ class CountdownDaemon:
         frame_times: List[float] = []
         stills = StillCache()
         slot: Optional[str] = None      # which message is up: countdown | temperature | wind | social:...
-        slot_passes = 0
         slot_started = 0.0
 
         def shut_output():
@@ -972,14 +967,13 @@ class CountdownDaemon:
             if renderer_key != key:
                 renderer = Renderer(out.width, out.height, cd, font_path)
                 renderer_key = key
-                slot_passes = 0
                 stills = StillCache()
 
             def draw(item, t):
                 """A frame: the countdown moves; weather and social pages are held still."""
                 if is_still(item):
                     return stills.get(item, out.width, out.height, renderer.number_style, renderer.text_style)
-                return renderer.frame(item, t)
+                return renderer.frame(item)
 
             try:
                 # What takes turns: the countdown, the weather page, then one
@@ -1004,7 +998,6 @@ class CountdownDaemon:
                 if not available:
                     if out.model_on:
                         out.off()
-                    renderer.strip_for(Message(()))   # so the next pass starts fresh
                     self._set_state("blank", "")
                     self._fps = 0.0
                     self._showing = {"slot": None, "message": ""}
@@ -1019,34 +1012,20 @@ class CountdownDaemon:
                     order = [n for n, _ in candidates]
                     later = [n for n in names if slot in order and order.index(n) > order.index(slot)]
                     slot = (later or names)[0]
-                    if not is_still(dict(available)[slot]):
-                        renderer.mover.reset()
-                    slot_passes, slot_started = renderer.mover.passes, time.monotonic()
+                    slot_started = time.monotonic()
                 message = dict(available)[slot]
                 self._showing = {"slot": slot, "message": message.plain}
 
                 out.on()
                 t0 = time.monotonic()
                 frame = draw(message, t0)
-                # Take turns: a social screen after its seconds; a scrolling message
-                # after each full pass, or after the hold time when static
-                if len(names) > 1:
-                    if is_still(message):
-                        done = t0 - slot_started >= hold_seconds(message, cfg)
-                    elif renderer.direction == "static":
-                        done = t0 - slot_started >= float((cd.get("motion") or {}).get("static_hold", 5) or 5)
-                    else:
-                        done = renderer.mover.passes != slot_passes
-                    if done:
-                        was_still = is_still(message)
-                        slot = names[(names.index(slot) + 1) % len(names)]
-                        message = dict(available)[slot]
-                        if was_still and not is_still(message):
-                            renderer.mover.reset()   # a fresh pass from the edge, never halfway across
-                        slot_passes, slot_started = renderer.mover.passes, t0
-                        self._showing = {"slot": slot, "message": message.plain}
-                        # The pass that just started belongs to the new message
-                        frame = draw(message, t0)
+                # Take turns: each page shows on its own for the global seconds per page
+                if len(names) > 1 and t0 - slot_started >= page_seconds(cfg):
+                    slot = names[(names.index(slot) + 1) % len(names)]
+                    message = dict(available)[slot]
+                    slot_started = t0
+                    self._showing = {"slot": slot, "message": message.plain}
+                    frame = draw(message, t0)
                 out.write_rgb(frame.tobytes())
                 self._set_state("drawing", "")
                 period = 1.0 / fps

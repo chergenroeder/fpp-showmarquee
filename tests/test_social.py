@@ -28,7 +28,7 @@ ALL = ("facebook", "instagram", "tiktok", "youtube")
 
 def social(enabled=True, **handles):
     """social config with the given sites on: social(facebook="me", tiktok="other")."""
-    return {"enabled": enabled, "screen_seconds": 5,
+    return {"enabled": enabled,
             "sites": {k: {"enabled": k in handles, "handle": handles.get(k, "")} for k in ALL}}
 
 
@@ -189,9 +189,9 @@ class Preview(unittest.TestCase):
         r = self.run_preview({"social": social(facebook="A", youtube="a", tiktok="b")})
         self.assertEqual([x["slot"] for x in r["strips"]],
                          ["countdown", "social:facebook+youtube", "social:tiktok"])
-        self.assertEqual([x["still"] for x in r["strips"]], [False, True, True])
-        self.assertEqual((r["strips"][1]["strip_width"], r["strips"][1]["strip_height"]), (64, 32))
-        self.assertEqual(r["screen_seconds"], 5)
+        # every page, the countdown too, is a panel-sized picture
+        self.assertEqual({(x["strip_width"], x["strip_height"]) for x in r["strips"]}, {(64, 32)})
+        self.assertEqual(r["seconds"], 5)
 
     def test_social_mode_shows_screens_even_when_off(self):
         r = self.run_preview({"social": social(enabled=False, instagram="me")}, **{"as": "social"})
@@ -208,7 +208,7 @@ class Preview(unittest.TestCase):
         self.assertIn("too wide", r["warning"])
 
     def test_validation_and_saved_handles_lose_the_at(self):
-        self.assertTrue(self.d.update_config({"social": {"screen_seconds": 0}}))
+        self.assertTrue(self.d.update_config({"global": {"screen_seconds": 0}}))
         self.assertTrue(self.d.update_config({"social": {"sites": {"tiktok": {"handle": "two words"}}}}))
         self.assertEqual(self.d.update_config({"social": {"sites": {"tiktok": {"enabled": True, "handle": " @me "}}}}), [])
         self.assertEqual(self.d.get_config()["social"]["sites"]["tiktok"]["handle"], "me")
@@ -247,14 +247,12 @@ class TakingTurns(unittest.TestCase):
         import shutil
         shutil.rmtree(self.dir, ignore_errors=True)
 
-    def configure(self, direction="R2L", countdown=True, seconds=1, **handles):
+    def configure(self, countdown=True, seconds=1, **handles):
         so = social(**handles)
-        so["screen_seconds"] = seconds
         errors = self.d.update_config({
-            "global": {"fpp_host": self.fpp.host},
+            "global": {"fpp_host": self.fpp.host, "screen_seconds": seconds},
             "countdown": {"model": "P5 Panel", "enabled": countdown,
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
-                          "motion": {"direction": direction, "pixels_per_second": 400, "static_hold": 1},
                           "text_style": {"font": "", "size": 6}, "number_style": {"font": "", "size": 6}},
             "social": so,
         })
@@ -282,10 +280,9 @@ class TakingTurns(unittest.TestCase):
         start = cycle.index(names[0])
         self.assertEqual(names, [cycle[(start + i) % 3] for i in range(len(names))])
         self.assertIn("social:tiktok", names)
-        # each social screen stays up about a second (not cut short by a pass)
-        for (slot, at, _), (_n, nxt, _f) in zip(seen, seen[1:]):
-            if slot.startswith("social:"):
-                self.assertGreater(nxt - at, 0.8, seen)
+        # every page, the countdown too, stays up about a second
+        for (_slot, at, _), (_n, nxt, _f) in zip(seen, seen[1:]):
+            self.assertGreater(nxt - at, 0.8, seen)
 
     def test_screens_hold_still(self):
         self.configure(seconds=2, instagram="me")
@@ -304,12 +301,13 @@ class TakingTurns(unittest.TestCase):
         self.assertTrue(set(names) <= {"social:facebook", "social:tiktok"} and len(names) >= 2, names)
         self.assertEqual(self.fpp.state["P5 Panel"], 1)
 
-    def test_static_countdown_and_screens(self):
-        self.configure(direction="static", youtube="me")
+    def test_countdown_is_held_still_too(self):
+        self.configure(seconds=2, youtube="me")
         self.thread.start()
-        names = [s for s, _, _ in self.watch(3.5)]
-        self.assertGreaterEqual(len(names), 3, names)
-        self.assertEqual(set(names), {"countdown", "social:youtube"})
+        seen = self.watch(4.5)
+        countdown = [frames for slot, _, frames in seen if slot == "countdown"]
+        self.assertTrue(countdown, seen)
+        self.assertLessEqual(min(len(f) for f in countdown), 3)    # one picture, not a scroll
 
     def test_status(self):
         self.configure(facebook="a", tiktok="")

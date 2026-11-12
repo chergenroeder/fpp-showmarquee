@@ -19,8 +19,8 @@ TEXT = "text"
 @dataclass(frozen=True)
 class Message:
     pieces: Tuple[Tuple[str, str], ...]   # ((role, text), ...) in display order
-    # How to split into lines when the message is too wide for one (vertical
-    # and static motion): groups of piece indexes, one group per line.
+    # How to split into lines when the message is too wide for the panel:
+    # groups of piece indexes, one group per line.
     # None = each piece on its own line.
     lines: Optional[Tuple[Tuple[int, ...], ...]] = None
 

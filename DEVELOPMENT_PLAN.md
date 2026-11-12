@@ -594,3 +594,26 @@ Replace the two scrolling weather messages ("Temp 72°F", "Wind 8 mph NW gusts 1
 - [x] Dev server check: Weather preview (moon by the clock at night, sample reading), Now playing countdown → weather → social, the Weather card.
 - [ ] Live call to Open-Meteo with `is_day`, and the Tempest's solar/lux at night on fpp-matrix.local.
 - [ ] Live check on fpp-matrix.local (TESTING.md section 6): day, night and windy pages on the P5 panel.
+
+---
+
+## Version 5 — No scrolling; one seconds per page (built 2026-11-11)
+
+Asked for: remove scrolling from every section; each section shows on its own, for a number of seconds set once for all of them (default 5).
+
+**Decisions**
+- The countdown is drawn the way Static drew it: centered, on two lines when wider than the panel (each shrinking further if needed). The HH:MM:SS timer still ticks in place.
+- **One setting, `global.screen_seconds`** (1–600, default 5), replaces `countdown.motion` (direction, speed, pause, Static hold), `weather.screen_seconds` and `social.screen_seconds`. Each page gets it: the countdown, the weather page, and each social media screen (two handles = two pages).
+- Settings from before (schema 5 migration, on load): a Static countdown's hold time is kept as the new setting; otherwise the weather's, then social media's seconds; otherwise 5. The old keys are removed from the saved file. An old settings file uploaded through the page has those keys dropped on save.
+
+**Built**
+- [x] `render.py`: `Mover` and the four scroll directions removed; `layout_strip()` always splits a too-wide message; `Renderer.frame(message)` centers it.
+- [x] `still.py`: `page_seconds(cfg)` replaces `hold_seconds()`. Daemon loop: every page ends after `page_seconds`; the pass counting and `mover.reset()` are gone.
+- [x] Preview: every `strips` item is a panel-sized picture; the reply has one `seconds` instead of `direction`, `pixels_per_second`, `repeat_delay`, `static_hold`, `screen_seconds` and `weather_seconds`. The page's preview no longer has a mover: it shows each picture for `seconds`.
+- [x] Settings page: the Motion card is replaced by a **Pages** card with **Seconds per page**; the Weather and Social Media cards lose their own seconds inputs.
+- [x] `scripts/render_preview.py`: a contact sheet of centered frames and a ticking-timer GIF instead of one GIF per direction.
+- [x] README, API.md, TESTING.md, `pluginInfo.json`.
+- [x] Tests: scroll-motion tests removed; centered frame, ticking timer stays in place, every page held for the global seconds (countdown included), migration from each kind of old setting, an uploaded old file losing its keys, validation. 193 tests, all passing.
+- [x] Dev server check: Pages card, no Motion card; the matrix and the preview switch pages every 3 s with `screen_seconds` 3.
+- [ ] On fpp-matrix.local: TESTING.md sections 1, 6 and 7.
+

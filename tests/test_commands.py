@@ -78,10 +78,10 @@ class Endpoints(CommandsBase):
 
     def test_partial_config_post_keeps_other_settings(self):
         self.assertEqual(self.post("config", {"countdown": {"model": "P5 Panel"}})[0], 200)
-        self.assertEqual(self.post("config", {"countdown": {"motion": {"direction": "static"}}})[0], 200)
+        self.assertEqual(self.post("config", {"countdown": {"layout": {"number_position": "last"}}})[0], 200)
         self.assertEqual(self.cd["model"], "P5 Panel")
-        self.assertEqual(self.cd["motion"]["direction"], "static")
-        self.assertEqual(self.cd["motion"]["pixels_per_second"], 15)   # default kept
+        self.assertEqual(self.cd["layout"]["number_position"], "last")
+        self.assertEqual(self.cd["layout"]["connector_last"], "in")   # default kept
 
     def test_bad_model_name_is_rejected_on_save(self):
         code, body = self.post("config", {"countdown": {"model": "../../etc/passwd"}})
