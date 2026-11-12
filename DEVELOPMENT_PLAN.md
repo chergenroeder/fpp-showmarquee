@@ -752,3 +752,13 @@ A code and UX review of the whole plugin. Sound: what the user types never reach
 
 Tests: 268, all passing.
 
+---
+
+## Instructions on the Overview tab (2026-11-11)
+
+Light, and mostly for first-time setup, rather than long text or a pop-up tour:
+- **Getting started**: four steps at the top of Overview (choose your matrix, linking to Display; turn on the pages you want; set up each page, done when no tab has a warning dot; Save), each ticked as it's done, from the settings on the page. Once all four are done it remembers that in the browser and stays hidden (Hide does the same). The "Choose your matrix" banner still covers a matrix unset later.
+- **How it works**: a folded note under the rotation list: pages take turns in order for Seconds per page; a page with nothing to show is skipped; nothing changes until Save, and the preview plays what the matrix will; the Display styles colour every page and a dot means a page needs something.
+- **Help**: a link in the header to the README on GitHub.
+- While checking it: the Weather dot also used the daemon's last report, which still said "choose a weather source" until Save, so step 3 couldn't tick before saving. That report now only counts for the source that's saved.
+

@@ -24,6 +24,8 @@ curl -s $API/config > /tmp/mc-before.json
 
 ## 0b. The settings page
 
+- [ ] On a new install the page opens on **Overview** with **Getting started**: choosing the matrix, turning pages on and setting them up tick their steps off; after **Save** all four are ticked and it hides, and stays hidden after a reload.
+- [ ] **How it works** opens and closes; **Help** opens the README on GitHub.
 - [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
 - [ ] **Edit** opens that page's tab; the preview shows just that page. Reloading the page comes back to the same tab.
 - [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round), and its line says **Save to turn it on** until you Save.

@@ -30,7 +30,9 @@
     <strong class="fs-5">Show Marquee</strong>
     <span id="mc-badge" class="badge bg-secondary">Loading…</span>
     <span class="small text-muted" id="mc-s-output">–</span>
-    <div class="ms-auto d-flex gap-1">
+    <div class="ms-auto d-flex gap-1 align-items-center">
+      <a class="btn btn-sm btn-link" href="https://github.com/chergenroeder/fpp-showmarquee#readme" target="_blank" rel="noopener noreferrer"
+         title="The full instructions, on GitHub">Help</a>
       <button type="button" class="btn btn-sm btn-outline-success" onclick="mcDaemon('start')">Start</button>
       <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mcDaemon('restart')">Restart</button>
       <button type="button" class="btn btn-sm btn-outline-danger" onclick="mcDaemon('stop')">Stop</button>
@@ -53,6 +55,17 @@
     <div class="col-lg-7">
 
       <div class="mc-pane" data-pane="overview">
+      <!-- Getting started: shown until the setup is done once -->
+      <div class="card mb-3 border-primary-subtle mc-hidden" id="mc-start">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Getting started</strong>
+          <button type="button" class="btn btn-sm btn-link p-0" id="mc-start-hide">Hide</button>
+        </div>
+        <div class="card-body py-2">
+          <ol class="list-unstyled mb-0 small" id="mc-start-steps"></ol>
+        </div>
+      </div>
+
       <!-- Overview -->
       <div class="card mb-3">
         <div class="card-header"><strong>What's on the matrix</strong></div>
@@ -65,6 +78,15 @@
           </div>
           <div class="small text-muted mt-1">Nothing scrolls: each page shows on its own for this many seconds. Each social media screen and each message is a page of its own.</div>
           <div class="small mt-3">Matrix showing now: <span id="mc-s-message">–</span></div>
+          <details class="mt-3 small">
+            <summary>How it works</summary>
+            <ul class="mt-2 mb-0 ps-3">
+              <li>The pages above take turns on the matrix in this order, each held still for <strong>Seconds per page</strong>. Each social media screen and each message is a page of its own.</li>
+              <li>A page with nothing to show right now is skipped until it has: the countdown on the day itself, the weather with no reading, a message outside its dates.</li>
+              <li>Nothing changes on the matrix until you <strong>Save</strong>. The preview on the right plays the rotation as the matrix will.</li>
+              <li>The <strong>Number style</strong> and <strong>Text style</strong> on the Display tab colour every page. A dot on a tab means that page needs something before it can show.</li>
+            </ul>
+          </details>
         </div>
       </div>
       </div>
@@ -817,7 +839,9 @@
     const dot = (k, on) => $$(`[data-dot="${k}"]`).forEach(d => d.classList.toggle('mc-hidden', !on));
     const W = cfg.weather || {}, S = cfg.social || {}, P = cfg.showprep || {}, C = cfg.schedule || {};
     const ws = (lastStatus && lastStatus.weather) || {};
-    dot('weather', !!W.enabled && (!W.source || (!!ws.error && ws.temp_f == null && ws.wind_mph == null)));
+    // The daemon's error is about the saved source; a source just picked here clears the dot at once
+    const wsErr = !!ws.error && (ws.source || '') === (W.source || '') && ws.temp_f == null && ws.wind_mph == null;
+    dot('weather', !!W.enabled && (!W.source || wsErr));
     const so = socialScreens(S);
     dot('social', !!S.enabled && (so.problems.length > 0 || !so.screens.length));
     dot('showprep', !!P.enabled && !APPS[P.app]);
@@ -826,7 +850,31 @@
     dot('messages', !!M.enabled && !(Array.isArray(M.items) ? M.items : []).some(m => m && m.enabled !== false && String(m.text || '').trim()));
     dot('display', !cfg.countdown.model);
     $('#mc-model-banner').classList.toggle('mc-hidden', !!cfg.countdown.model || tab === 'display');
+    updateStart();
   }
+  // ── getting started ──
+  function startDone() { try { return localStorage.getItem('showmarquee.started') === '1'; } catch (e) { return false; } }
+  function updateStart() {
+    const box = $('#mc-start');
+    if (!cfg || !box) return;
+    const anyOn = SECTIONS.some(([, , path]) => !!getPath(cfg, path));
+    const needs = $$('#mc-tabs [data-dot]').filter(d => d.dataset.dot !== 'display' && !d.classList.contains('mc-hidden'));
+    const dirty = JSON.stringify(cfg) !== saved;
+    const steps = [
+      [!!cfg.countdown.model, 'Choose your matrix', 'its overlay model, on the', 'display', 'Display tab'],
+      [anyOn, 'Turn on the pages you want', 'with the switches in the list below', null, ''],
+      [anyOn && !needs.length, 'Set up each page', '<strong>Edit</strong> opens its tab; a dot means it still needs something', null, ''],
+      [!dirty && !!cfg.countdown.model && anyOn, 'Save', 'nothing changes on the matrix until you do', null, ''],
+    ];
+    $('#mc-start-steps').innerHTML = steps.map(([ok, what, how, go, goText], i) =>
+      `<li class="mb-1"><span class="${ok ? 'text-success' : 'text-muted'}" aria-hidden="true">${ok ? '✓' : '○'}</span>
+        <span class="${ok ? 'text-muted text-decoration-line-through' : ''}"><strong>${i + 1}. ${what}</strong></span><span class="text-muted">: ${how}${go ? ` <a href="#${go}" data-goto="${go}">${goText}</a>` : ''}</span>
+        <span class="visually-hidden">${ok ? '(done)' : '(to do)'}</span></li>`).join('');
+    const all = steps.every(st => st[0]);
+    if (all) { try { localStorage.setItem('showmarquee.started', '1'); } catch (e) {} }
+    box.classList.toggle('mc-hidden', all || startDone());
+  }
+
   function onOverviewClick(e) {
     const go = e.target.closest('[data-goto]');
     if (go) { e.preventDefault(); showTab(go.dataset.goto); return; }
@@ -1288,6 +1336,10 @@
     $(`#mc-tabs [data-tab="${tab}"]`).focus();
   });
   $('#mc-root').addEventListener('click', onOverviewClick);
+  $('#mc-start-hide').addEventListener('click', () => {
+    try { localStorage.setItem('showmarquee.started', '1'); } catch (e) {}
+    $('#mc-start').classList.add('mc-hidden');
+  });
   renderOverview();      // the default order until the settings load
   let startTab = (location.hash || '').slice(1);
   if (!TABS.includes(startTab)) { try { startTab = localStorage.getItem('showmarquee.tab') || 'overview'; } catch (e) { startTab = 'overview'; } }

@@ -54,11 +54,11 @@ rm -f /home/fpp/media/config/plugin.fpp-showmarquee.json
 
 ## The settings page
 
-At the top: the plugin's status (Online, drawing at N fps, or what's wrong) with Start / Restart / Stop, then a row of tabs. The preview on the right shows the tab you're on; **Save** at the bottom saves every tab at once. If no matrix is chosen yet, a banner on every tab points to Display. The page opens on the tab you used last.
+At the top: the plugin's status (Online, drawing at N fps, or what's wrong), **Help** (this page) and Start / Restart / Stop, then a row of tabs. The preview on the right shows the tab you're on; **Save** at the bottom saves every tab at once. If no matrix is chosen yet, a banner on every tab points to Display. The page opens on the tab you used last.
 
 | Tab | What it does |
 |---|---|
-| **Overview** | **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. The preview plays every page in turn, as the matrix does. |
+| **Overview** | Until the setup is done once, **Getting started**: four steps (choose your matrix, turn on the pages you want, set up each page, Save) that tick themselves off, then hide for good (or click Hide). **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. A folded **How it works** sums up how pages take turns, get skipped and get saved. The preview plays every page in turn, as the matrix does. |
 | **Countdown** | **Show on the matrix**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
 | **Weather** | **Show on the matrix**; where it comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
 | **Social** | **Show on the matrix**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
