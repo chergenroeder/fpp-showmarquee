@@ -232,12 +232,11 @@ def _migrate_user(user: dict) -> bool:
         w["source"] = "tempest" if w.get("enabled") else ""
         changed = True
     if isinstance(w, dict):
-        # Before 4 the weather scrolled as "Temp 72°F" and "Wind 8 mph"; the
-        # weather page has no such labels.
-        for part in ("temperature", "wind"):
-            if isinstance(w.get(part), dict) and "label" in w[part]:
-                del w[part]["label"]
-                changed = True
+        # Before 4 the weather scrolled as "Temp 72°F"; the weather page has no
+        # temperature label. (The wind label is kept: the page says "Wind 8 mph".)
+        if isinstance(w.get("temperature"), dict) and "label" in w["temperature"]:
+            del w["temperature"]["label"]
+            changed = True
     # Before 5 the countdown could scroll (countdown.motion) and each section
     # had its own seconds. Now nothing scrolls and one global setting holds
     # every page; it takes the first of the old values that was set.

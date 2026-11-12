@@ -92,6 +92,7 @@ set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enable
   ```
   then put it back with `set '{"weather":{"symbol":{"wind_mph":15,"gust_mph":25}}}'`.
 - [ ] The text is readable from across the yard; on the P5 panel nothing is cut off.
+- [ ] The wind line reads "Wind 8 mph NW" (or "Wind Calm"); change the Wind **Label** and it changes.
 - [ ] Turn Wind off: the page shows the temperature only. Turn both off: no weather page.
 
 ## 7. Social media

@@ -84,20 +84,28 @@ SYMBOL_SHARES = (0.40, 0.35, 0.30)   # of the panel width, tried in turn to make
 
 
 def _without_direction(wind: str) -> str:
-    """ "18 mph NW" -> "18 mph" """
+    """ "Wind 18 mph NW" -> "Wind 18 mph" """
     from .weather import COMPASS
     words = wind.split()
     return " ".join(words[:-1]) if len(words) > 2 and words[-1] in COMPASS else wind
 
 
+def _without_label(wind: str, label: str) -> str:
+    """ "Wind 18 mph" -> "18 mph" """
+    return wind[len(label):].strip() if label and wind.startswith(label + " ") else wind
+
+
 def page_variants(page: WeatherPage) -> List[Tuple[str, ...]]:
     """The page's lines, then shorter versions to try when they don't fit:
-    without the gust line, then the wind without its direction, then the
-    first line alone."""
+    without the gust line, then the wind without its direction, then without
+    its label too (the label says what the number is, so it goes last), then
+    the first line alone."""
     full = page.lines
     short_wind = _without_direction(page.wind)
+    bare_wind = _without_label(short_wind, page.wind_label)
     out: List[Tuple[str, ...]] = [full]
-    for v in ((page.temp, page.wind), (page.temp, short_wind), (page.temp or short_wind,)):
+    for v in ((page.temp, page.wind), (page.temp, short_wind), (page.temp, bare_wind),
+              (page.temp or short_wind,)):
         v = tuple(x for x in v if x)
         if v and v not in out:
             out.append(v)
@@ -107,9 +115,10 @@ def page_variants(page: WeatherPage) -> List[Tuple[str, ...]]:
 def weather_layout(page: WeatherPage, panel_w: int, panel_h: int, number_style, text_style):
     """(symbol size, gap, [(text, style, size)]) for the page.
 
-    For each version of the lines (page_variants), tries the symbol at 40 %,
-    35 %, then 30 % of the width, and takes the first where every line is at
-    least READABLE. If none is, the first line alone, allowed down to size 4.
+    For each version of the lines (page_variants), in order, tries the symbol
+    at 40 %, 35 % and 30 % of the width and keeps the one where the smallest
+    line is largest (on a tie, the bigger symbol), as long as every line is at
+    least READABLE. If no version fits, the first line alone, down to size 4.
     """
     gap = max(1, panel_w // 32)
 
@@ -119,12 +128,16 @@ def weather_layout(page: WeatherPage, panel_w: int, panel_h: int, number_style, 
 
     for texts in page_variants(page):
         lines = styled(texts)
+        best = None
         for share in SYMBOL_SHARES:
             sym = max(0, min(panel_h, int(panel_w * share)))
             sizes = fit_lines(lines, panel_w - sym - gap, panel_h, READABLE)
-            if sizes is not None:
-                return (sym if sym >= MIN_SYMBOL else 0, gap,
-                        [(t, s, z) for (t, s), z in zip(lines, sizes)])
+            if sizes is not None and (best is None or min(sizes) > min(best[1])):
+                best = (sym, sizes)
+        if best is not None:
+            sym, sizes = best
+            return (sym if sym >= MIN_SYMBOL else 0, gap,
+                    [(t, s, z) for (t, s), z in zip(lines, sizes)])
     sym = max(0, min(panel_h, int(panel_w * SYMBOL_SHARES[-1])))
     lines = styled(page_variants(page)[-1])
     sizes = fit_lines(lines, panel_w - sym - gap, panel_h, 4) or [4] * len(lines)

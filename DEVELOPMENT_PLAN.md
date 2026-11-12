@@ -701,3 +701,15 @@ Asked for: a section for the plugin user's own messages, simple to set up but cu
 - [x] Dev server check: Add message, the `{days}` button inserting into the message being edited (it first went to message 1 when the browser hadn't registered focus; it now follows typing and clicks too, and otherwise picks the newest message), own colour, picture, the date pickers, and the preview ("Only 44 days until Christmas").
 - [ ] On fpp-matrix.local: TESTING.md section 10.
 
+---
+
+## The wind line says "Wind" (2026-11-11)
+
+Seen on the matrix: beside a sun or moon, "8 mph NW" didn't tell viewers it was the wind (decision 5 of version 4 had dropped the labels to save room). The wind line now starts with its label again: **"Wind 8 mph NW"**, **"Wind Calm"**.
+
+- `weather.wind.label` is back (default `Wind`, editable, `""` for none), with a Label field beside the Wind switch. Settings saved before version 4 keep theirs; the old cleanup now drops only the unused temperature label.
+- The temperature stays unlabelled ("72°F" says what it is).
+- On a small panel the label goes last: the gust line, then the direction, then "Wind" (by then the page may be showing the wind symbol, which says it too).
+- The layout now picks, for each version of the page, the symbol size that leaves the text largest (it used to take the biggest symbol that fit, which squeezed "Wind 18 mph NW" to size 11 on a 192 × 96 panel; now every line keeps the style's size, 16).
+- Tests: the label, changing and clearing it, its place in the shortening order, kept on a 64-wide panel. 258 in total.
+

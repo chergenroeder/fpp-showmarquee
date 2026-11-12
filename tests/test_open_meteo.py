@@ -160,7 +160,7 @@ class Poller(unittest.TestCase):
         self.assertEqual(r.source, "open-meteo")
         self.assertEqual(r.humidity, 76)
         page = weather_page(r, {**CFG, "wind": {"gust_min_diff_mph": 5}}, hour=12)
-        self.assertEqual(page.lines, ("39°F", "7 mph W", "gusts 15"))
+        self.assertEqual(page.lines, ("39°F", "Wind 7 mph W", "gusts 15"))
         # is_day 0 from Open-Meteo wins over the clock (noon): the moon
         self.assertEqual((page.symbol, page.is_day, page.day_from), ("moon", False, "open-meteo"))
 
@@ -196,7 +196,7 @@ class Poller(unittest.TestCase):
         r = p.reading()
         self.assertIsNone(r.temp_c)
         page = weather_page(r, CFG, hour=12)
-        self.assertEqual(page.lines, ("Calm",))
+        self.assertEqual(page.lines, ("Wind Calm",))
 
     def test_failed_fetch_keeps_the_last_reading(self):
         p = self.make()

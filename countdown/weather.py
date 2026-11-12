@@ -474,7 +474,7 @@ class OpenMeteoPoller:
 DEFAULTS = {
     "stale_minutes": 5,
     "temperature": {"enabled": True},
-    "wind": {"enabled": True, "direction": True, "gusts": True,
+    "wind": {"enabled": True, "label": "Wind", "direction": True, "gusts": True,
              "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"},
     "symbol": {"wind_mph": 15, "gust_mph": 25},
 }
@@ -487,10 +487,11 @@ CLOCK_DAY = (7, 19)    # neither known: day from 7:00 to 19:00 on the player's c
 class WeatherPage:
     symbol: str          # "sun", "moon" or "wind"
     temp: str = ""       # "72°F"
-    wind: str = ""       # "8 mph NW" or "Calm"
+    wind: str = ""       # "Wind 8 mph NW" or "Wind Calm" (with its label)
     gust: str = ""       # "gusts 15"
     is_day: bool = True
     day_from: str = ""   # what said day or night: "open-meteo", "tempest" or "clock"
+    wind_label: str = "" # the label at the start of the wind line ("Wind"), so a small panel can drop it last
 
     @property
     def lines(self) -> Tuple[str, ...]:
@@ -550,6 +551,7 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
     mph = ms_to_mph(r.wind_ms) if wind_fresh else None
     gust_mph = ms_to_mph(r.gust_ms) if gust_fresh else None
     wind = gust = ""
+    wind_label = " ".join(str(w.get("label") if w.get("label") is not None else "Wind").split())
     if w.get("enabled") and mph is not None:
         if mph < 1:
             wind = str(w.get("calm_text") or "Calm").strip() or "Calm"
@@ -557,6 +559,8 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
             wind = f"{round(mph)} mph"
             if w.get("direction") and r.wind_dir is not None:
                 wind += " " + compass(r.wind_dir)
+        # Say what the number is: beside a sun or moon, "8 mph NW" alone doesn't
+        wind = f"{wind_label} {wind}".strip()
         if (w.get("gusts") and gust_mph is not None and gust_mph >= 1
                 and gust_mph - mph >= float(w.get("gust_min_diff_mph", 5))):
             label = str(w.get("gust_label") or "").strip()
@@ -568,4 +572,4 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
     windy = ((mph is not None and mph >= float(sym.get("wind_mph", 15)))
              or (gust_mph is not None and gust_mph >= float(sym.get("gust_mph", 25))))
     symbol = "wind" if windy else ("sun" if is_day else "moon")
-    return WeatherPage(symbol, temp, wind, gust, is_day, day_from)
+    return WeatherPage(symbol, temp, wind, gust, is_day, day_from, wind_label if wind else "")

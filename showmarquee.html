@@ -169,6 +169,8 @@
           <div class="row g-2 align-items-end mt-1">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-w-on" data-path="weather.wind.enabled">
               <label class="form-check-label" for="mc-w-w-on">Wind <span class="mc-example" id="mc-ex-wind"></span></label></div></div>
+            <div class="col-4 col-sm-2"><label class="form-label form-label-sm mb-0" for="mc-w-w-label">Label</label>
+              <input type="text" class="form-control form-control-sm" id="mc-w-w-label" maxlength="20" data-path="weather.wind.label"></div>
             <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-dir" data-path="weather.wind.direction">
               <label class="form-check-label" for="mc-w-dir">Direction</label></div></div>
             <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-gust" data-path="weather.wind.gusts">
@@ -857,7 +859,7 @@
     $$('.mc-w-om-only').forEach(el => el.classList.toggle('mc-hidden', src !== 'open-meteo'));
     showLocation();
     $('#mc-ex-temp').textContent = '72°F';
-    $('#mc-ex-wind').textContent = join('8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
+    $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });

@@ -43,7 +43,7 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "pieces": [["number", "45 Days"], ["text", "to Christmas"]]
   },
   "output": { "state": "drawing", "error": "", "fps": 19.8, "root": true },
-  "showing": { "slot": "weather", "message": "[Moon] 37°F 2 mph NNE" },
+  "showing": { "slot": "weather", "message": "[Moon] 37°F Wind 2 mph NNE" },
   "weather": {
     "enabled": true, "source": "tempest", "listening": true, "error": "",
     "hub": "HB-00069444", "device": "ST-00084993", "hub_ip": "192.168.1.147",
@@ -53,7 +53,7 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "wind_mph": 2.1, "wind_dir": "NNE", "wind_age_s": 1,
     "gust_mph": 2.5, "humidity": 40.0,
     "solar_wm2": 0.0, "lux": 0.0,
-    "page": { "symbol": "moon", "lines": ["37°F", "2 mph NNE"], "plain": "[Moon] 37°F 2 mph NNE" },
+    "page": { "symbol": "moon", "lines": ["37°F", "Wind 2 mph NNE"], "plain": "[Moon] 37°F Wind 2 mph NNE" },
     "is_day": false, "day_from": "tempest"
   },
   "social": {
@@ -195,6 +195,7 @@ The full settings:
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
 | `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
+| `weather.wind.label` | the word before the wind speed on the weather page (`Wind 8 mph NW`); `""` for none. Default `Wind` |
 | `weather.symbol.wind_mph` / `gust_mph` | 0–200: show the wind symbol when the wind (or the gusts) is at least this; otherwise the sun by day, the moon at night |
 | `social.enabled` | show the social media screens |
 | `social.sites.<site>.enabled` / `handle` | site is `facebook`, `instagram`, `tiktok` or `youtube`. Handle: up to 30 letters, digits, `.`, `_`, `-`; a leading `@` is accepted and removed when saved. A site that's on with no handle is skipped. |
@@ -274,7 +275,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
   "strip": "<base64 PNG of the first page>", "strip_width": 192, "strip_height": 96,
   "strips": [
     { "slot": "countdown", "message": "Christmas in 45 Days", "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 },
-    { "slot": "weather", "message": "[Moon] 37°F 2 mph NNE", "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 }
+    { "slot": "weather", "message": "[Moon] 37°F Wind 2 mph NNE", "strip": "<base64 PNG>", "strip_width": 192, "strip_height": 96 }
   ],
   "warning": "Number font “X” isn't on this player; using “DejaVuSans-Bold” instead."
 }
