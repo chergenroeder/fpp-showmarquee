@@ -56,5 +56,11 @@
             "tiktok":    { "enabled": false, "handle": "" },
             "youtube":   { "enabled": false, "handle": "" }
         }
+    },
+    "showprep": {
+        "enabled": false,
+        "app": "",
+        "message": "Scan to get the {app} app before the show",
+        "link": ""
     }
 }

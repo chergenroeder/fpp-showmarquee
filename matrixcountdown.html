@@ -40,6 +40,7 @@
         <tr><td class="mc-k">Output</td><td id="mc-s-output">–</td></tr>
         <tr><td class="mc-k">Weather</td><td id="mc-s-weather">–</td></tr>
         <tr><td class="mc-k">Social media</td><td id="mc-s-social">–</td></tr>
+        <tr><td class="mc-k">Show prep</td><td id="mc-s-showprep">–</td></tr>
         <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
       </table>
     </div>
@@ -216,7 +217,38 @@
         </div>
       </div>
 
-      <div class="mc-section">Shared by all three</div>
+      <div class="mc-section">4 · Show Prep</div>
+
+      <!-- Show prep -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Show Prep</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-sp-on" data-path="showprep.enabled">
+            <label class="form-check-label" for="mc-sp-on">Show prep page</label></div>
+        </div>
+        <div class="card-body" id="mc-showprep-body">
+          <div class="small text-muted mb-2">Tells viewers to get your show's audio app before the show: a QR code they scan with their phone's camera, beside your message.</div>
+          <fieldset class="mb-2 p-2 rounded border" id="mc-sp-app">
+            <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">The app viewers should get</legend>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-sp-app" id="mc-sp-app-pm" value="pulsemesh" data-path="showprep.app">
+              <label class="form-check-label" for="mc-sp-app-pm">PulseMesh <span class="mc-example">QR opens pulsemesh.io/download, which sends each phone to its own app store</span></label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="mc-sp-app" id="mc-sp-app-t2" value="tune2" data-path="showprep.app">
+              <label class="form-check-label" for="mc-sp-app-t2">Tune2 <span class="mc-example">QR opens Tune2's downloads page, with its App Store and Google Play links</span></label></div>
+            <div class="small mc-warn mt-1 mc-hidden" id="mc-sp-app-need">Choose the app: the page doesn't show until you do.</div>
+          </fieldset>
+          <div class="row g-2">
+            <div class="col-12"><label class="form-label form-label-sm mb-0" for="mc-sp-msg">Message <span class="mc-example">{app} becomes the app's name</span></label>
+              <input type="text" class="form-control form-control-sm" id="mc-sp-msg" maxlength="120" data-path="showprep.message"></div>
+            <div class="col-12"><label class="form-label form-label-sm mb-0" for="mc-sp-link">Your own link for the QR code <span class="mc-example">optional; e.g. your show's web page</span></label>
+              <input type="url" class="form-control form-control-sm" id="mc-sp-link" maxlength="200" placeholder="(the app's download page)" autocomplete="off" spellcheck="false" data-path="showprep.link"></div>
+          </div>
+          <div class="small mt-2" id="mc-sp-plan"></div>
+          <div class="small mc-warn" id="mc-sp-warn"></div>
+          <div class="small text-muted mt-1">The app's name uses the Number style, the rest of the message the Text style. Shorter links make smaller codes, which can be drawn with more LEDs per square (easier to scan).</div>
+        </div>
+      </div>
+
+      <div class="mc-section">Shared by all</div>
 
       <!-- Pages -->
       <div class="card mb-3">
@@ -226,7 +258,7 @@
             <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
               <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
           </div>
-          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page and each social media screen show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
+          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen and the show prep page show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
         </div>
       </div>
 
@@ -277,6 +309,8 @@
             <label class="btn btn-outline-secondary" for="mc-as-weather">Weather</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-social" value="social">
             <label class="btn btn-outline-secondary" for="mc-as-social">Social</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-showprep" value="showprep">
+            <label class="btn btn-outline-secondary" for="mc-as-showprep">Show prep</label>
           </div>
         </div>
         <div class="card-body">
@@ -417,6 +451,24 @@
     $('#mc-so-warn').textContent = problems.join(' ');
   }
 
+  // ── show prep ──
+  const APPS = { pulsemesh: { name: 'PulseMesh', link: 'https://pulsemesh.io/download' },
+                 tune2: { name: 'Tune2', link: 'https://www.tune2.app/downloads' } };
+  function refreshShowPrep() {
+    const P = cfg.showprep || {};
+    $('#mc-showprep-body').style.opacity = P.enabled ? '' : '.55';
+    const app = APPS[P.app];
+    const needApp = !!P.enabled && !app;
+    $('#mc-sp-app-need').classList.toggle('mc-hidden', !needApp);
+    $('#mc-sp-app').classList.toggle('border-warning', needApp);
+    const own = String(P.link || '').trim();
+    const badLink = own && !/^https?:\/\/[^\s/$.?#][^\s]*$/i.test(own);
+    $('#mc-sp-plan').textContent = app
+      ? `QR code opens ${own || app.link}. Message: “${String(P.message || '').replace(/\{app\}/g, app.name)}”`
+      : '';
+    $('#mc-sp-warn').textContent = badLink ? 'The link must be a web address starting with https:// (or http://).' : '';
+  }
+
   // ── style cards ──
   function buildStyleCards() {
     $$('[data-style]').forEach(col => {
@@ -509,6 +561,7 @@
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
     refreshSocial();
+    refreshShowPrep();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
     $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
@@ -643,9 +696,11 @@
     refresh();
     const W = cfg.weather || {}, S = cfg.social || {};
     const noScreens = S.enabled && !socialScreens(S).screens.length;
+    const P = cfg.showprep || {}, noApp = P.enabled && !APPS[P.app];
     notify(W.enabled && !W.source ? 'Saved. Choose where the weather comes from for it to show.'
-         : noScreens ? 'Saved. Turn on a site and enter its handle for social media to show.' : 'Saved',
-           (W.enabled && !W.source) || noScreens);
+         : noScreens ? 'Saved. Turn on a site and enter its handle for social media to show.'
+         : noApp ? 'Saved. Choose the app for the show prep page to show.' : 'Saved',
+           (W.enabled && !W.source) || noScreens || noApp);
     setTimeout(loadStatus, 600);
   };
 
@@ -744,6 +799,9 @@
       : (so.screens || []).length ? so.screens.map(x => x.plain).join(' → ') + (soProblems.length ? ' · ' + soProblems.join('; ') : '')
       : 'no screens: ' + (soProblems.join('; ') || 'turn on a site and enter its handle');
     soEl.className = so.enabled && soProblems.length ? 'mc-warn' : '';
+    const sp = s.showprep || {}, spEl = $('#mc-s-showprep');
+    spEl.textContent = !sp.enabled ? 'off' : sp.problem ? sp.problem : `${sp.app_name}: QR to ${sp.link}`;
+    spEl.className = sp.enabled && sp.problem ? 'mc-warn' : '';
     const o = s.output || {};
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');

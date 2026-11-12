@@ -63,6 +63,11 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
       { "sites": ["instagram"], "handle": "smith_lights", "plain": "[Instagram] @smith_lights" }
     ],
     "problems": { "tiktok": "TikTok is on but has no handle" }
+  },
+  "showprep": {
+    "enabled": true, "app": "pulsemesh", "app_name": "PulseMesh",
+    "link": "https://pulsemesh.io/download", "own_link": false, "problem": "",
+    "plain": "[QR https://pulsemesh.io/download] Scan to get the PulseMesh app before the show"
   }
 }
 ```
@@ -73,9 +78,10 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `target` | `null` if a custom target has no valid date. `display` is `days`, `hms`, `hours`, `minutes` or `blank`. |
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
-| `showing` | What the matrix is drawing now: `slot` is `countdown`, `weather` (the weather page), or `social:<sites>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
+| `showing` | What the matrix is drawing now: `slot` is `countdown`, `weather` (the weather page), `social:<sites>`, or `showprep` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
 | `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `page` is what the weather page shows now (`symbol` is `sun`, `moon` or `wind`; `lines` are the temperature, wind and gust lines that are on and fresh), or `null` when there's nothing to show. `is_day` and `day_from` (`open-meteo`, `tempest` or `clock`) say how the sun or moon was chosen. `solar_wm2` and `lux` are the Tempest's light readings (`null` with Open-Meteo). |
 | `social` | `screens`: the social media screens in the order they show, one per distinct handle (sites with the same handle, ignoring case and `@`, share a screen). `problems`: sites that are on but can't show, by site key. |
+| `showprep` | `link` is what the QR code opens (`own_link` when it's yours rather than the app's). `problem` says why the page can't show or is incomplete: no app chosen, a bad link, or the QR code library missing. |
 
 ### `GET version`
 
@@ -132,6 +138,12 @@ The full settings:
       "tiktok":    { "enabled": false, "handle": "" },
       "youtube":   { "enabled": false, "handle": "" }
     }
+  },
+  "showprep": {
+    "enabled": false,
+    "app": "",
+    "message": "Scan to get the {app} app before the show",
+    "link": ""
   }
 }
 ```
@@ -152,6 +164,10 @@ The full settings:
 | `weather.symbol.wind_mph` / `gust_mph` | 0–200: show the wind symbol when the wind (or the gusts) is at least this; otherwise the sun by day, the moon at night |
 | `social.enabled` | show the social media screens |
 | `social.sites.<site>.enabled` / `handle` | site is `facebook`, `instagram`, `tiktok` or `youtube`. Handle: up to 30 letters, digits, `.`, `_`, `-`; a leading `@` is accepted and removed when saved. A site that's on with no handle is skipped. |
+| `showprep.enabled` | show the show prep page |
+| `showprep.app` | `pulsemesh`, `tune2`, or `""` (not chosen: no page) |
+| `showprep.message` | up to 120 characters; `{app}` becomes the app's name |
+| `showprep.link` | `""` for the app's own page (PulseMesh: `https://pulsemesh.io/download`, which picks the phone's store; Tune2: `https://www.tune2.app/downloads`), or your own `https://` or `http://` link, up to 200 characters |
 | `*_style.font` | a name from `GET fonts`; `""` = Pillow's built-in font. A missing font falls back to an installed bold sans font. |
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
@@ -203,7 +219,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {
@@ -221,7 +237,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 }
 ```
 
-`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, or when a handle is too wide for the panel even at the smallest size.
+`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle, then with Show Prep on `showprep`. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, when a handle is too wide for the panel even at the smallest size, or when the show prep page's QR code or message doesn't fit (or the QR code library is missing).
 
 ---
 

@@ -1,9 +1,11 @@
 """Still pages: drawn once, held on the matrix for the seconds per page, never scrolled.
 
-Two kinds take turns with the countdown (also held still, see render.py):
-  social.Screen        logos above an @handle (drawn by social.draw_screen)
-  weather.WeatherPage  a sun/moon/wind symbol beside the temperature, wind and
-                       gust lines (drawn here)
+Three kinds take turns with the countdown (also held still, see render.py):
+  weather.WeatherPage    a sun/moon/wind symbol beside the temperature, wind and
+                         gust lines (drawn here)
+  social.Screen          logos above an @handle (drawn by social.draw_screen)
+  showprep.ShowPrepPage  a QR code to the show's audio app beside a message
+                         (drawn here)
 
 is_still() tells the drawing loop which items are drawn here (the countdown is
 drawn by render.Renderer, centered), page_seconds() how long every page shows,
@@ -12,6 +14,7 @@ and StillCache draws each page once per panel and style.
 
 from typing import Dict, List, Optional, Tuple
 
+from .showprep import ShowPrepPage
 from .social import Screen
 from .weather import WeatherPage
 
@@ -21,7 +24,7 @@ LINE_GAP = 1
 
 
 def is_still(item) -> bool:
-    return isinstance(item, (Screen, WeatherPage))
+    return isinstance(item, (Screen, WeatherPage, ShowPrepPage))
 
 
 def page_seconds(cfg: dict) -> float:
@@ -147,6 +150,115 @@ def draw_weather_page(page: WeatherPage, panel_w: int, panel_h: int, number_styl
     return img
 
 
+# ── Show prep page ────────────────────────────────────────────────────────────
+
+QR_LIGHT = (225, 225, 225)   # the code's light squares and border, a little under full white so it doesn't glare
+
+
+def _space(style, size: int) -> float:
+    """The gap between words: the font's space, but at least 30 % of the size (pixel fonts' spaces can vanish)."""
+    return max(style.font(size).getlength(" "), size * 0.3)
+
+
+def _wrap(words: List[Tuple[str, object]], size: int, width: int) -> Optional[List[List[Tuple[str, object]]]]:
+    """Greedy word wrap at one font size; None if a single word is wider than width."""
+    lines: List[List[Tuple[str, object]]] = [[]]
+
+    def line_w(line):
+        if not line:
+            return 0
+        space = _space(line[0][1], size)
+        return sum(st.font(size).getlength(w) for w, st in line) + space * (len(line) - 1)
+
+    for word, st in words:
+        if st.font(size).getlength(word) > width:
+            return None
+        if lines[-1] and line_w(lines[-1] + [(word, st)]) > width:
+            lines.append([])
+        lines[-1].append((word, st))
+    return [ln for ln in lines if ln]
+
+
+def message_layout(page: ShowPrepPage, width: int, height: int, number_style, text_style,
+                   min_size: int = READABLE):
+    """(font size, lines of (word, style)) for the message, or (None, []) if it can't fit.
+
+    The app's name is in the Number style, the rest in the Text style, all at
+    one size: the Text style's size, shrinking until the wrapped lines fit.
+    """
+    app = page.app_name.lower()
+    words = [(w, number_style if w.strip(".,!?:;").lower() == app else text_style)
+             for w in page.message.split()]
+    if not words:
+        return None, []
+    for size in range(max(int(text_style.size), min_size), min_size - 1, -1):
+        lines = _wrap(words, size, width)
+        if lines is None:
+            continue
+        asc = max(max(st.font(size).getmetrics()[0] for _w, st in ln) for ln in lines)
+        desc = max(max(st.font(size).getmetrics()[1] for _w, st in ln) for ln in lines)
+        if len(lines) * (asc + desc) + LINE_GAP * (len(lines) - 1) <= height:
+            return size, lines
+    return None, []
+
+
+def draw_show_prep(page: ShowPrepPage, panel_w: int, panel_h: int, number_style, text_style):
+    """(image, problem): the QR code on the left, the message on the right.
+
+    problem is "" or why the page isn't complete (no QR library, or the code
+    doesn't fit the panel), for the settings page.
+    """
+    from PIL import Image, ImageDraw
+    from .showprep import QUIET, best_qr
+    img = Image.new("RGB", (panel_w, panel_h))
+    problem = ""
+    qr_px = 0
+    try:
+        modules, scale = best_qr(page.link, min(panel_h, panel_w // 2))
+    except ImportError:
+        modules, scale = None, 0
+        problem = "the QR code library (python3-qrcode) isn't installed: Reinstall the plugin"
+    if modules is not None:
+        n = len(modules)
+        qr_px = (n + 2 * QUIET) * scale
+        x0, y0 = 0, (panel_h - qr_px) // 2
+        d = ImageDraw.Draw(img)
+        d.rectangle([x0, y0, x0 + qr_px - 1, y0 + qr_px - 1], fill=QR_LIGHT)
+        for r, row in enumerate(modules):
+            for c, dark in enumerate(row):
+                if dark:
+                    x, y = x0 + (QUIET + c) * scale, y0 + (QUIET + r) * scale
+                    d.rectangle([x, y, x + scale - 1, y + scale - 1], fill=(0, 0, 0))
+    elif not problem:
+        problem = f"the QR code doesn't fit a {panel_w}\u00d7{panel_h} matrix"
+
+    gap = max(2, panel_w // 32) if qr_px else 0
+    x_text = qr_px + gap
+    width = panel_w - x_text
+    size, lines = message_layout(page, width, panel_h, number_style, text_style)
+    if size is None:
+        size, lines = message_layout(page, width, panel_h, number_style, text_style, min_size=4)
+        if size is not None and not problem:
+            problem = "the message is too small to read beside the QR code: shorten it or use a smaller Text size"
+    if size is None:
+        return img, problem or "the message doesn't fit beside the QR code: shorten it"
+    asc = max(max(st.font(size).getmetrics()[0] for _w, st in ln) for ln in lines)
+    desc = max(max(st.font(size).getmetrics()[1] for _w, st in ln) for ln in lines)
+    block = len(lines) * (asc + desc) + LINE_GAP * (len(lines) - 1)
+    y = (panel_h - block) // 2
+    draw = ImageDraw.Draw(img)
+    for ln in lines:
+        space = _space(ln[0][1], size)
+        line_w = sum(st.font(size).getlength(w) for w, st in ln) + space * (len(ln) - 1)
+        x = x_text + (width - line_w) / 2
+        for w, st in ln:
+            draw.fontmode = "L" if st.antialias else "1"
+            draw.text((x, y + asc), w, fill=st.color, font=st.font(size), anchor="ls")
+            x += st.font(size).getlength(w) + space
+        y += asc + desc + LINE_GAP
+    return img, problem
+
+
 # ── Cache ─────────────────────────────────────────────────────────────────────
 
 class StillCache:
@@ -172,4 +284,6 @@ def draw(item, panel_w: int, panel_h: int, number_style, text_style):
     if isinstance(item, Screen):
         from .social import draw_screen
         return draw_screen(item, panel_w, panel_h, text_style)[0]
+    if isinstance(item, ShowPrepPage):
+        return draw_show_prep(item, panel_w, panel_h, number_style, text_style)[0]
     return draw_weather_page(item, panel_w, panel_h, number_style, text_style)

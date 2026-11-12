@@ -111,7 +111,19 @@ set '{"global":{"screen_seconds":3},"social":{"sites":{"instagram":{"handle":"sm
 - [ ] Turn **Countdown on** off: only the social screens take turns.
 - [ ] The page's **Social media** status line names the screens; switching a site on with an empty handle shows a warning there and in the card.
 
-## 8. Recovery
+## 8. Show prep
+
+```bash
+set '{"global":{"screen_seconds":5},"showprep":{"enabled":true,"app":"pulsemesh","link":""}}'
+```
+
+- [ ] After the countdown, **the show prep page**: a QR code on the left with a light border, "Scan to get the **PulseMesh** app before the show" on the right.
+- [ ] Scan the code on the matrix with an iPhone camera from the street: it opens pulsemesh.io/download and goes on to the App Store. With an Android phone: Google Play.
+- [ ] Switch to Tune2 (`"app":"tune2"`): the code opens www.tune2.app/downloads; its App Store and Google Play links work.
+- [ ] Your own link (`"link":"https://example.com"`) replaces it; clearing it (`"link":""`) goes back to the app's page.
+- [ ] Try it at the brightness you run the show at: if phones struggle, lower the matrix brightness a little.
+
+## 9. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.

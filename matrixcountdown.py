@@ -31,6 +31,8 @@ from typing import Dict, List, Optional
 from countdown.fonts import FontIndex
 from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
+from countdown.showprep import (APPS, MESSAGE_MAX, ShowPrepPage, link_problem, show_prep_page,
+                                show_prep_status)
 from countdown.social import SITES, Screen, clean_handle, handle_problem, social_screens, social_status
 from countdown.still import StillCache, is_still, page_seconds
 from countdown.timecalc import compute_display, local_now, resolve_target
@@ -420,6 +422,15 @@ def validate_config(cfg: dict) -> List[str]:
         problem = handle_problem(site.get("handle"))
         if problem:
             errors.append(f"social.sites.{key}.handle: the {name} handle {problem}")
+    sp = cfg.get("showprep") or {}
+    if not isinstance(sp.get("enabled", False), bool):
+        errors.append("showprep.enabled must be true or false")
+    if str(sp.get("app") or "") not in {"", *APPS}:
+        errors.append("showprep.app must be \"pulsemesh\", \"tune2\" or \"\" (not chosen)")
+    if link_problem(sp.get("link")):
+        errors.append(f"showprep.link {link_problem(sp.get('link'))}")
+    if len(str(sp.get("message") or "")) > MESSAGE_MAX:
+        errors.append(f"showprep.message must be at most {MESSAGE_MAX} characters")
     return errors
 
 
@@ -604,14 +615,14 @@ class CountdownDaemon:
         """The message as the matrix would draw it, from unsaved form settings.
 
         body: {"config": {...partial config...}, "width": w, "height": h,
-               "as": "now" | "days" | "under_day" | "weather" | "social"}
+               "as": "now" | "days" | "under_day" | "weather" | "social" | "showprep"}
         Returns the drawn strip as a PNG (base64) plus what the page needs to
         animate it the same way the daemon moves it.
         """
         try:
             from countdown.render import Renderer
             from countdown.social import draw_screen
-            from countdown.still import draw_weather_page
+            from countdown.still import draw_show_prep, draw_weather_page
         except ImportError:
             return {"error": "Pillow is not installed"}
         cfg = _deep_merge(load_defaults(), body.get("config") or {})
@@ -673,6 +684,9 @@ class CountdownDaemon:
                 if page is not None:
                     sequence.append((page.slot, page))
             sequence += [(sc.slot, sc) for sc in social_screens(cfg.get("social") or {})]
+            prep = show_prep_page(cfg.get("showprep") or {})
+            if prep is not None:
+                sequence.append((prep.slot, prep))
             if not sequence:
                 sequence = [("countdown", message)]
         if mode == "social":
@@ -683,6 +697,14 @@ class CountdownDaemon:
                 shown = [Screen(tuple(k for k, _ in SITES), "YourHandle")]
                 weather_note = "sample handle (no site is on with a handle)"
             sequence = [(sc.slot, sc) for sc in shown]
+        if mode == "showprep":
+            # Show the page even if Show Prep is switched off, so it can be set up first
+            spcfg = cfg.get("showprep") or {}
+            prep = show_prep_page(spcfg, force=True)
+            if prep is None:
+                prep = show_prep_page({**spcfg, "app": "pulsemesh", "link": ""}, force=True)
+                weather_note = "sample with PulseMesh (choose the app)"
+            sequence = [(prep.slot, prep)]
         result = {
             "width": w, "height": h,
             "target": {"when": target.when.isoformat(timespec="minutes"),
@@ -701,6 +723,10 @@ class CountdownDaemon:
             # Every page is a panel-sized picture, held still on the matrix
             if isinstance(msg, WeatherPage):
                 strip = draw_weather_page(msg, w, h, number_style, text_style)
+            elif isinstance(msg, ShowPrepPage):
+                strip, problem = draw_show_prep(msg, w, h, number_style, text_style)
+                if problem:
+                    notes.append("Show prep: " + problem + ".")
             elif is_still(msg):
                 strip, fits = draw_screen(msg, w, h, text_style)
                 if not fits:
@@ -774,6 +800,7 @@ class CountdownDaemon:
             "showing": dict(self._showing),
             "weather": self.weather_status(cfg),
             "social": social_status(cfg.get("social") or {}),
+            "showprep": show_prep_status(cfg.get("showprep") or {}),
         }
 
     # ── Weather ──
@@ -916,13 +943,15 @@ class CountdownDaemon:
             errors = validate_config(cfg)
             wcfg = cfg.get("weather") or {}
             scfg = cfg.get("social") or {}
+            spcfg = cfg.get("showprep") or {}
             if not errors:
                 self._ensure_listener(cfg)
 
             # Nothing to draw: make sure the model is off
             reason = ("output disabled" if not g.get("enable_output", True) else
-                      "countdown, weather and social media off"
-                      if not (cd.get("enabled", True) or wcfg.get("enabled") or scfg.get("enabled")) else
+                      "countdown, weather, social media and show prep off"
+                      if not (cd.get("enabled", True) or wcfg.get("enabled") or scfg.get("enabled")
+                              or spcfg.get("enabled")) else
                       "no model chosen" if not model else "")
             if reason or errors:
                 if out is not None:
@@ -993,6 +1022,9 @@ class CountdownDaemon:
                         if page is not None:
                             candidates.append((page.slot, page))
                 candidates.extend((sc.slot, sc) for sc in social_screens(scfg))
+                prep = show_prep_page(spcfg)
+                if prep is not None:
+                    candidates.append((prep.slot, prep))
                 available = [(n, m) for n, m in candidates if is_still(m) or not m.blank]
 
                 if not available:

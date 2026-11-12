@@ -617,3 +617,28 @@ Asked for: remove scrolling from every section; each section shows on its own, f
 - [x] Dev server check: Pages card, no Motion card; the matrix and the preview switch pages every 3 s with `screen_seconds` 3.
 - [ ] On fpp-matrix.local: TESTING.md sections 1, 6 and 7.
 
+---
+
+## Version 6 — Show prep page (built 2026-11-11)
+
+Asked for: a section that tells viewers to download the show's audio app before the show, with the user choosing **PulseMesh** or **Tune2**, and a QR code a phone can scan to get to the app store for that app.
+
+**Research (2026-11-11)**
+- PulseMesh: App Store `https://apps.apple.com/us/app/pulsemesh/id6695758719`, Google Play `io.pulsemesh.app`. **`https://pulsemesh.io/download`** is a viewer page ("Get the PulseMesh app") that redirects each phone to its store, with the web player `https://player.pulsemesh.io` as a fallback.
+- Tune2: App Store `https://apps.apple.com/ie/app/tune2/id6547844420`, Google Play `com.tune.two`. No single link that picks the store; **`https://www.tune2.app/downloads`** has both store links (and Tune2 Sync for display owners).
+- QR size: both links (29 and 31 characters) fit the smallest code that holds them (version 2, 25 × 25 at error correction L); a 2-module lit border makes 29 squares, so 3 LEDs per square on a 96-tall matrix (87 LEDs). The store links themselves would need version 3–4 (29–33 squares).
+
+**Decisions (2026-11-11, with the user)**
+- Tune2's code opens its downloads page (chosen over two codes, iPhone and Android, or a typed link). Either app can be given the user's own link instead.
+- The user's matrix is 192 × 96.
+
+**Built**
+- [x] `countdown/showprep.py`: `APPS` (name, default link), `show_prep_page()`, `link_problem()`, `show_prep_status()`, `qr_matrix()` (python3-qrcode, imported only when drawing) and `best_qr()`: the biggest code that fits at whole LEDs per square, trying error correction H, Q, M, L (higher wins a tie).
+- [x] `still.py`: `draw_show_prep()`: the code on the left (dark squares on a light (225,225,225) background with a 2-square border, phones need the light border), the message word-wrapped on the right, the app's name in the Number style. Word gaps are at least 30 % of the size (some fonts' spaces vanish). The page says when the code doesn't fit, the text has to go below size 8, or the library is missing (the message still shows).
+- [x] Daemon: `showprep` settings (`enabled`, `app`, `message`, `link`) and validation; its turn after the social screens; `status.showprep`; preview `as: showprep` (a PulseMesh sample when no app is chosen) and in "Now".
+- [x] `pluginInfo.json`: `python3-qrcode` added to `dependencies.packages` (Debian bookworm 7.4.2, architecture all); description. `fpp_install.sh` warns if it's missing.
+- [x] Settings page: a "4 · Show Prep" card (switch, app choice with where each code goes, message, own link, a line naming the link), a Show prep preview button, a status line.
+- [x] Tests: 19 in `tests/test_showprep.py`, including the drawn code read back square by square and compared to the library's. 212 in total, all passing.
+- [x] Dev server check, and a real scan: Chromium's `BarcodeDetector` read `https://pulsemesh.io/download` and `https://www.tune2.app/downloads` from the preview images.
+- [ ] On fpp-matrix.local: **Reinstall** (not just Update) so FPP installs python3-qrcode; then TESTING.md section 8, scanning from the street with an iPhone and an Android phone.
+
