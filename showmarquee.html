@@ -46,12 +46,12 @@
   <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="mc-tabs" role="tablist">
     <li class="nav-item" role="presentation"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="show" role="tab">Show<span class="mc-dot mc-hidden" data-dot="show" title="Needs attention"></span></button></li>
-    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
-    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
-    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
-    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="showprep" role="tab">Show prep<span class="mc-dot mc-hidden" data-dot="showprep" title="Needs attention"></span></button></li>
-    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="schedule" role="tab">Schedule<span class="mc-dot mc-hidden" data-dot="schedule" title="Needs attention"></span></button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="messages" role="tab">Messages<span class="mc-dot mc-hidden" data-dot="messages" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="schedule" role="tab">Schedule<span class="mc-dot mc-hidden" data-dot="schedule" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="showprep" role="tab">Show prep<span class="mc-dot mc-hidden" data-dot="showprep" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="display" role="tab">Display<span class="mc-dot mc-hidden" data-dot="display" title="Needs attention"></span></button></li>
   </ul>
 
@@ -908,9 +908,11 @@
   }
 
   // ── tabs and the overview ──
-  const SECTIONS = [['show', 'Show', 'show.enabled'], ['countdown', 'Countdown', 'countdown.enabled'], ['weather', 'Weather', 'weather.enabled'],
-                    ['social', 'Social media', 'social.enabled'], ['showprep', 'Show prep', 'showprep.enabled'],
-                    ['schedule', 'Schedule', 'schedule.enabled'], ['messages', 'Messages', 'messages.enabled']];
+  // The default order (countdown/still.py SECTIONS): the Overview list and the tabs follow it
+  const SECTIONS = [['show', 'Show', 'show.enabled'], ['messages', 'Messages', 'messages.enabled'],
+                    ['countdown', 'Countdown', 'countdown.enabled'], ['schedule', 'Schedule', 'schedule.enabled'],
+                    ['showprep', 'Show prep', 'showprep.enabled'], ['social', 'Social media', 'social.enabled'],
+                    ['weather', 'Weather', 'weather.enabled']];
   const SEC = Object.fromEntries(SECTIONS.map(x => [x[0], x]));
   const TABS = ['overview', ...SECTIONS.map(x => x[0]), 'display'];
   let tab = 'overview';

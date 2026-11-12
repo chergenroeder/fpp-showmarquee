@@ -41,7 +41,7 @@ def page_seconds(cfg: dict) -> float:
         return 5.0
 
 
-SECTIONS = ("show", "countdown", "weather", "social", "showprep", "schedule", "messages")
+SECTIONS = ("show", "messages", "countdown", "schedule", "showprep", "social", "weather")
 
 
 def page_order(cfg: dict) -> list:

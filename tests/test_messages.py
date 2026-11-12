@@ -183,7 +183,7 @@ class Daemon(unittest.TestCase):
     def test_preview_now_and_validation(self):
         r = self.d.preview({"config": {"messages": {"enabled": True, "items": [msg("Hi"), msg("Bye", picture="star")]}},
                             "width": 192, "height": 96})
-        self.assertEqual([x["slot"] for x in r["strips"]], ["countdown", "message:1", "message:2"])
+        self.assertEqual([x["slot"] for x in r["strips"]], ["message:1", "message:2", "countdown"])   # messages first by default
         self.assertTrue(self.d.update_config({"messages": {"items": [msg("x", color="red")]}}))
         self.assertEqual(self.d.update_config({"messages": {"enabled": True, "items": [msg("Hi")]}}), [])
         st = self.d.get_status()["messages"]
