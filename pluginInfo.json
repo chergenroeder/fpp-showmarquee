@@ -21,11 +21,19 @@
 			{
 				"to": "api.open-meteo.com",
 				"what": "this player's latitude and longitude, rounded to about 1 km, every 15 minutes",
-				"why": "to get the current temperature, wind and whether it is day, only with Weather on and Open-Meteo chosen",
+				"why": "for the weather page: temperature, wind and day or night; only with Open-Meteo chosen",
 				"alwaysOn": false
 			}
 		],
-		"collects": [],
+		"collects": [
+			{
+				"what": "a weather location you type in instead of FPP's own (latitude and longitude)",
+				"about": "operator",
+				"keptDays": null,
+				"canDelete": true,
+				"where": "/home/fpp/media/plugindata/fpp-showmarquee/location.json"
+			}
+		],
 		"sensors": [],
 		"remoteAccess": "none",
 		"systemChanges": [
@@ -43,7 +51,7 @@
 			}
 		],
 		"closedCode": false,
-		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Its settings (config/plugin.fpp-showmarquee.json) and a weather location you type in (plugindata/fpp-showmarquee/location.json) stay after uninstall."
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Uninstalling removes its settings (config/plugin.fpp-showmarquee.json) and a weather location you type in (plugindata/fpp-showmarquee/); a Reinstall keeps them on FPP 10.4 and later."
 	},
 
 	"dependencies": {

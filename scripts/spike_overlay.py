@@ -9,7 +9,7 @@ text below test frame timing; the plugin's own pages don't scroll.
 
 Run it ON the FPP player, as root, against a pixel-overlay model you can see:
 
-    sudo python3 spike_overlay.py --model "Matrix"
+    python3 spike_overlay.py --model "Matrix"      (as root)
 
 (fppd runs as root and creates the overlay buffer writable by root only.)
 
@@ -95,7 +95,7 @@ class Overlay:
         except PermissionError:
             st = os.stat(path)
             sys.exit(f"Permission denied writing {path} (mode {oct(st.st_mode & 0o777)}, owner uid {st.st_uid}).\n"
-                     "fppd runs as root and creates it writable by root only: run this with sudo.")
+                     "fppd runs as root and creates it writable by root only: run this as root.")
         size = os.fstat(self.fd).st_size
         self.mm = mmap.mmap(self.fd, size)
         self.width, self.height, flags = HEADER.unpack_from(self.mm, 0)

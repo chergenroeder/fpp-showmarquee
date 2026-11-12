@@ -1,26 +1,26 @@
 <!-- Show Marquee settings page. FPP wraps this in its own page (Bootstrap 5, jQuery). -->
 <style>
   #mc-root { max-width: 1100px; background-color: var(--bs-body-bg); color: var(--bs-body-color); }
-  #mc-root .mc-lbl { font-size: .78em; color: var(--bs-secondary-color, #6c757d); text-transform: uppercase;
+  #mc-root .mc-lbl { font-size: .78em; color: var(--bs-secondary-color); text-transform: uppercase;
                      letter-spacing: .07em; font-weight: 600; margin: 14px 0 6px; }
   #mc-root .mc-lbl:first-child { margin-top: 0; }
-  #mc-root .mc-example { font-family: var(--bs-font-monospace, monospace); font-size: .85em; color: var(--bs-secondary-color, #6c757d); }
+  #mc-root .mc-example { font-family: var(--bs-font-monospace, monospace); font-size: .85em; color: var(--bs-secondary-color); }
   #mc-root .form-check-label .mc-example { margin-left: .4em; }
   #mc-root .mc-hidden { display: none !important; }
   #mc-root .mc-preview-wrap { border-radius: 6px; padding: 8px; overflow: hidden; }
   #mc-root canvas { display: block; margin: 0 auto; image-rendering: pixelated; max-width: 100%; }
   #mc-root .mc-color { width: 3.2rem; padding: .15rem; }
-  #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color, #dee2e6); }
-  #mc-root .mc-warn { color: var(--bs-warning-text-emphasis, #997404); }
-  #mc-root .mc-err { color: var(--bs-danger, #dc3545); }
+  #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color); }
+  #mc-root .mc-warn { color: var(--bs-warning-text-emphasis); }
+  #mc-root .mc-err { color: var(--bs-danger); }
   #mc-root .mc-logo { width: 24px; height: 24px; image-rendering: auto; }
   #mc-root .mc-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%;
-                     background: var(--bs-warning, #ffc107); margin-left: .35rem; vertical-align: middle; }
+                     background: var(--bs-warning); margin-left: .35rem; vertical-align: middle; }
   #mc-root #mc-tabs .nav-link { white-space: nowrap; padding: .4rem .7rem; }
   #mc-root #mc-ov-list .list-group-item { padding: .45rem .6rem; }
   /* A link inside a coloured banner takes the banner's own text colour, so it reads in light and dark mode */
   #mc-root .mc-inherit-link { color: inherit !important; font-weight: 600; text-decoration: underline; }
-  #mc-root td.mc-k { color: var(--bs-secondary-color, #6c757d); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
+  #mc-root td.mc-k { color: var(--bs-secondary-color); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
 <div class="container-fluid px-3 py-3" id="mc-root">

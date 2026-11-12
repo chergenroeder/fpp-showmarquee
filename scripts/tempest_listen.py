@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that this player can hear a WeatherFlow Tempest hub on the local network.
 
-Run it ON the FPP player (no sudo needed):
+Run it ON the FPP player (no root needed):
 
     python3 tempest_listen.py              # listens 75 s, long enough for one full observation
     python3 tempest_listen.py --seconds 180

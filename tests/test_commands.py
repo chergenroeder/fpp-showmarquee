@@ -182,6 +182,47 @@ class Scripts(CommandsBase):
                 self.assertTrue(os.access(os.path.join(COMMANDS, cmd["script"]), os.X_OK), cmd["script"])
                 self.assertTrue(cmd["name"].startswith("Show Marquee - "))
 
+    def test_no_sudo_in_shipped_scripts(self):
+        root = os.path.join(HERE, "..")
+        for folder in ("commands", "scripts"):
+            for name in os.listdir(os.path.join(root, folder)):
+                with open(os.path.join(root, folder, name)) as f:
+                    self.assertNotIn("sudo", f.read(), f"{folder}/{name}")
+        for name in ("api.php", "callbacks.sh", "showmarquee.py"):
+            with open(os.path.join(root, name)) as f:
+                self.assertNotIn("sudo", f.read(), name)
+
+    def run_uninstall(self, reinstall=None):
+        """Run fpp_uninstall.sh against a scratch media folder; return what's left."""
+        import tempfile
+        media = tempfile.mkdtemp()
+        os.makedirs(os.path.join(media, "config"))
+        os.makedirs(os.path.join(media, "plugindata", "fpp-showmarquee"))
+        open(os.path.join(media, "config", "plugin.fpp-showmarquee.json"), "w").write("{}")
+        open(os.path.join(media, "config", "plugin.other-plugin.json"), "w").write("{}")
+        open(os.path.join(media, "plugindata", "fpp-showmarquee", "location.json"), "w").write("{}")
+        env = dict(os.environ, MEDIADIR=media, FPPDIR=os.path.join(media, "no-fpp-here"))
+        env.pop("FPP_PLUGIN_REINSTALL", None)
+        if reinstall is not None:
+            env["FPP_PLUGIN_REINSTALL"] = reinstall
+        script = os.path.join(HERE, "..", "scripts", "fpp_uninstall.sh")
+        codes = [subprocess.run(["bash", script], env=env, capture_output=True, text=True, timeout=20).returncode
+                 for _ in range(2)]                                      # safe to run twice
+        left = sorted(os.path.relpath(os.path.join(d, f), media) for d, _, fs in os.walk(media) for f in fs)
+        shutil.rmtree(media)
+        return codes, left
+
+    def test_uninstall_removes_settings_and_data(self):
+        codes, left = self.run_uninstall()
+        self.assertEqual(codes, [0, 0])
+        self.assertEqual(left, ["config/plugin.other-plugin.json"])      # only another plugin's file
+
+    def test_reinstall_keeps_them(self):
+        codes, left = self.run_uninstall("1")
+        self.assertEqual(codes, [0, 0])
+        self.assertIn("config/plugin.fpp-showmarquee.json", left)
+        self.assertIn("plugindata/fpp-showmarquee/location.json", left)
+
 
 if __name__ == "__main__":
     unittest.main()

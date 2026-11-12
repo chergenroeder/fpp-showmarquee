@@ -1,12 +1,22 @@
 [
     {
         "name": "Show Marquee - Countdown",
-        "description": "Turn the countdown on or off and save it (the Countdown on switch). Off blanks the matrix and turns the overlay model off, so sequences show through.",
+        "description": "Turn the countdown page on or off and save it (its Show on the matrix switch). The other pages keep taking turns; with every page off the matrix goes blank and the overlay model turns off, so sequences show through.",
         "script": "state.sh",
         "args": [
-            { "name": "State", "description": "State", "type": "string", "optional": false,
-              "contents": ["On", "Off", "Toggle"], "default": "On",
-              "help": "On shows the countdown, Off hides it, Toggle switches to the opposite of the current state." }
+            {
+                "name": "State",
+                "description": "State",
+                "type": "string",
+                "optional": false,
+                "contents": [
+                    "On",
+                    "Off",
+                    "Toggle"
+                ],
+                "default": "On",
+                "help": "On shows the countdown, Off hides it, Toggle switches to the opposite of the current state."
+            }
         ]
     },
     {
@@ -14,18 +24,62 @@
         "description": "Change what the countdown counts down to, and save it.",
         "script": "set_target.sh",
         "args": [
-            { "name": "Target", "description": "Target", "type": "string", "optional": false,
-              "contents": ["Christmas", "New Year's Day", "Custom"], "default": "Christmas",
-              "help": "Christmas (Dec 25) and New Year's Day (Jan 1) use their own dates; Custom uses the date below." },
-            { "name": "Date", "description": "Custom date (YYYY-MM-DD)", "type": "string", "optional": true, "default": "",
-              "help": "Only for Custom, e.g. 2027-03-14. Leave empty to keep the date already saved." },
-            { "name": "Time", "description": "Custom time (HH:MM, 24-hour)", "type": "string", "optional": true, "default": "",
-              "help": "Only for Custom, e.g. 18:30. Leave empty to keep the time already saved (00:00 if none)." },
-            { "name": "Name", "description": "Event name", "type": "string", "optional": true, "default": "",
-              "help": "The name shown in the message, e.g. Opening Night. Leave empty to keep the saved name for this target." },
-            { "name": "Repeat", "description": "Repeat every year (Custom)", "type": "string", "optional": true,
-              "contents": ["", "true", "false"], "default": "",
-              "help": "Only for Custom. Empty keeps the saved setting." }
+            {
+                "name": "Target",
+                "description": "Target",
+                "type": "string",
+                "optional": false,
+                "contents": [
+                    "Christmas",
+                    "New Year's Day",
+                    "Custom"
+                ],
+                "default": "Christmas",
+                "help": "Christmas (Dec 25) and New Year's Day (Jan 1) use their own dates; Custom uses the date below."
+            },
+            {
+                "name": "Date",
+                "description": "Custom date (YYYY-MM-DD)",
+                "type": "string",
+                "optional": true,
+                "default": "",
+                "help": "Only for Custom, e.g. 2027-03-14. Leave empty to keep the date already saved."
+            },
+            {
+                "name": "Time",
+                "description": "Custom time (HH:MM, 24-hour)",
+                "type": "string",
+                "optional": true,
+                "default": "",
+                "help": "Only for Custom, e.g. 18:30. Leave empty to keep the time already saved (00:00 if none)."
+            },
+            {
+                "name": "Name",
+                "description": "Event name",
+                "type": "string",
+                "optional": true,
+                "default": "",
+                "help": "The name shown in the message, e.g. Opening Night. Leave empty to keep the saved name for this target."
+            },
+            {
+                "name": "Repeat",
+                "description": "Repeat every year (Custom)",
+                "type": "string",
+                "optional": true,
+                "contents": [
+                    "",
+                    "true",
+                    "false"
+                ],
+                "default": "",
+                "help": "Only for Custom. Empty keeps the saved setting."
+            }
         ]
+    },
+    {
+        "name": "Show Marquee - Start",
+        "description": "Start Show Marquee's background program if it isn't running (the settings page's Start button uses this). It starts with FPP on its own; this is for after a Stop.",
+        "script": "start.sh",
+        "args": []
     }
 ]

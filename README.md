@@ -46,11 +46,7 @@ The plugin starts with FPP and stops with it. To get new FPP commands after an u
 
 ### Uninstalling
 
-Uninstalling stops the plugin. Your settings are kept, so a reinstall picks them up again. To remove them too:
-
-```bash
-rm -f /home/fpp/media/config/plugin.fpp-showmarquee.json
-```
+Uninstalling stops the plugin and removes its settings (`config/plugin.fpp-showmarquee.json`) and its data (`plugindata/fpp-showmarquee/`, which holds a weather location you typed in). On FPP 10.4 and later a **Reinstall** keeps them. On FPP 10.0–10.3, FPP can't tell a Reinstall from an uninstall, so a Reinstall clears them too: click **Download settings** first, then **Upload settings** afterwards.
 
 ## The settings page
 
@@ -213,6 +209,7 @@ Use them anywhere FPP runs a command: a playlist **FPP Command** entry, the sche
 | Command | Arguments |
 |---|---|
 | **Show Marquee - Countdown** | `On`, `Off` or `Toggle`: turns the countdown page on or off (the countdown's **Show on the matrix** switch). The other pages keep taking turns; with every page off, the matrix goes blank and the overlay model turns off, so sequences show through. Saved. |
+| **Show Marquee - Start** | No arguments. Starts the plugin's background program if it isn't running (it starts with FPP on its own; this is for after a **Stop**). The settings page's **Start** button uses it. |
 | **Show Marquee - Set Target** | `Christmas`, `New Year's Day` or `Custom`, then optional *date* (YYYY-MM-DD), *time* (HH:MM), *event name*, *repeat every year* (true/false). Blank optional arguments keep what's saved. Saved. |
 
 For example, show "Opening Night" until the show, then switch back to Christmas afterwards. That takes two scheduler entries running **Set Target**.
@@ -235,7 +232,7 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 | Weather: `Open-Meteo didn't answer within 10 s` or `answered HTTP …` | Open-Meteo is slow or down; the plugin retries on its own and keeps the last reading for up to 45 minutes. |
 | Weather: `listening for the Tempest hub… no reading yet` | The player isn't hearing the hub. Run `scripts/tempest_listen.py` on the player: if it hears nothing, the player is on a different network (e.g. FPP's own Wi-Fi). |
 | Weather: `cannot listen on UDP port 50222` | Another program holds the port without sharing it. Stop it, or use a different port if your hub is set up to send there. |
-| `Pillow is not installed` | **Reinstall** the plugin so FPP installs its dependencies (needs internet), or `sudo apt-get install python3-pil`; then **Restart**. |
+| `Pillow is not installed` | **Reinstall** the plugin so FPP installs its dependencies (needs internet); then **Restart**. |
 | Preview: `font ... isn't on this player; using ... instead` | Pick a font from the list, or reinstall to get DejaVu. |
 | Preview: `@... is too wide for a ...-pixel matrix` | The handle doesn't fit even at the smallest size. Pick a narrower Text font. |
 | Social media: `... is on but has no handle` | Type the handle for that site, or switch it off. |

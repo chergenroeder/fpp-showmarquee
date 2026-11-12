@@ -163,7 +163,14 @@ On the **Messages** tab, turn on **Show on the matrix**:
 - [ ] Only between dates: today to today shows it; tomorrow to tomorrow skips it ("outside its dates").
 - [ ] ▲ ▼ reorder the messages on the matrix; ✕ deletes one; Save, then Revert keeps them.
 
-## 11. Recovery
+## 11. Start, uninstall and reinstall
+
+- [ ] **Stop**, then **Start** on the settings page: the plugin comes back, running as root (Output says drawing, not "permission denied").
+- [ ] FPP's command list has **Show Marquee - Start**; running it while the plugin is running does nothing.
+- [ ] FPP 10.4+: **Reinstall** keeps the settings and a typed-in weather location.
+- [ ] **Uninstall**: `config/plugin.fpp-showmarquee.json` and `plugindata/fpp-showmarquee/` are gone; nothing else in `config/` changed.
+
+## 12. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.

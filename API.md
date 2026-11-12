@@ -306,7 +306,7 @@ The social media logos as the plugin draws them, 48×48 base64 PNGs, for the set
 
 | Endpoint | |
 |---|---|
-| `POST daemon/start` | Start the daemon (as root, via sudo) if it isn't running. `{"status": "running" \| "starting" \| "already_running"}` |
+| `POST daemon/start` | Start the daemon if it isn't running, by asking FPP to run the plugin's **Show Marquee - Start** command (fppd runs it as root). `{"status": "running" \| "starting" \| "already_running"}` |
 | `POST daemon/restart` | Restart in place (same user). `{"status": "restarting"}` |
 | `POST daemon/stop` | Stop; the model is blanked and turned off. `{"status": "stopping"}` |
 

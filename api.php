@@ -71,24 +71,23 @@ function fppshowmarqueeDaemonStop()    { return fppshowmarqueeDaemonRequest('dae
 function fppshowmarqueeDaemonRestart() { return fppshowmarqueeDaemonRequest('daemon/restart', 'POST'); }
 
 function fppshowmarqueeDaemonStart() {
-    global $settings;
-    $plugin_dir = $settings['pluginDirectory'] . '/fpp-showmarquee';
-    $daemon     = $plugin_dir . '/showmarquee.py';
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');
     if ($alive !== false) {
         return json(array('status' => 'already_running'));
     }
     // The daemon must run as root to write the overlay buffer fppd (root)
-    // creates with mode 0644. The web server runs as fpp, which FPP gives
-    // passwordless sudo; -n fails instead of prompting if that's not so.
-    // Its output goes nowhere: the daemon writes its own log (and logs its own
-    // crashes) through a handler that follows FPP's log rotation.
-    $sudo  = (function_exists('posix_geteuid') && posix_geteuid() === 0) ? '' : 'sudo -n ';
-    $inner = 'MEDIADIR=' . escapeshellarg($settings['mediaDirectory']) .
-             ' LOGDIR=' . escapeshellarg($settings['logDirectory']) .
-             ' exec python3 ' . escapeshellarg($daemon) .
-             ' >/dev/null 2>&1 </dev/null';
-    shell_exec('nohup ' . $sudo . 'sh -c ' . escapeshellarg($inner) . ' >/dev/null 2>&1 &');
+    // creates. Rather than start it from the web server (which runs as fpp),
+    // ask fppd to run the plugin's "Show Marquee - Start" command: fppd runs
+    // command scripts as root, through FPP's own command API.
+    $body = json_encode(array('command' => 'Show Marquee - Start', 'multisyncCommand' => false,
+                              'multisyncHosts' => '', 'args' => array()));
+    $ctx = stream_context_create(array('http' => array(
+        'method' => 'POST', 'header' => "Content-Type: application/json\r\n",
+        'content' => $body, 'timeout' => 5, 'ignore_errors' => true)));
+    $sent = @file_get_contents('http://127.0.0.1/api/command', false, $ctx);
+    if ($sent === false) {
+        return json(array('status' => 'error', 'error' => "couldn't reach FPP's command API"));
+    }
     usleep(1200000); // 1.2 s startup grace
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');
     return json(array('status' => $alive !== false ? 'running' : 'starting'));

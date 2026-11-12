@@ -762,3 +762,21 @@ Light, and mostly for first-time setup, rather than long text or a pop-up tour:
 - **Help**: a link in the header to the README on GitHub.
 - While checking it: the Weather dot also used the daemon's last report, which still said "choose a weather source" until Save, so step 3 couldn't tick before saving. That report now only counts for the source that's saved.
 
+---
+
+## Against FPP's publishing rules (2026-11-11)
+
+Checked against fpp-data's [PLUGINS.md](https://github.com/FalconChristmas/fpp-data/blob/master/PLUGINS.md), the template's PLUGIN_GUIDELINES.md and PLUGININFO_FORMAT.md. First-time submissions must also fix "Best practice" findings.
+
+**Fixed**
+1. **No sudo.** The Start button started the daemon with `sudo -n` from the web server. Now `api.php` asks FPP (`POST /api/command`) to run a new command, **Show Marquee - Start** (`commands/start.sh`, which calls `mc_start_daemon`); fppd runs command scripts as root. Restart is the daemon restarting itself. "sudo" no longer appears in any shipped script, API.md or the README (the Pillow tip says Reinstall; the dev scripts say "as root"); a test checks the scripts.
+2. **Privacy text lengths**: the Open-Meteo `why` was 102 characters (limit 100).
+3. **Theme rule**: the hex fallbacks in the page's styles (`var(--bs-…, #…)`) are gone; FPP always defines Bootstrap's variables. The preview canvas's black panel and LED gaps stay: they draw an LED matrix, black in both themes.
+4. **Uninstall cleans up**: `fpp_uninstall.sh` removes `config/plugin.fpp-showmarquee.json` and `plugindata/fpp-showmarquee/` unless `FPP_PLUGIN_REINSTALL=1` (FPP 10.4+ Reinstall). On FPP 10.0–10.3 a Reinstall clears them too; the README says to download the settings first. Tests: real uninstall, Reinstall, run twice.
+5. **`collects`** declares the typed-in weather location (operator, kept until deleted, deletable, in plugindata); `other` says uninstall removes the settings and data.
+6. The **Show Marquee - Countdown** description no longer says "Off blanks the matrix".
+
+**Checked**: python3-pil 11.1, fonts-dejavu-core 2.37 and python3-qrcode 8.2 are in Debian Trixie (FPP 10); the QR tests pass with qrcode 8.2 as well as Bookworm's 7.4.2.
+
+**Left to do at submission**: test on the latest FPP release and the nightly; run the Plugin preview and the Privacy disclosure builder; open the fpp-data issue and answer the automated check.
+
