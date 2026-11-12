@@ -31,7 +31,9 @@ from typing import Dict, List, Optional
 from countdown.fonts import FontIndex
 from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
-from countdown.schedule import SchedulePage, schedule_page, schedule_status
+from countdown.messages import MessagePage, item_page, message_pages, messages_status
+from countdown.messages import settings_problems as messages_settings_problems
+from countdown.schedule import SchedulePage, format_range, night_times, schedule_page, schedule_status
 from countdown.schedule import settings_problems as schedule_settings_problems
 from countdown.showprep import (APPS, MESSAGE_MAX, ShowPrepPage, link_problem, show_prep_page,
                                 show_prep_status)
@@ -434,6 +436,7 @@ def validate_config(cfg: dict) -> List[str]:
     if len(str(sp.get("message") or "")) > MESSAGE_MAX:
         errors.append(f"showprep.message must be at most {MESSAGE_MAX} characters")
     errors += schedule_settings_problems(cfg.get("schedule") or {})
+    errors += messages_settings_problems(cfg.get("messages") or {})
     return errors
 
 
@@ -452,6 +455,9 @@ def logo_pngs(size: int = 48) -> dict:
 
 
 # ── Daemon ────────────────────────────────────────────────────────────────────
+
+SAMPLE_FILL_INS = {"days": "8", "tonight": "5:30\u201310 PM", "temp": "72\u00b0F"}   # for previews
+
 
 def _sample_reading() -> Reading:
     """72°F, wind 8 mph NW gusting 15: for previews before live weather arrives."""
@@ -625,7 +631,7 @@ class CountdownDaemon:
         try:
             from countdown.render import Renderer
             from countdown.social import draw_screen
-            from countdown.still import draw_schedule_page, draw_show_prep, draw_weather_page
+            from countdown.still import draw_message, draw_schedule_page, draw_show_prep, draw_weather_page
         except ImportError:
             return {"error": "Pillow is not installed"}
         cfg = _deep_merge(load_defaults(), body.get("config") or {})
@@ -693,6 +699,8 @@ class CountdownDaemon:
             sched = schedule_page(cfg.get("schedule") or {}, now)
             if sched is not None:
                 sequence.append((sched.slot, sched))
+            sequence += [(m.slot, m) for m in message_pages(cfg.get("messages") or {},
+                                                           self.fill_values(cfg, now), now.date())]
             if not sequence:
                 sequence = [("countdown", message)]
         if mode == "social":
@@ -718,6 +726,24 @@ class CountdownDaemon:
                 sched = schedule_page({"mode": "same", "every": {"start": "17:30", "end": "22:00"}}, now, force=True)
                 weather_note = "sample schedule (no show times set yet)"
             sequence = [(sched.slot, sched)]
+        if mode == "messages":
+            # Every message with text, even if switched off or outside its dates, so each
+            # can be set up; a fill-in with nothing right now uses a sample value
+            values = self.fill_values(cfg, now)
+            sampled = [k for k, v in values.items() if not v]
+            values = {**SAMPLE_FILL_INS, **{k: v for k, v in values.items() if v}}
+            items = (cfg.get("messages") or {}).get("items") or []
+            sequence = []
+            for i, item in enumerate(items if isinstance(items, list) else []):
+                page, _why = item_page(i, item if isinstance(item, dict) else {}, values, now.date(), force=True)
+                if page is not None:
+                    sequence.append((page.slot, page))
+            used = {n for item in items if isinstance(item, dict) for n in SAMPLE_FILL_INS
+                    if "{" + n + "}" in str(item.get("text") or "")}
+            if not sequence:
+                return {"error": "add a message with some text to preview it"}
+            if used & set(sampled):
+                weather_note = "sample value for " + ", ".join("{" + n + "}" for n in sorted(used & set(sampled)))
         result = {
             "width": w, "height": h,
             "target": {"when": target.when.isoformat(timespec="minutes"),
@@ -736,6 +762,10 @@ class CountdownDaemon:
             # Every page is a panel-sized picture, held still on the matrix
             if isinstance(msg, WeatherPage):
                 strip = draw_weather_page(msg, w, h, number_style, text_style)
+            elif isinstance(msg, MessagePage):
+                strip, problem = draw_message(msg, w, h, number_style, text_style)
+                if problem:
+                    notes.append(f"Message {msg.index + 1}: " + problem + ".")
             elif isinstance(msg, SchedulePage):
                 strip, problem = draw_schedule_page(msg, w, h, number_style, text_style)
                 if problem:
@@ -819,6 +849,7 @@ class CountdownDaemon:
             "social": social_status(cfg.get("social") or {}),
             "showprep": show_prep_status(cfg.get("showprep") or {}),
             "schedule": schedule_status(cfg.get("schedule") or {}, now),
+            "messages": messages_status(cfg.get("messages") or {}, self.fill_values(cfg, now), now.date()),
         }
 
     # ── Weather ──
@@ -869,6 +900,24 @@ class CountdownDaemon:
             if self._listener is not None:
                 self._listener.start()
             return self._listener
+
+    def fill_values(self, cfg: dict, now: datetime) -> Dict[str, Optional[str]]:
+        """What the custom messages' fill-ins say right now; None when there's nothing."""
+        cd = cfg.get("countdown") or {}
+        target = resolve_target(cd.get("target") or {}, now)
+        days = (target.when.date() - now.date()).days if target is not None else None
+        sc = cfg.get("schedule") or {}
+        tonight = night_times(sc)[(now.weekday() + 1) % 7]
+        temp = None
+        w = cfg.get("weather") or {}
+        if w.get("enabled"):
+            reading = self.weather_reading()
+            page = weather_page(reading, w, hour=now.hour) if reading is not None else None
+            temp = page.temp if page is not None and page.temp else None
+        return {"days": str(days) if days is not None and days >= 0 else None,
+                "tonight": format_range(tonight, "24" if str(sc.get("clock")) == "24" else "12") if tonight else None,
+                "temp": temp,
+                "date": now.strftime("%b ") + str(now.day)}
 
     def weather_reading(self) -> Optional[Reading]:
         with self._listener_lock:
@@ -963,6 +1012,7 @@ class CountdownDaemon:
             scfg = cfg.get("social") or {}
             spcfg = cfg.get("showprep") or {}
             shcfg = cfg.get("schedule") or {}
+            mscfg = cfg.get("messages") or {}
             if not errors:
                 self._ensure_listener(cfg)
 
@@ -970,7 +1020,7 @@ class CountdownDaemon:
             reason = ("output disabled" if not g.get("enable_output", True) else
                       "every section off"
                       if not (cd.get("enabled", True) or wcfg.get("enabled") or scfg.get("enabled")
-                              or spcfg.get("enabled") or shcfg.get("enabled")) else
+                              or spcfg.get("enabled") or shcfg.get("enabled") or mscfg.get("enabled")) else
                       "no model chosen" if not model else "")
             if reason or errors:
                 if out is not None:
@@ -1047,6 +1097,9 @@ class CountdownDaemon:
                 sched = schedule_page(shcfg, local_now())
                 if sched is not None:
                     candidates.append((sched.slot, sched))
+                if mscfg.get("enabled"):
+                    now_l = local_now()
+                    candidates.extend((m.slot, m) for m in message_pages(mscfg, self.fill_values(cfg, now_l), now_l.date()))
                 available = [(n, m) for n, m in candidates if is_still(m) or not m.blank]
 
                 if not available:

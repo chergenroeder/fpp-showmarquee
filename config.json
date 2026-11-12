@@ -80,5 +80,9 @@
         "show": "week",
         "title": "Show Times",
         "clock": "12"
+    },
+    "messages": {
+        "enabled": false,
+        "items": []
     }
 }

@@ -679,3 +679,25 @@ The plugin outgrew its name: the countdown is now one of five pages (countdown, 
 - New icon (`scripts/make_icon.py`): a marquee sign ringed with bulbs, its panel an LED matrix with red and green lines, on a post against a night sky. Checked at 256, 64 and 32 px.
 - `pluginInfo.json` description and privacy summary rewritten around the sign; README opening likewise.
 
+---
+
+## Version 9 — Custom messages (built 2026-11-11)
+
+Asked for: a section for the plugin user's own messages, simple to set up but customizable.
+
+**Design**
+- A list of messages (up to 10, 120 characters each), each its own page in the rotation, shown in list order, for the global seconds per page. Enter starts a new line. Text is centered, wrapped and shrunk to fit; nothing scrolls.
+- Per message, all optional: **colour** (Text style, Number style, or its own `#rrggbb` in the Text style's font); a **picture** on the left (star, tree, snowflake, gift, candy cane, heart, drawn in code in `symbols.py`); **when** (always, or between two dates as month and day, every year, wrapping the new year).
+- **Fill-ins**: `{days}` (days until the countdown's date), `{tonight}` (tonight's show times from the schedule), `{temp}` (from the weather), `{date}` ("Dec 18"). A message whose fill-in has nothing now is skipped, not shown with a gap; unknown `{names}` are left as typed.
+- Left out on purpose: per-message fonts, sizes and seconds (the two shared styles and the one seconds setting keep the matrix consistent).
+
+**Built**
+- [x] `countdown/messages.py`: `fill()`, `in_window()`, `item_page()`, `message_pages()`, `messages_status()` (showing now, and why not), `settings_problems()`.
+- [x] `symbols.py`: the six pictures. `still.py`: `draw_message()` (picture up to 34 % of the width and the panel's height; then 25 %, then none, before text goes below size 8).
+- [x] Daemon: `messages` settings and validation; `fill_values()` (from the countdown target, the schedule, the weather and the date); each message's turn after the schedule; `status.messages`; preview `as: messages` (every message with text, sample values for empty fill-ins) and in "Now".
+- [x] Settings page: a "6 · Custom Messages" card: a list editor (on/off, text, colour with a picker for own colour, picture, always/between dates with month and day pickers, ▲ ▼ ✕), **Add message**, fill-in buttons that insert at the cursor of the message being edited, and each message's "showing" / "not showing now: why"; a Messages preview button; a status line.
+- [x] Docs: README (Custom messages section), API.md, TESTING.md section 10, `pluginInfo.json`.
+- [x] Tests: 21 in `tests/test_messages.py`. 256 in total, all passing.
+- [x] Dev server check: Add message, the `{days}` button inserting into the message being edited (it first went to message 1 when the browser hadn't registered focus; it now follows typing and clicks too, and otherwise picks the newest message), own colour, picture, the date pickers, and the preview ("Only 44 days until Christmas").
+- [ ] On fpp-matrix.local: TESTING.md section 10.
+

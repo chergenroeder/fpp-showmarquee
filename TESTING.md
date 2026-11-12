@@ -136,7 +136,19 @@ Turn on **Show the schedule** on the settings page, then for each, check the car
 - [ ] **Tonight only**: "Tonight 5:30–10 PM"; with tonight off, "No show tonight" and the next show.
 - [ ] **Clock** 24-hour: "17:30–22:00".
 
-## 10. Recovery
+## 10. Custom messages
+
+On the settings page, turn on **Show my messages**:
+
+- [ ] **Add message** "Merry Christmas!" (Enter) "from the Smiths", picture Tree: the tree on the left, two centered lines on the right, in the Text style's colour.
+- [ ] Add "Only {days} days left!" using the `{days}` button, Colour: Number style, picture Star: the number is filled in.
+- [ ] Own colour (gold): the text is that colour.
+- [ ] A long message ("Thank you for visiting! Please drive slowly and enjoy the show") wraps and still reads from the street.
+- [ ] "It's {temp} out" with Weather off: it says "not showing now: nothing for {temp} right now", and the matrix skips it.
+- [ ] Only between dates: today to today shows it; tomorrow to tomorrow skips it ("outside its dates").
+- [ ] ▲ ▼ reorder the messages on the matrix; ✕ deletes one; Save, then Revert keeps them.
+
+## 11. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.

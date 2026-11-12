@@ -42,6 +42,7 @@
         <tr><td class="mc-k">Social media</td><td id="mc-s-social">–</td></tr>
         <tr><td class="mc-k">Show prep</td><td id="mc-s-showprep">–</td></tr>
         <tr><td class="mc-k">Schedule</td><td id="mc-s-schedule">–</td></tr>
+        <tr><td class="mc-k">Messages</td><td id="mc-s-messages">–</td></tr>
         <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
       </table>
     </div>
@@ -326,6 +327,28 @@
         </div>
       </div>
 
+      <div class="mc-section">6 · Custom Messages</div>
+
+      <!-- Custom messages -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Custom Messages</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-ms-on" data-path="messages.enabled">
+            <label class="form-check-label" for="mc-ms-on">Show my messages</label></div>
+        </div>
+        <div class="card-body" id="mc-messages-body">
+          <div class="small text-muted mb-2">Your own pages, shown in this order. Press Enter in a message to start a new line on the matrix.</div>
+          <div id="mc-ms-list"></div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="mc-ms-add">Add message</button>
+            <span class="small text-muted" id="mc-ms-count"></span>
+          </div>
+          <div class="small mt-2">Fill-ins <span class="text-muted">(click to add to the message you're typing in)</span>:
+            <span class="d-inline-flex flex-wrap gap-1 align-middle" id="mc-ms-fills"></span></div>
+          <div class="small text-muted mt-1">A message whose fill-in has nothing to show right now (no weather for <code>{temp}</code>, no show tonight for <code>{tonight}</code>) is skipped until it does.</div>
+        </div>
+      </div>
+
       <div class="mc-section">Shared by all</div>
 
       <!-- Pages -->
@@ -336,7 +359,7 @@
             <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
               <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
           </div>
-          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen, the show prep page and the schedule show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
+          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen, the show prep page, the schedule and each of your messages show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
         </div>
       </div>
 
@@ -391,6 +414,8 @@
             <label class="btn btn-outline-secondary" for="mc-as-showprep">Show prep</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-schedule" value="schedule">
             <label class="btn btn-outline-secondary" for="mc-as-schedule">Schedule</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-messages" value="messages">
+            <label class="btn btn-outline-secondary" for="mc-as-messages">Messages</label>
           </div>
         </div>
         <div class="card-body">
@@ -635,6 +660,110 @@
     toForm();
   }
 
+  // ── custom messages ──
+  const MS_MAX = 10;
+  const PICTURES = [['', 'None'], ['star', 'Star'], ['tree', 'Tree'], ['snowflake', 'Snowflake'],
+                    ['gift', 'Gift'], ['candycane', 'Candy cane'], ['heart', 'Heart']];
+  const FILLS = { days: 'days until the countdown date', tonight: "tonight's show times",
+                  temp: 'the temperature', date: "today's date" };
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let msFocus = null;          // the message text box last typed in
+  let msStatus = [];           // from the daemon: showing now, and why not
+  const msItems = () => { cfg.messages = cfg.messages || {}; if (!Array.isArray(cfg.messages.items)) cfg.messages.items = []; return cfg.messages.items; };
+  const newMessage = () => ({ enabled: true, text: '', color: 'text', picture: '', when: 'always', from: '12-24', to: '12-25' });
+  function mdSelects(i, which) {
+    const opts = (n, f) => Array.from({ length: n }, (_, k) => `<option value="${k + 1}">${f(k)}</option>`).join('');
+    return `<select class="form-select form-select-sm w-auto d-inline-block" data-ms="${which}-m" data-i="${i}" aria-label="${which} month">${opts(12, k => MONTHS[k])}</select>` +
+           `<select class="form-select form-select-sm w-auto d-inline-block" data-ms="${which}-d" data-i="${i}" aria-label="${which} day">${opts(31, k => k + 1)}</select>`;
+  }
+  function renderMessages() {
+    const items = msItems();
+    $('#mc-ms-list').innerHTML = items.map((_, i) => `
+      <div class="border rounded p-2 mb-2" data-msg="${i}">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-ms-${i}-on" data-path="messages.items.${i}.enabled">
+            <label class="form-check-label small fw-bold" for="mc-ms-${i}-on">Message ${i + 1}</label></div>
+          <span class="small ms-1" data-ms-status="${i}"></span>
+          <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="Message ${i + 1}">
+            <button type="button" class="btn btn-outline-secondary" data-ms-move="-1" data-i="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button type="button" class="btn btn-outline-secondary" data-ms-move="1" data-i="${i}" aria-label="Move down" ${i === items.length - 1 ? 'disabled' : ''}>▼</button>
+            <button type="button" class="btn btn-outline-danger" data-ms-del="${i}" aria-label="Delete message ${i + 1}">✕</button>
+          </div>
+        </div>
+        <textarea class="form-control form-control-sm" rows="2" maxlength="120" placeholder="Merry Christmas from the Smiths!" data-path="messages.items.${i}.text" data-ms-text="${i}" aria-label="Message ${i + 1} text"></textarea>
+        <div class="d-flex flex-wrap align-items-end gap-2 mt-1">
+          <div><label class="form-label form-label-sm mb-0">Colour</label>
+            <div class="d-flex gap-1">
+              <select class="form-select form-select-sm w-auto" data-ms="color" data-i="${i}">
+                <option value="text">Text style</option><option value="number">Number style</option><option value="own">Own colour</option></select>
+              <input type="color" class="form-control form-control-sm mc-color" data-ms="color-own" data-i="${i}" aria-label="Message ${i + 1} colour"></div></div>
+          <div><label class="form-label form-label-sm mb-0">Picture</label>
+            <select class="form-select form-select-sm w-auto" data-path="messages.items.${i}.picture">${PICTURES.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></div>
+          <div><label class="form-label form-label-sm mb-0">Show</label>
+            <select class="form-select form-select-sm w-auto" data-path="messages.items.${i}.when">
+              <option value="always">Always</option><option value="dates">Only between dates</option></select></div>
+          <div class="mc-ms-dates" data-i="${i}"><span class="small me-1">from</span>${mdSelects(i, 'from')}<span class="small mx-1">to</span>${mdSelects(i, 'to')}
+            <span class="small text-muted ms-1">every year</span></div>
+        </div>
+      </div>`).join('');
+    $('#mc-ms-add').disabled = items.length >= MS_MAX;
+    $('#mc-ms-count').textContent = items.length ? `${items.length} of ${MS_MAX}` : 'No messages yet.';
+  }
+  function fillMessageControls() {
+    msItems().forEach((m, i) => {
+      const own = m.color && m.color !== 'text' && m.color !== 'number';
+      const sel = $(`[data-ms="color"][data-i="${i}"]`), pick = $(`[data-ms="color-own"][data-i="${i}"]`);
+      if (sel) sel.value = own ? 'own' : (m.color || 'text');
+      if (pick) { pick.value = own ? m.color : '#ffffff'; pick.classList.toggle('mc-hidden', !own); }
+      for (const which of ['from', 'to']) {
+        const [mm, dd] = String(m[which] || (which === 'from' ? '12-24' : '12-25')).split('-').map(Number);
+        const ms = $(`[data-ms="${which}-m"][data-i="${i}"]`), ds = $(`[data-ms="${which}-d"][data-i="${i}"]`);
+        if (ms) ms.value = String(mm || 12);
+        if (ds) ds.value = String(dd || 1);
+      }
+      const dates = $(`.mc-ms-dates[data-i="${i}"]`);
+      if (dates) dates.classList.toggle('mc-hidden', m.when !== 'dates');
+      const st = $(`[data-ms-status="${i}"]`);
+      if (st) {
+        const s = msStatus[i];
+        st.textContent = !String(m.text || '').trim() ? 'type a message'
+          : s ? (s.showing ? 'showing' : 'not showing now: ' + s.why) : '';
+        st.className = 'small ms-1 ' + (s && s.showing ? 'text-success' : 'text-muted');
+      }
+    });
+  }
+  function onMessageControl(e) {
+    const el = e.target, i = Number(el.dataset.i), m = msItems()[i];
+    if (!m || !el.dataset.ms) return false;
+    const pad = n => String(n).padStart(2, '0');
+    if (el.dataset.ms === 'color') m.color = el.value === 'own' ? ($(`[data-ms="color-own"][data-i="${i}"]`).value || '#ffffff') : el.value;
+    else if (el.dataset.ms === 'color-own') m.color = el.value;
+    else {
+      const which = el.dataset.ms.split('-')[0];
+      m[which] = pad($(`[data-ms="${which}-m"][data-i="${i}"]`).value) + '-' + pad($(`[data-ms="${which}-d"][data-i="${i}"]`).value);
+    }
+    refresh();
+    return true;
+  }
+  function messageButtons(e) {
+    const b = e.target.closest('button'); if (!b) return;
+    const items = msItems();
+    if (b.id === 'mc-ms-add') { if (items.length < MS_MAX) items.push(newMessage()); }
+    else if (b.dataset.msDel !== undefined) items.splice(Number(b.dataset.msDel), 1);
+    else if (b.dataset.msMove !== undefined) {
+      const i = Number(b.dataset.i), j = i + Number(b.dataset.msMove);
+      if (j < 0 || j >= items.length) return;
+      [items[i], items[j]] = [items[j], items[i]];
+    } else return;
+    renderMessages(); toForm();
+    if (b.id === 'mc-ms-add') { const t = $(`[data-ms-text="${items.length - 1}"]`); if (t) t.focus(); }
+  }
+  function refreshMessages() {
+    const M = cfg.messages || {};
+    $('#mc-messages-body').style.opacity = M.enabled ? '' : '.55';
+    fillMessageControls();
+  }
+
   // ── style cards ──
   function buildStyleCards() {
     $$('[data-style]').forEach(col => {
@@ -684,6 +813,7 @@
 
   function onInput(e) {
     const el = e.target;
+    if (el.dataset.ms && onMessageControl(e)) return;
     if (el.id === 'mc-name') {
       setPath(cfg, 'countdown.target.event_name.' + getPath(cfg, 'countdown.target.type'), el.value);
     } else if (el.dataset.path) {
@@ -734,6 +864,7 @@
     refreshSocial();
     refreshShowPrep();
     refreshSchedule();
+    refreshMessages();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
     $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
@@ -850,7 +981,7 @@
       notify('Could not load settings: ' + (e.message || e) + '. Is the daemon running?', true);
       return;
     }
-    fillFonts(); fillModels(); toForm();
+    fillFonts(); fillModels(); renderMessages(); toForm();
     $('#mc-save-msg').textContent = '';
   }
   window.mcLoad = mcLoad;
@@ -899,7 +1030,7 @@
       return base;
     };
     cfg = merge(JSON.parse(JSON.stringify(cfg)), data);
-    fillFonts(); fillModels(); toForm();
+    fillFonts(); fillModels(); renderMessages(); toForm();
     notify('Settings loaded from ' + file.name + ': check them, then Save');
   }
 
@@ -977,6 +1108,11 @@
     const sc = s.schedule || {}, scEl = $('#mc-s-schedule');
     scEl.textContent = !sc.enabled ? 'off' : (sc.problems || []).length ? sc.problems.join('; ') : (sc.summary || '–');
     scEl.className = sc.enabled && (sc.problems || []).length ? 'mc-warn' : '';
+    const ms = s.messages || {}, msEl = $('#mc-s-messages');
+    msStatus = ms.items || [];
+    msEl.textContent = !ms.enabled ? 'off' : !msStatus.length ? 'no messages yet'
+      : `${ms.showing} of ${msStatus.length} showing now`;
+    if (cfg) fillMessageControls();
     const o = s.output || {};
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
@@ -993,6 +1129,22 @@
   buildStyleCards();
   buildSiteRows();
   buildSchedule();
+  $('#mc-ms-fills').innerHTML = Object.entries(FILLS).map(([k, d]) =>
+    `<button type="button" class="btn btn-sm btn-outline-secondary py-0" data-fill="${k}" title="${d}">{${k}}</button>`).join('');
+  $('#mc-ms-fills').addEventListener('click', e => {
+    const b = e.target.closest('[data-fill]'); if (!b) return;
+    // The message last typed or clicked in; with none yet, the newest
+    const all = $$('[data-ms-text]');
+    const t = msFocus && document.body.contains(msFocus) ? msFocus : all[all.length - 1];
+    if (!t) return;
+    const ins = '{' + b.dataset.fill + '}', a = t.selectionStart ?? t.value.length, z = t.selectionEnd ?? a;
+    t.value = (t.value.slice(0, a) + ins + t.value.slice(z)).slice(0, 120);
+    t.focus(); t.selectionStart = t.selectionEnd = a + ins.length;
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  const markMessage = e => { if (e.target.dataset && e.target.dataset.msText !== undefined) msFocus = e.target; };
+  ['focusin', 'input', 'mousedown'].forEach(ev => $('#mc-root').addEventListener(ev, markMessage));
+  $('#mc-messages-body').addEventListener('click', messageButtons);
   loadLogos();
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);

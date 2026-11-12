@@ -1,12 +1,13 @@
 """Still pages: drawn once, held on the matrix for the seconds per page, never scrolled.
 
-Four kinds take turns with the countdown (also held still, see render.py):
+Five kinds take turns with the countdown (also held still, see render.py):
   weather.WeatherPage    a sun/moon/wind symbol beside the temperature, wind and
                          gust lines (drawn here)
   social.Screen          logos above an @handle (drawn by social.draw_screen)
   showprep.ShowPrepPage  a QR code to the show's audio app beside a message
                          (drawn here)
   schedule.SchedulePage  the show times for the week or tonight (drawn here)
+  messages.MessagePage   the user's own message, with an optional picture (drawn here)
 
 is_still() tells the drawing loop which items are drawn here (the countdown is
 drawn by render.Renderer, centered), page_seconds() how long every page shows,
@@ -15,6 +16,7 @@ and StillCache draws each page once per panel and style.
 
 from typing import Dict, List, Optional, Tuple
 
+from .messages import MessagePage
 from .schedule import SchedulePage
 from .showprep import ShowPrepPage
 from .social import Screen
@@ -26,7 +28,7 @@ LINE_GAP = 1
 
 
 def is_still(item) -> bool:
-    return isinstance(item, (Screen, WeatherPage, ShowPrepPage, SchedulePage))
+    return isinstance(item, (Screen, WeatherPage, ShowPrepPage, SchedulePage, MessagePage))
 
 
 def page_seconds(cfg: dict) -> float:
@@ -384,6 +386,102 @@ def _draw_centered(page: SchedulePage, panel_w, panel_h, number_style, text_styl
     return img, "it doesn't fit the matrix"
 
 
+# ── Custom message page ───────────────────────────────────────────────────────
+
+def message_style(page: MessagePage, number_style, text_style):
+    """The style the message is drawn in: the Text or Number style, or the
+    Text style's font in the message's own colour."""
+    from dataclasses import replace
+    from .render import parse_color
+    if page.color == "number":
+        return number_style
+    if page.color == "text":
+        return text_style
+    return replace(text_style, color=parse_color(page.color, text_style.color))
+
+
+def custom_message_layout(page: MessagePage, width: int, height: int, style, min_size: int = READABLE):
+    """(size, wrapped lines) for the text in width x height, or (None, []).
+
+    The user's own line breaks are kept; a line too wide is wrapped at spaces.
+    One size for every line: the style's size, shrinking until it all fits.
+    """
+    for size in range(max(int(style.size), min_size), min_size - 1, -1):
+        font = style.font(size)
+        out: List[str] = []
+        ok = True
+        for line in page.lines:
+            cur = ""
+            for word in line.split():
+                if font.getlength(word) > width:
+                    ok = False
+                    break
+                trial = f"{cur} {word}".strip()
+                if cur and font.getlength(trial) > width:
+                    out.append(cur)
+                    cur = word
+                else:
+                    cur = trial
+            if not ok:
+                break
+            if cur:
+                out.append(cur)
+        if not ok or not out:
+            continue
+        asc, desc = font.getmetrics()
+        if len(out) * (asc + desc) + LINE_GAP * (len(out) - 1) <= height:
+            return size, out
+    return None, []
+
+
+def draw_message(page: MessagePage, panel_w: int, panel_h: int, number_style, text_style):
+    """(image, problem): the picture on the left (if any), the text centered beside it."""
+    from PIL import Image, ImageDraw
+    from .symbols import draw_symbol
+    img = Image.new("RGB", (panel_w, panel_h))
+    style = message_style(page, number_style, text_style)
+    problem = ""
+    pic = 0
+    if page.picture:
+        pic = max(0, min(panel_h, int(panel_w * 0.34)))
+        if pic < MIN_SYMBOL:
+            pic = 0
+    gap = max(2, panel_w // 32) if pic else 0
+    x_text = pic + gap
+    width = panel_w - x_text
+    size, lines = custom_message_layout(page, width, panel_h, style)
+    if size is None and pic:
+        # Make room: a smaller picture, then none
+        for share in (0.25, 0.0):
+            pic = int(min(panel_h, panel_w * share)) if share else 0
+            pic = pic if pic >= MIN_SYMBOL else 0
+            gap = max(2, panel_w // 32) if pic else 0
+            x_text, width = pic + gap, panel_w - (pic + gap)
+            size, lines = custom_message_layout(page, width, panel_h, style)
+            if size is not None:
+                if not pic:
+                    problem = "the picture is left off so the text fits"
+                break
+    if size is None:
+        size, lines = custom_message_layout(page, width, panel_h, style, min_size=4)
+        problem = "the text is too small to read: shorten it or use a smaller Text size"
+    if size is None:
+        return img, "the text doesn't fit the matrix: shorten it"
+    if pic:
+        mark = draw_symbol(page.picture, pic)
+        img.paste(mark, (0, (panel_h - pic) // 2), mark)
+    font = style.font(size)
+    asc, desc = font.getmetrics()
+    block = len(lines) * (asc + desc) + LINE_GAP * (len(lines) - 1)
+    y = (panel_h - block) // 2
+    draw = ImageDraw.Draw(img)
+    draw.fontmode = "L" if style.antialias else "1"
+    for line in lines:
+        draw.text((x_text + (width - font.getlength(line)) / 2, y + asc), line, fill=style.color, font=font, anchor="ls")
+        y += asc + desc + LINE_GAP
+    return img, problem
+
+
 # ── Cache ─────────────────────────────────────────────────────────────────────
 
 class StillCache:
@@ -413,4 +511,6 @@ def draw(item, panel_w: int, panel_h: int, number_style, text_style):
         return draw_show_prep(item, panel_w, panel_h, number_style, text_style)[0]
     if isinstance(item, SchedulePage):
         return draw_schedule_page(item, panel_w, panel_h, number_style, text_style)[0]
+    if isinstance(item, MessagePage):
+        return draw_message(item, panel_w, panel_h, number_style, text_style)[0]
     return draw_weather_page(item, panel_w, panel_h, number_style, text_style)

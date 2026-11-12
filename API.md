@@ -73,6 +73,13 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     "enabled": true, "problems": [],
     "summary": "Sun–Thu 5–10 PM · Fri & Sat 5–11 PM",
     "plain": "Show Times | Sun–Thu 5–10 PM | Fri & Sat 5–11 PM *"
+  },
+  "messages": {
+    "enabled": true, "showing": 1,
+    "items": [
+      { "showing": true, "why": "", "plain": "[Tree] Merry Christmas! / from the Smiths" },
+      { "showing": false, "why": "nothing for {temp} right now", "plain": "" }
+    ]
   }
 }
 ```
@@ -83,9 +90,10 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `target` | `null` if a custom target has no valid date. `display` is `days`, `hms`, `hours`, `minutes` or `blank`. |
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
-| `showing` | What the matrix is drawing now: `slot` is `countdown`, `weather` (the weather page), `social:<sites>`, `showprep` or `schedule` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
+| `showing` | What the matrix is drawing now: `slot` is `countdown`, `weather` (the weather page), `social:<sites>`, `showprep`, `schedule` or `message:<n>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
 | `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `page` is what the weather page shows now (`symbol` is `sun`, `moon` or `wind`; `lines` are the temperature, wind and gust lines that are on and fresh), or `null` when there's nothing to show. `is_day` and `day_from` (`open-meteo`, `tempest` or `clock`) say how the sun or moon was chosen. `solar_wm2` and `lux` are the Tempest's light readings (`null` with Open-Meteo). |
 | `social` | `screens`: the social media screens in the order they show, one per distinct handle (sites with the same handle, ignoring case and `@`, share a screen). `problems`: sites that are on but can't show, by site key. |
+| `messages` | One entry per message, in order: `showing` now or not, and `why` not (`switched off`, `no text`, `outside its dates`, `nothing for {temp} right now`). `showing` at the top counts them. |
 | `schedule` | `summary` is the week as the matrix groups it. `problems` says what's missing (no show nights, a start or end time not set). In `plain`, `*` marks tonight's line. |
 | `showprep` | `link` is what the QR code opens (`own_link` when it's yours rather than the app's). `problem` says why the page can't show or is incomplete: no app chosen, a bad link, or the QR code library missing. |
 
@@ -163,6 +171,13 @@ The full settings:
     "show": "week",
     "title": "Show Times",
     "clock": "12"
+  },
+  "messages": {
+    "enabled": false,
+    "items": [
+      { "enabled": true, "text": "Merry Christmas!\nfrom the Smiths", "color": "text", "picture": "tree",
+        "when": "dates", "from": "12-24", "to": "12-25" }
+    ]
   }
 }
 ```
@@ -183,6 +198,8 @@ The full settings:
 | `weather.symbol.wind_mph` / `gust_mph` | 0–200: show the wind symbol when the wind (or the gusts) is at least this; otherwise the sun by day, the moon at night |
 | `social.enabled` | show the social media screens |
 | `social.sites.<site>.enabled` / `handle` | site is `facebook`, `instagram`, `tiktok` or `youtube`. Handle: up to 30 letters, digits, `.`, `_`, `-`; a leading `@` is accepted and removed when saved. A site that's on with no handle is skipped. |
+| `messages.enabled` | show your messages |
+| `messages.items` | up to 10, in the order they show. Each: `enabled`; `text` (up to 120 characters, `\n` for a new line, fill-ins `{days}` `{tonight}` `{temp}` `{date}`); `color` (`text`, `number` or `#rrggbb`); `picture` (`""`, `star`, `tree`, `snowflake`, `gift`, `candycane`, `heart`); `when` (`always` or `dates`, with `from` and `to` as `MM-DD`, every year, wrapping the new year if `to` comes first) |
 | `schedule.enabled` | show the schedule page |
 | `schedule.nights` | 7 true/false, Sunday first: the nights the show runs |
 | `schedule.mode` | `same` (`every`), `weekend` (`weeknight` and `weekend`, with `weekend_nights` saying which nights are the weekend) or `custom` (`custom`: 7 start/end pairs, Sunday first) |
@@ -245,7 +262,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set), `messages` (every message with text, even switched off or outside its dates, with sample values and a `note` for fill-ins that have nothing yet; an `error` when there's no message with text). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {
@@ -263,7 +280,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 }
 ```
 
-`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle, then with Show Prep on `showprep`, then with Daily Schedule on `schedule`. The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, when a handle is too wide for the panel even at the smallest size, or when the show prep page's QR code or message doesn't fit (or the QR code library is missing).
+`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle, then with Show Prep on `showprep`, then with Daily Schedule on `schedule`, then with Custom Messages on `message:1`, `message:2`, … (those showing now). The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, when a handle is too wide for the panel even at the smallest size, or when the show prep page's QR code or message doesn't fit (or the QR code library is missing).
 
 ---
 
