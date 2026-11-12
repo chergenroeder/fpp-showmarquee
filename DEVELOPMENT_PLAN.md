@@ -799,3 +799,18 @@ Walked through as someone who has never seen the plugin: the README's opening, a
 
 Tests: 273. Checked again as a new user on the dev server.
 
+---
+
+## v11: Weather conditions (2026-11-12)
+
+The weather symbol showed only the sun, moon or wind, never rain. It now shows the weather.
+
+- **Symbols** (`symbols.py`, drawn in code): partly cloudy by day and by night (the sun or moon behind a cloud, with a dark gap between), cloudy, fog, rain, sleet (drops and an ice pellet), snow, thunderstorm (a grey cloud and a gold bolt). Checked on a contact sheet at 96, 38, 26 and 14 px.
+- **Open-Meteo**: `weather_code` is added to the fields asked for (nothing else is sent). 0 clear; 1–2 partly cloudy; 3 cloudy; 45, 48 fog; drizzle, rain and showers rain; freezing drizzle and rain sleet; snow and snow showers snow; 95–99 storm.
+- **Tempest**: `obs_st` rain in the last minute and precipitation type, `evt_precip` (rain starting), and the lightning count and distance. Rain lasts 10 minutes after the last drop (light rain comes and goes); rain at or below 1 °C, or hail, is sleet; 2 strikes within 20 km in 15 minutes is a storm (one alone can be electrical noise). It can't sense clouds, fog or snow.
+- **Which wins**: storm, snow, sleet, rain, fog, then wind, then cloudy, partly cloudy, clear (the sun or moon).
+- **Setting** `weather.symbol.conditions` (default on): "Symbol shows rain, snow, clouds, fog and storms" on the Weather tab, with a note on what a Tempest can sense. Off: only the sun, moon and wind, as before.
+- **Status**: `weather.condition` and `condition_from`; the status line names the symbol and, for the Tempest, "lightning nearby" or "Tempest's rain sensor". `page.plain` names the symbol ("[Partly cloudy] 40°F").
+
+Tests: Open-Meteo codes to symbols, the order against wind, turning it off; Tempest rain (and how long it lasts), the rain-start event, sleet, hail, lightning (distance, two strikes, 15 minutes), storm over rain over wind.
+

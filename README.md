@@ -1,6 +1,6 @@
 # fpp-showmarquee — Show Marquee
 
-A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); your **show times**; and **your own messages**, each with an optional colour, holiday picture and dates. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
+A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind), from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); your **show times**; and **your own messages**, each with an optional colour, holiday picture and dates. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
 
 ```
  Countdown             Weather               Social media
@@ -18,7 +18,7 @@ A sign for your light show, on an LED matrix. **Show Marquee** shows pages that 
 **Six kinds of page**, each optional, taking turns on the matrix in the order you choose, each held still for **Seconds per page** (5 by default):
 
 - **Countdown** to Christmas, New Year's Day or a date you choose (with **Repeat every year** for birthdays and anniversaries). "8 Days to Christmas" or "Christmas in 8 Days"; under a day, a ticking **HH:MM:SS** timer or hours, then minutes. Counts by the player's own clock, daylight saving included. At zero the matrix goes blank for the rest of that day, then Christmas and New Year's count to next year.
-- **Weather**: a **sun**, **moon** or **wind** symbol beside the temperature and wind, in **°F and mph** or **°C and km/h**, from **Open-Meteo** over the internet (no account or key) or your own **WeatherFlow Tempest** station on your network (no internet). You pick the source.
+- **Weather**: a symbol for the weather (**sun**, **moon**, **partly cloudy**, **cloudy**, **rain**, **sleet**, **snow**, **thunderstorm**, **fog** or **wind**) beside the temperature and wind, in **°F and mph** or **°C and km/h**, from **Open-Meteo** over the internet (no account or key) or your own **WeatherFlow Tempest** station on your network (no internet). You pick the source.
 - **Social media**: each site's logo above your `@handle`, for Facebook, Instagram, TikTok and YouTube. Sites with the same handle share one screen; different handles get a screen each.
 - **Show prep**: a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**), beside a message such as "Scan to get the PulseMesh app before the show".
 - **Schedule**: your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", a ▸ pointing to tonight) or just tonight's. Same every night, weeknights + weekends, or each night different; shows that run past midnight are handled.
@@ -89,7 +89,11 @@ On the **Weather** tab, turn on **Show on the matrix**, then choose where the we
 ```
 
 - **One page.** It shows for **Seconds per page** (default 5), taking turns with the countdown and social media: countdown → weather → social screens → countdown again.
-- **The symbol:** the **wind** when the wind is at least 15 mph or the gusts at least 25 mph (both under "More wind, symbol and source options"); otherwise the **sun** by day and the **moon** at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor (day above 5 W/m² of sunlight). Until either says, 7:00–19:00 on the player's clock counts as day.
+- **The symbol** shows the weather, the first of these that applies: **thunderstorm**, **snow**, **sleet**, **rain**, **fog**, **wind** (the wind at least 15 mph or the gusts at least 25 mph, under "More wind, symbol and source options"), **cloudy**, **partly cloudy** (the sun or moon behind a cloud), then the **sun** by day and the **moon** at night.
+  - **Open-Meteo** gives the conditions for your location every 15 minutes (drizzle shows as rain, freezing rain as sleet).
+  - **A Tempest** can only sense rain and lightning: **rain** in the last 10 minutes (**sleet** at or below 34°F / 1°C, or when it senses hail), and a **thunderstorm** after 2 lightning strikes within 20 km (12 miles) in 15 minutes. It can't see clouds, fog or snow, so otherwise it's the sun, moon or wind.
+  - Turn off **Symbol shows rain, snow, clouds, fog and storms** for just the sun, moon and wind.
+  - Day or night: Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor (day above 5 W/m² of sunlight). Until either says, 7:00–19:00 on the player's clock counts as day.
 - **Units:** °F and mph (the default) or °C and km/h, on the Weather tab. The limits under "More wind, symbol and source options" stay in mph; with °C and km/h chosen, the page shows each one in km/h beside it.
 - **The lines:** the temperature (`72°F` or `22°C`, whole degrees) in the **Number style**; the wind (`Wind 8 mph NW`, or `Wind Calm` under 1 mph; the word "Wind" is the **Label** beside the Wind switch, and can be changed or cleared) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol, which takes the room that's left. On a small panel the page drops the gust line, then the wind direction, then the "Wind" label, rather than use text too small to read.
 - **Temperature or wind off:** the page shows only the other one. With both off there is no weather page.
@@ -263,7 +267,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/output.py` | Writing frames into the overlay model's buffer (`/dev/shm`). |
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
 | `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener, day or night, and what goes on the weather page. |
-| `countdown/symbols.py` | The sun, moon and wind symbols (drawn in code). |
+| `countdown/symbols.py` | The weather symbols and the holiday pictures (drawn in code). |
 | `countdown/still.py` | Still pages: the weather, show prep, schedule and message layouts, how long each page holds, and the cache shared with the social screens. |
 | `countdown/showprep.py` | Show prep: the apps and their links, the page, and the QR code. |
 | `countdown/schedule.py` | Daily schedule: show nights and times, grouping and wording, the page. |

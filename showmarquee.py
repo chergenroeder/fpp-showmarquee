@@ -416,6 +416,8 @@ def validate_config(cfg: dict) -> List[str]:
                 raise ValueError
         except (TypeError, ValueError):
             errors.append(f"weather.symbol.{key} must be from 0 to 200 mph")
+    if not isinstance((w.get("symbol") or {}).get("conditions", True), bool):
+        errors.append("weather.symbol.conditions must be true or false")
     so = cfg.get("social") or {}
     if not isinstance(so.get("enabled", False), bool):
         errors.append("social.enabled must be true or false")
@@ -966,6 +968,8 @@ class CountdownDaemon:
                                                "plain": page.plain},
             "is_day": None if page is None else page.is_day,
             "day_from": None if page is None else page.day_from,
+            "condition": None if page is None else (page.condition or None),
+            "condition_from": None if page is None else (page.condition_from or None),
             "solar_wm2": r.solar_wm2, "lux": r.lux,
         })
         return info

@@ -16,7 +16,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 
-from countdown.weather import Reading, TempestListener, WeatherPage, compass, weather_page  # noqa: E402
+from countdown.weather import (Reading, TempestListener, WeatherPage, compass, condition_from_code,  # noqa: E402
+                               weather_page)
 
 try:
     import PIL  # noqa: F401
@@ -33,11 +34,12 @@ def rapid(epoch, mph, deg, serial=ST):
                        "ob": [epoch, mph * MPH, deg]}).encode()
 
 
-def obs(epoch, temp_f, avg_mph=0.0, gust_mph=0.0, deg=0, serial=ST, lux=0, solar=0):
+def obs(epoch, temp_f, avg_mph=0.0, gust_mph=0.0, deg=0, serial=ST, lux=0, solar=0,
+        rain_mm=0.0, precip=0, strike_km=0, strikes=0):
     c = (temp_f - 32) * 5 / 9
     return json.dumps({"serial_number": serial, "type": "obs_st", "hub_sn": HUB, "firmware_revision": 172,
                        "obs": [[epoch, 0.0, avg_mph * MPH, gust_mph * MPH, deg, 3, 837.0, c, 40.0,
-                                lux, 0.0, solar, 0.0, 0, 0, 0, 2.68, 1]]}).encode()
+                                lux, 0.0, solar, rain_mm, precip, strike_km, strikes, 2.68, 1]]}).encode()
 
 
 class Packets(unittest.TestCase):
@@ -280,6 +282,77 @@ class Layout(unittest.TestCase):
                 self.assertGreater(img.getchannel("A").getextrema()[1], 0)
 
 
+class Conditions(unittest.TestCase):
+    """Rain, sleet and storms from the Tempest; Open-Meteo's codes."""
+
+    CFG = {"stale_minutes": 5}
+
+    def sym(self, lst, now, hour=12):
+        return weather_page(lst.reading(), self.CFG, now, hour)
+
+    def test_rain_shows_and_lasts_ten_minutes(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 50, avg_mph=3, solar=300), now=0)
+        self.assertEqual(self.sym(lst, 1).symbol, "sun")
+        lst.handle(obs(160, 50, avg_mph=3, solar=300, rain_mm=0.2, precip=1), now=60)
+        p = self.sym(lst, 61)
+        self.assertEqual((p.symbol, p.condition, p.condition_from), ("rain", "rain", "tempest"))
+        lst.handle(obs(220, 50, avg_mph=3, solar=300), now=120)        # a dry minute: still rain
+        self.assertEqual(self.sym(lst, 121).symbol, "rain")
+        lst.handle(obs(700, 50, avg_mph=3, solar=300), now=600)
+        self.assertEqual(self.sym(lst, 60 + 601).symbol, "sun")         # 10 minutes after the last drop
+
+    def test_rain_start_event_shows_at_once(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 50, solar=0), now=0)
+        self.assertTrue(lst.handle(json.dumps({"serial_number": ST, "type": "evt_precip", "hub_sn": HUB,
+                                               "evt": [130]}).encode(), now=30))
+        self.assertEqual(self.sym(lst, 31).symbol, "rain")
+
+    def test_cold_rain_and_hail_are_sleet(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 33, rain_mm=0.1, precip=1), now=0)
+        self.assertEqual(self.sym(lst, 1).symbol, "sleet")
+        lst = TempestListener()
+        lst.handle(obs(100, 60, precip=2), now=0)
+        self.assertEqual(self.sym(lst, 1).symbol, "sleet")
+
+    def test_lightning_needs_two_close_strikes(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 70, solar=300, strike_km=8, strikes=1), now=0)
+        self.assertEqual(self.sym(lst, 1).symbol, "sun")                 # one strike can be noise
+        lst.handle(obs(160, 70, solar=300, strike_km=40, strikes=3), now=60)
+        self.assertEqual(self.sym(lst, 61).symbol, "sun")                # too far away
+        lst.handle(obs(220, 70, solar=300, strike_km=12, strikes=1), now=120)
+        p = self.sym(lst, 121)
+        self.assertEqual((p.symbol, p.condition_from), ("storm", "tempest"))
+        lst.handle(obs(980, 70, solar=300), now=880)
+        self.assertEqual(self.sym(lst, 0 + 901).symbol, "sun")           # the first strike is 15 minutes old
+
+    def test_storm_beats_rain_and_rain_beats_wind(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 70, avg_mph=30, rain_mm=1.0, precip=1), now=0)
+        self.assertEqual(self.sym(lst, 1).symbol, "rain")
+        lst.handle(obs(160, 70, avg_mph=30, rain_mm=1.0, precip=1, strike_km=5, strikes=4), now=60)
+        self.assertEqual(self.sym(lst, 61).symbol, "storm")
+
+    def test_tempest_without_rain_says_nothing_about_the_sky(self):
+        lst = TempestListener()
+        lst.handle(obs(100, 50, solar=0), now=0)
+        p = self.sym(lst, 1)
+        self.assertEqual((p.symbol, p.condition, p.condition_from), ("moon", "", ""))
+
+    def test_codes(self):
+        self.assertEqual([condition_from_code(c) for c in (0, 1, 2, 3, 45, 51, 57, 61, 66, 71, 80, 85, 95, 96, 99)],
+                         ["clear", "partly", "partly", "cloudy", "fog", "rain", "sleet", "rain", "sleet", "snow",
+                          "rain", "snow", "storm", "storm", "storm"])
+        self.assertEqual([condition_from_code(c) for c in (None, "x", True, 4, 100)], [None] * 5)
+
+    def test_plain_names_the_symbol(self):
+        self.assertEqual(WeatherPage("partly_night", "40°F").plain, "[Partly cloudy] 40°F")
+        self.assertEqual(WeatherPage("storm", "70°F").plain, "[Thunderstorm] 70°F")
+
+
 @unittest.skipUnless(HAVE_PIL, "Pillow not installed")
 class PreviewSequence(unittest.TestCase):
     """POST preview "now" returns every message that takes turns."""
@@ -334,7 +407,7 @@ class PreviewSequence(unittest.TestCase):
         self.assertNotIn("label", w["temperature"])
         self.assertEqual(w["wind"]["label"], "Wind")                 # the wind label is kept: the page uses it
         self.assertFalse(w["wind"]["gusts"])                      # kept
-        self.assertEqual(w["symbol"], {"wind_mph": 15, "gust_mph": 25})
+        self.assertEqual(w["symbol"], {"wind_mph": 15, "gust_mph": 25, "conditions": True})
         self.assertNotIn("screen_seconds", w)
         self.assertEqual(cfg["global"]["screen_seconds"], 5)
         self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
@@ -476,6 +549,7 @@ class TakingTurns(unittest.TestCase):
         # the fed packets have no daylight (solar 0): the moon, from the Tempest
         self.assertEqual(st["weather"]["page"]["lines"], ["72°F", "Wind 8 mph NW", "gusts 20"])
         self.assertEqual((st["weather"]["page"]["symbol"], st["weather"]["day_from"]), ("moon", "tempest"))
+        self.assertEqual((st["weather"]["condition"], st["weather"]["condition_from"]), (None, None))   # no rain
         self.assertEqual(st["weather"]["hub"], HUB)
 
     def test_weather_page_holds_still_for_its_seconds(self):

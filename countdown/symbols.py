@@ -1,4 +1,5 @@
-"""Pictures drawn on the pages: the weather symbols (sun, moon, wind) and the
+"""Pictures drawn on the pages: the weather symbols (sun, moon, wind, cloud,
+partly cloudy by day and night, rain, sleet, snow, thunderstorm, fog) and the
 custom messages' holiday pictures (star, tree, snowflake, gift, candy cane, heart).
 
 Drawn in code at 4x the size asked for and scaled down (like the social media
@@ -10,13 +11,23 @@ import math
 import threading
 from typing import Dict, Tuple
 
-SYMBOLS = ("sun", "moon", "wind")
-NAMES = {"sun": "Sun", "moon": "Moon", "wind": "Wind"}
+SYMBOLS = ("sun", "moon", "partly_day", "partly_night", "cloud", "fog", "wind",
+           "rain", "sleet", "snow", "storm")
+NAMES = {"sun": "Sun", "moon": "Moon", "wind": "Wind", "partly_day": "Partly cloudy",
+         "partly_night": "Partly cloudy", "cloud": "Cloudy", "fog": "Fog", "rain": "Rain",
+         "sleet": "Sleet", "snow": "Snow", "storm": "Thunderstorm"}
 
 SS = 4
 SUN = (255, 196, 0)
 MOON = (244, 233, 176)
 WIND = (127, 211, 255)
+GOLD = (255, 196, 0)
+CLOUD = (215, 222, 232)
+STORM_CLOUD = (150, 160, 180)
+RAIN = (70, 150, 255)
+FLAKE = (255, 255, 255)
+FOG = (185, 195, 205)
+CLEAR = (0, 0, 0, 0)
 
 _cache: Dict[Tuple[str, int], "object"] = {}
 _lock = threading.Lock()
@@ -78,9 +89,107 @@ def _wind(S):
     return img
 
 
+def _cloud(d, x0, y0, w, fill, grow=0.0):
+    """A cloud w wide (and w / 1.6 tall) with its top-left at x0, y0: a flat-bottomed
+    pill with two bumps on top. grow makes it bigger all round (to cut a gap)."""
+    h = w / 1.6
+    g = grow
+    d.rounded_rectangle([x0 - g, y0 + 0.45 * h - g, x0 + w + g, y0 + h + g], radius=0.275 * h + g, fill=fill)
+    for cx, cy, r in ((0.32 * w, 0.55 * h, 0.30 * h), (0.60 * w, 0.40 * h, 0.40 * h)):
+        d.ellipse([x0 + cx - r - g, y0 + cy - r - g, x0 + cx + r + g, y0 + cy + r + g], fill=fill)
+
+
+def _plain_cloud(S):
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (S, S), CLEAR)
+    w = 0.92 * S
+    _cloud(ImageDraw.Draw(img), 0.04 * S, (S - w / 1.6) / 2, w, CLOUD)
+    return img
+
+
+def _partly(S, night: bool):
+    """The sun (or moon) up to the right, a cloud in front of it to the lower left."""
+    from PIL import Image, ImageDraw, ImageOps
+    img = Image.new("RGBA", (S, S), CLEAR)
+    b = round(0.66 * S)
+    behind = ImageOps.mirror(_moon(b)) if night else _sun(b)
+    img.paste(behind, (S - b, 0), behind)
+    d = ImageDraw.Draw(img)
+    w = 0.82 * S
+    x0, y0 = 0.02 * S, S - w / 1.6 - 0.04 * S
+    _cloud(d, x0, y0, w, CLEAR, grow=0.05 * S)       # a dark gap around the cloud
+    _cloud(d, x0, y0, w, CLOUD)
+    return img
+
+
+def _drop(d, x, y, S, fill):
+    """A raindrop: a short slanted stroke with round ends, its top at x, y."""
+    w = max(1, round(0.075 * S))
+    x1, y1 = x - 0.07 * S, y + 0.22 * S
+    d.line([(x, y), (x1, y1)], fill=fill, width=w)
+    for px, py in ((x, y), (x1, y1)):
+        d.ellipse([px - w / 2, py - w / 2, px + w / 2, py + w / 2], fill=fill)
+
+
+def _flake(d, x, y, S):
+    """A small six-armed snowflake centred on x, y."""
+    r, w = 0.12 * S, max(1, round(0.06 * S))
+    for i in range(3):
+        a = math.pi / 3 * i + math.pi / 2
+        d.line([(x - r * math.cos(a), y - r * math.sin(a)), (x + r * math.cos(a), y + r * math.sin(a))],
+               fill=FLAKE, width=w)
+
+
+def _falling(S, kind: str):
+    """A cloud across the top with rain, sleet or snow under it."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (S, S), CLEAR)
+    d = ImageDraw.Draw(img)
+    _cloud(d, 0.06 * S, 0.04 * S, 0.88 * S, CLOUD)
+    xs = (0.30, 0.53, 0.76)
+    for i, x in enumerate(xs):
+        x = x * S
+        if kind == "snow" or (kind == "sleet" and i == 1):
+            y = (0.75 if i % 2 == 0 else 0.86) * S
+            if kind == "sleet":                             # an ice pellet between two drops
+                r = 0.065 * S
+                d.ellipse([x - 0.04 * S - r, 0.80 * S - r, x - 0.04 * S + r, 0.80 * S + r], fill=FLAKE)
+            else:
+                _flake(d, x - 0.03 * S, y, S)
+        else:
+            _drop(d, x, 0.68 * S, S, RAIN)
+    return img
+
+
+def _storm(S):
+    """A grey cloud with a lightning bolt coming out of it."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (S, S), CLEAR)
+    d = ImageDraw.Draw(img)
+    _cloud(d, 0.06 * S, 0.04 * S, 0.88 * S, STORM_CLOUD)
+    bolt = [(0.60, 0.36), (0.36, 0.68), (0.50, 0.68), (0.40, 0.98), (0.70, 0.58), (0.55, 0.58), (0.68, 0.36)]
+    pts = [(x * S, y * S) for x, y in bolt]
+    d.line(pts + [pts[0]], fill=CLEAR, width=max(1, round(0.08 * S)), joint="curve")   # a gap round the bolt
+    d.polygon(pts, fill=GOLD)
+    return img
+
+
+def _fog(S):
+    """Four soft horizontal bands of different lengths."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (S, S), CLEAR)
+    d = ImageDraw.Draw(img)
+    w = max(1, round(0.09 * S))
+    for y, x0, x1 in ((0.24, 0.12, 0.78), (0.42, 0.22, 0.92), (0.60, 0.08, 0.72), (0.78, 0.28, 0.90)):
+        y, x0, x1 = y * S, x0 * S, x1 * S
+        d.line([(x0, y), (x1, y)], fill=FOG, width=w)
+        for px in (x0, x1):
+            d.ellipse([px - w / 2, y - w / 2, px + w / 2, y + w / 2], fill=FOG)
+    return img
+
+
 # ── Holiday pictures for custom messages ──────────────────────────────────────
 
-GOLD = (255, 196, 0)
 GREEN = (46, 184, 75)
 RED = (230, 40, 50)
 WHITE = (255, 255, 255)
@@ -189,7 +298,10 @@ def _heart(S):
 
 PICTURES = ("star", "tree", "snowflake", "gift", "candycane", "heart")
 
-_DRAW = {"sun": _sun, "moon": _moon, "wind": _wind, "star": _star, "tree": _tree, "snowflake": _snowflake,
+_DRAW = {"sun": _sun, "moon": _moon, "wind": _wind, "cloud": _plain_cloud,
+         "partly_day": lambda S: _partly(S, False), "partly_night": lambda S: _partly(S, True),
+         "rain": lambda S: _falling(S, "rain"), "sleet": lambda S: _falling(S, "sleet"),
+         "snow": lambda S: _falling(S, "snow"), "storm": _storm, "fog": _fog, "star": _star, "tree": _tree, "snowflake": _snowflake,
          "gift": _gift, "candycane": _candycane, "heart": _heart}
 
 

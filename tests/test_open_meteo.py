@@ -26,11 +26,11 @@ T0 = 1794399300          # a quarter hour (12:15:00 UTC on 2026-11-11)
 CFG = {"stale_minutes": 5}
 
 
-def reply(t=T0, temp=3.9, wind=3.1, wdir=268, gust=6.5, rh=76, is_day=0):
+def reply(t=T0, temp=3.9, wind=3.1, wdir=268, gust=6.5, rh=76, is_day=0, code=None):
     return {"latitude": 40.0, "longitude": -100.0, "current_units": {},
             "current": {"time": t, "interval": 900, "temperature_2m": temp, "relative_humidity_2m": rh,
                         "wind_speed_10m": wind, "wind_direction_10m": wdir, "wind_gusts_10m": gust,
-                        "is_day": is_day}}
+                        "is_day": is_day, **({} if code is None else {"weather_code": code})}}
 
 
 class FakeOpenMeteo:
@@ -97,7 +97,7 @@ class Fetch(unittest.TestCase):
         self.assertEqual(set(q), {"latitude", "longitude", "current", "wind_speed_unit", "timeformat"})
         self.assertEqual((q["latitude"], q["longitude"]), (["40.71"], ["-74.01"]))
         self.assertEqual(q["current"][0].split(","), ["temperature_2m", "relative_humidity_2m", "wind_speed_10m",
-                                                      "wind_direction_10m", "wind_gusts_10m", "is_day"])
+                                                      "wind_direction_10m", "wind_gusts_10m", "is_day", "weather_code"])
         self.assertEqual((q["wind_speed_unit"], q["timeformat"]), (["ms"], ["unixtime"]))
         self.assertEqual(headers.get("User-Agent"), "fpp-showmarquee (FPP plugin)")
 
@@ -170,6 +170,40 @@ class Poller(unittest.TestCase):
         p.poll()
         self.assertTrue(p.reading().is_day)
         self.assertEqual(weather_page(p.reading(), CFG, hour=23).symbol, "sun")
+
+    def test_weather_code_picks_the_symbol(self):
+        p = self.make()
+        calm = dict(wind=1.0, gust=2.0)
+        for code, day, want in ((0, 1, "sun"), (0, 0, "moon"), (1, 1, "partly_day"), (2, 0, "partly_night"),
+                                (3, 1, "cloud"), (45, 1, "fog"), (48, 0, "fog"), (53, 1, "rain"), (63, 0, "rain"),
+                                (81, 1, "rain"), (56, 1, "sleet"), (67, 0, "sleet"), (73, 1, "snow"), (77, 1, "snow"),
+                                (86, 0, "snow"), (95, 1, "storm"), (99, 0, "storm"), (4, 1, "sun")):
+            self.next = reply(is_day=day, code=code, **calm)
+            p.poll()
+            page = weather_page(p.reading(), CFG, hour=12)
+            self.assertEqual(page.symbol, want, code)
+            self.assertEqual(page.condition_from, "open-meteo" if page.condition else "")
+
+    def test_rain_beats_wind_but_wind_beats_clouds(self):
+        p = self.make()
+        windy = dict(wind=20 / 2.2369363, gust=30 / 2.2369363)
+        for code, want in ((61, "rain"), (71, "snow"), (95, "storm"), (45, "fog"), (3, "wind"), (2, "wind"), (0, "wind")):
+            self.next = reply(is_day=1, code=code, **windy)
+            p.poll()
+            self.assertEqual(weather_page(p.reading(), CFG, hour=12).symbol, want, code)
+
+    def test_conditions_can_be_turned_off(self):
+        p = self.make()
+        self.next = reply(is_day=1, code=63, wind=1.0, gust=2.0)
+        p.poll()
+        page = weather_page(p.reading(), {**CFG, "symbol": {"conditions": False}}, hour=12)
+        self.assertEqual((page.symbol, page.condition), ("sun", ""))
+
+    def test_no_weather_code_is_the_sun_or_moon(self):
+        p = self.make()
+        self.next = reply(is_day=1, wind=1.0, gust=2.0)
+        p.poll()
+        self.assertEqual(weather_page(p.reading(), CFG, hour=12).symbol, "sun")
 
     def test_open_meteo_readings_last_45_minutes_not_5(self):
         p = self.make()

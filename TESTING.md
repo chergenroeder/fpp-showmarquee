@@ -101,7 +101,10 @@ set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enable
 ```
 
 - [ ] The countdown and **the weather page** take turns, 5 s each, both held still: a symbol on the left, the temperature over the wind (and gusts) on the right.
-- [ ] By day it's the **sun**, after dark the **moon** (the status line says which, and whether Open-Meteo, the Tempest or the clock decided).
+- [ ] On a clear, calm day it's the **sun**, after dark the **moon** (the status line says which, and whether Open-Meteo, the Tempest or the clock decided).
+- [ ] **Conditions** (Open-Meteo): on a cloudy, rainy, snowy, foggy or stormy day the symbol matches the sky outside (Open-Meteo updates every 15 minutes), and the status line names it. Rain, snow, storms and fog show even when it's windy; clouds give way to the wind symbol.
+- [ ] **Conditions** (Tempest): in rain the **rain** symbol comes up within a minute of the first drops and stays 10 minutes after the last; near freezing it's **sleet**. With lightning nearby (2 strikes within 20 km in 15 minutes) it's the **storm**, and the status line says "lightning nearby".
+- [ ] Turn off **Symbol shows rain, snow, clouds, fog and storms**: only the sun, moon and wind.
 - [ ] **Units** °C and km/h: the page reads "22°C" and "Wind 13 km/h …", and the limits under More options show km/h beside the mph.
 - [ ] Lower the wind symbol limit to see the **wind** symbol on a calm day:
   ```bash

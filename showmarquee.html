@@ -174,7 +174,7 @@
             <label class="form-check-label" for="mc-w-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
-          <div class="small text-muted mb-2">One page: a sun, moon or wind symbol beside the temperature and wind.</div>
+          <div class="small text-muted mb-2">One page: a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind) beside the temperature and wind.</div>
           <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
             <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
@@ -204,6 +204,9 @@
             <div class="col-8 col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-w-units">Units</label>
               <select class="form-select form-select-sm" id="mc-w-units" data-path="weather.units">
                 <option value="imperial">°F and mph</option><option value="metric">°C and km/h</option></select></div>
+            <div class="col-12 col-sm-7 align-self-end"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-cond" data-path="weather.symbol.conditions">
+              <label class="form-check-label" for="mc-w-cond">Symbol shows rain, snow, clouds, fog and storms</label></div>
+              <div class="small text-muted mc-w-tempest">A Tempest senses rain and lightning only (no clouds, fog or snow): rain at or below 34°F (1°C) shows as sleet.</div></div>
           </div>
           <div class="row g-2 align-items-end">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
@@ -244,7 +247,7 @@
               <div class="col-12 small text-muted mc-w-om-only">Open-Meteo readings are hidden once 45 minutes old (three missed updates).</div>
             </div>
           </details>
-          <div class="small text-muted mt-2">The symbol is the <strong>wind</strong> when it's windy (above), otherwise the <strong>sun</strong> by day and the <strong>moon</strong> at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor; until either says, 7:00–19:00 on this player's clock is day. The temperature uses the Number style, wind and gusts the Text style.</div>
+          <div class="small text-muted mt-2">The symbol is the first that applies: a <strong>storm</strong>, <strong>snow</strong>, <strong>sleet</strong>, <strong>rain</strong>, <strong>fog</strong>, the <strong>wind</strong> when it's windy (above), <strong>clouds</strong>, then the <strong>sun</strong> by day and the <strong>moon</strong> at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor; until either says, 7:00–19:00 on this player's clock is day. The temperature uses the Number style, wind and gusts the Text style.</div>
           <div class="small mt-2" id="mc-w-live"></div>
         </div>
       </div>
@@ -1286,8 +1289,16 @@
         const age = w.last_packet_age_s;
         wt = 'Tempest: ' + parts.join(', ') + (age != null ? ` · heard ${age} s ago` : '') + (w.hub ? ` · ${w.hub}${w.device ? ' / ' + w.device : ''}` : '');
       }
-      if (w.page) wt += ` · showing the ${w.page.symbol}`
-        + (w.page.symbol !== 'wind' ? ` (${w.is_day ? 'day' : 'night'}: ${w.day_from === 'clock' ? "player's clock" : w.day_from === 'tempest' ? "Tempest's light sensor" : 'Open-Meteo'})` : ' (windy)');
+      if (w.page) {
+        const NAME = { sun: 'sun', moon: 'moon', wind: 'wind', partly_day: 'sun behind a cloud', partly_night: 'moon behind a cloud',
+                       cloud: 'cloud', fog: 'fog', rain: 'rain', sleet: 'sleet', snow: 'snow', storm: 'storm' };
+        const sym = w.page.symbol;
+        const dayNight = `${w.is_day ? 'day' : 'night'}: ${w.day_from === 'clock' ? "player's clock" : w.day_from === 'tempest' ? "Tempest's light sensor" : 'Open-Meteo'}`;
+        wt += ` · showing the ${NAME[sym] || sym}`
+          + (sym === 'wind' ? ' (windy)'
+             : ['sun', 'moon', 'partly_day', 'partly_night'].includes(sym) ? ` (${dayNight})`
+             : w.condition_from === 'tempest' ? (sym === 'storm' ? ' (lightning nearby)' : " (Tempest's rain sensor)") : '');
+      }
       if (w.error) wt += ' · last update failed: ' + w.error;
     }
     $('#mc-s-weather').textContent = wt;

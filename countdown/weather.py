@@ -11,14 +11,18 @@ The hub broadcasts JSON on UDP port 50222 (WeatherFlow UDP reference v143):
   rapid_wind  ~every 3 s   ob = [epoch, wind m/s, direction deg]
   obs_st      ~every 60 s  obs[0] = [epoch, lull, avg, gust (m/s), direction deg, interval s,
                                      pressure mb, air temp C, humidity %, lux, UV,
-                                     solar radiation W/m2, ...]
+                                     solar radiation W/m2, rain mm (last minute),
+                                     precipitation type (0 none, 1 rain, 2 hail, 3 both),
+                                     lightning average distance km, lightning strikes, ...]
+  evt_precip  when rain starts      evt = [epoch]
 TempestListener keeps the latest temperature, wind, gust and light level, each
-with the time it arrived. Some machines receive every packet twice (two network interfaces);
+with the time it arrived, and when it last saw rain, hail and nearby lightning. Some machines receive every packet twice (two network interfaces);
 repeats of the same (sensor, type, epoch) are dropped.
 
-weather_page() turns a reading into the weather page: a symbol (sun, moon or
-wind) and the temperature, wind and gust lines, in F and mph, skipping anything
-older than the stale limit.
+weather_page() turns a reading into the weather page: a symbol (the
+conditions: storm, snow, sleet, rain, fog, wind, cloud, partly cloudy, or the
+sun or moon) and the temperature, wind and gust lines, skipping anything older
+than the stale limit.
 """
 
 import json
@@ -67,6 +71,11 @@ class Reading:
     solar_wm2: Optional[float] = None   # Tempest: solar radiation and illuminance
     lux: Optional[float] = None
     light_at: Optional[float] = None
+    condition: Optional[str] = None     # Open-Meteo: from weather_code (CONDITIONS)
+    condition_at: Optional[float] = None
+    rain_at: Optional[float] = None     # Tempest: when it last saw rain, hail,
+    hail_at: Optional[float] = None     # and lightning within STORM_KM
+    strikes: List[float] = field(default_factory=list)
     hub: str = ""
     device: str = ""
     source: str = ""
@@ -162,13 +171,14 @@ class TempestListener:
             return False
         kind = str(msg.get("type") or "")
         serial = str(msg.get("serial_number") or "")
-        if kind not in ("rapid_wind", "obs_st"):
+        if kind not in ("rapid_wind", "obs_st", "evt_precip"):
             with self._lock:
                 self._count(kind)
             return False
         if self.device and serial.upper() != self.device:
             return False
-        ob = msg.get("ob") if kind == "rapid_wind" else (msg.get("obs") or [None])[0]
+        ob = (msg.get("ob") if kind == "rapid_wind" else msg.get("evt") if kind == "evt_precip"
+              else (msg.get("obs") or [None])[0])
         if not isinstance(ob, list) or not ob:
             return False
         epoch = _num(ob[0])
@@ -185,6 +195,9 @@ class TempestListener:
             r.source = source or r.source
             r.last_packet_at = now
             changed = False
+            if kind == "evt_precip":
+                r.rain_at = now                 # rain started: show it at once
+                return True
             if kind == "rapid_wind" and len(ob) >= 3:
                 speed, direction = _num(ob[1]), _num(ob[2])
                 if speed is not None:
@@ -202,6 +215,16 @@ class TempestListener:
                     r.humidity = get(8)
                 if get(11) is not None or get(9) is not None:
                     r.solar_wm2, r.lux, r.light_at = get(11), get(9), now
+                # Rain and hail in the last minute; lightning close enough to call a storm
+                kind_p = int(get(13) or 0)
+                if (get(12) or 0) > 0 or kind_p in (1, 3):
+                    r.rain_at, changed = now, True
+                if kind_p in (2, 3):
+                    r.hail_at, changed = now, True
+                n, km = int(get(15) or 0), get(14)
+                if n > 0 and (km is None or km <= STORM_KM):
+                    r.strikes = [t for t in r.strikes if now - t <= STORM_HOLD_S][-20:] + [now] * min(n, 20)
+                    changed = True
                 # Fall back to the minute average for wind if rapid_wind isn't arriving
                 if get(2) is not None and (r.wind_at is None or now - r.wind_at > 30):
                     r.wind_ms, r.wind_dir, r.wind_at = get(2), get(4), now
@@ -214,14 +237,39 @@ class TempestListener:
     def reading(self) -> Reading:
         with self._lock:
             r = self._reading
-            return Reading(**{**r.__dict__, "packets": dict(r.packets)})
+            return Reading(**{**r.__dict__, "packets": dict(r.packets), "strikes": list(r.strikes)})
 
 
 # ── Open-Meteo ────────────────────────────────────────────────────────────────
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_FIELDS = ("temperature_2m", "relative_humidity_2m", "wind_speed_10m",
-                     "wind_direction_10m", "wind_gusts_10m", "is_day")
+                     "wind_direction_10m", "wind_gusts_10m", "is_day", "weather_code")
+
+
+def condition_from_code(code) -> Optional[str]:
+    """Open-Meteo's weather_code (WMO 4677, the subset it uses) as one of CONDITIONS."""
+    c = _num(code)
+    if c is None:
+        return None
+    c = int(c)
+    if c in (0,):
+        return "clear"
+    if c in (1, 2):
+        return "partly"
+    if c == 3:
+        return "cloudy"
+    if c in (45, 48):
+        return "fog"
+    if c in (56, 57, 66, 67):
+        return "sleet"          # freezing drizzle / freezing rain
+    if 51 <= c <= 55 or 61 <= c <= 65 or 80 <= c <= 82:
+        return "rain"
+    if 71 <= c <= 77 or c in (85, 86):
+        return "snow"
+    if 95 <= c <= 99:
+        return "storm"
+    return None
 USER_AGENT = "fpp-showmarquee (FPP plugin)"
 
 
@@ -460,13 +508,15 @@ class OpenMeteoPoller:
                 r.humidity = get("relative_humidity_2m")
             if get("is_day") is not None:
                 r.is_day, r.is_day_at = bool(get("is_day")), at
+            if "weather_code" in cur:
+                r.condition, r.condition_at = condition_from_code(cur.get("weather_code")), at
             r.last_packet_at = now
             self.last_fetch_at = now
 
     def reading(self) -> Reading:
         with self._lock:
             r = self._reading
-            return Reading(**{**r.__dict__, "packets": dict(r.packets)})
+            return Reading(**{**r.__dict__, "packets": dict(r.packets), "strikes": list(r.strikes)})
 
 
 # ── The weather page ──────────────────────────────────────────────────────────
@@ -476,8 +526,16 @@ DEFAULTS = {
     "temperature": {"enabled": True},
     "wind": {"enabled": True, "label": "Wind", "direction": True, "gusts": True,
              "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"},
-    "symbol": {"wind_mph": 15, "gust_mph": 25},
+    "symbol": {"wind_mph": 15, "gust_mph": 25, "conditions": True},
 }
+# What the sky is doing, from Open-Meteo's weather_code or (rain, sleet and
+# storm only) the Tempest's rain and lightning sensors
+CONDITIONS = ("clear", "partly", "cloudy", "fog", "rain", "sleet", "snow", "storm")
+STORM_KM = 20           # Tempest: lightning this close (km) counts
+STORM_STRIKES = 2       # ... this many strikes within STORM_HOLD_S make a storm (one alone can be noise)
+STORM_HOLD_S = 15 * 60
+RAIN_HOLD_S = 10 * 60   # Tempest: still "rain" this long after the last drop (light rain comes and goes)
+SLEET_C = 1.0           # Tempest: rain reported at or below this is sleet (it can't sense snow)
 SOLAR_DAY_WM2 = 5      # Tempest: day above this solar radiation (night reads 0)
 LUX_DAY = 50           # ... or, without solar radiation, above this illuminance
 CLOCK_DAY = (7, 19)    # neither known: day from 7:00 to 19:00 on the player's clock
@@ -485,13 +543,15 @@ CLOCK_DAY = (7, 19)    # neither known: day from 7:00 to 19:00 on the player's c
 
 @dataclass(frozen=True)
 class WeatherPage:
-    symbol: str          # "sun", "moon" or "wind"
+    symbol: str          # one of symbols.WEATHER: "sun", "moon", "rain", "wind", ...
     temp: str = ""       # "72°F"
     wind: str = ""       # "Wind 8 mph NW" or "Wind Calm" (with its label)
     gust: str = ""       # "gusts 15"
     is_day: bool = True
     day_from: str = ""   # what said day or night: "open-meteo", "tempest" or "clock"
     wind_label: str = "" # the label at the start of the wind line ("Wind"), so a small panel can drop it last
+    condition: str = ""  # the sky (CONDITIONS), "" when not known
+    condition_from: str = ""  # "open-meteo" or "tempest"
 
     @property
     def lines(self) -> Tuple[str, ...]:
@@ -499,7 +559,8 @@ class WeatherPage:
 
     @property
     def plain(self) -> str:
-        return " ".join((f"[{self.symbol.capitalize()}]",) + self.lines)
+        from .symbols import NAMES
+        return " ".join((f"[{NAMES.get(self.symbol, self.symbol.capitalize())}]",) + self.lines)
 
     @property
     def slot(self) -> str:
@@ -526,6 +587,38 @@ def day_or_night(r: Reading, now: float, stale_s: float, hour: int) -> Tuple[boo
         if r.lux is not None:
             return r.lux > LUX_DAY, "tempest"
     return CLOCK_DAY[0] <= hour < CLOCK_DAY[1], "clock"
+
+
+def sky(r: Reading, now: float, stale_s: float) -> Tuple[str, str]:
+    """(condition, where it came from), or ("", "") when not known.
+
+    Open-Meteo's weather_code; for the Tempest, nearby lightning (storm) or
+    recent rain or hail (rain, or sleet near freezing). The Tempest can't see
+    clouds or fog, so with no rain it says nothing (the sun or moon shows).
+    """
+    if r.condition and _fresh(r.condition_at, now, stale_s):
+        return r.condition, "open-meteo"
+    if len([t for t in r.strikes if now - t <= STORM_HOLD_S]) >= STORM_STRIKES:
+        return "storm", "tempest"
+    if _fresh(r.hail_at, now, RAIN_HOLD_S):
+        return "sleet", "tempest"
+    if _fresh(r.rain_at, now, RAIN_HOLD_S):
+        cold = r.temp_c is not None and _fresh(r.temp_at, now, stale_s) and r.temp_c <= SLEET_C
+        return ("sleet" if cold else "rain"), "tempest"
+    return "", ""
+
+
+def pick_symbol(condition: str, windy: bool, is_day: bool) -> str:
+    """Storm, snow, sleet, rain and fog first; then wind; then the clouds; then the sun or moon."""
+    if condition in ("storm", "snow", "sleet", "rain", "fog"):
+        return condition
+    if windy:
+        return "wind"
+    if condition == "cloudy":
+        return "cloud"
+    if condition == "partly":
+        return "partly_day" if is_day else "partly_night"
+    return "sun" if is_day else "moon"
 
 
 def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
@@ -578,5 +671,7 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
     is_day, day_from = day_or_night(r, now, stale_s, hour)
     windy = ((mph is not None and mph >= float(sym.get("wind_mph", 15)))
              or (gust_mph is not None and gust_mph >= float(sym.get("gust_mph", 25))))
-    symbol = "wind" if windy else ("sun" if is_day else "moon")
-    return WeatherPage(symbol, temp, wind, gust, is_day, day_from, wind_label if wind else "")
+    condition, condition_from = sky(r, now, stale_s) if sym.get("conditions", True) else ("", "")
+    symbol = pick_symbol(condition, windy, is_day)
+    return WeatherPage(symbol, temp, wind, gust, is_day, day_from, wind_label if wind else "",
+                       condition, condition_from)

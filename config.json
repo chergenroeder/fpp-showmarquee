@@ -48,7 +48,7 @@
             "enabled": true, "label": "Wind", "direction": true,
             "gusts": true, "gust_label": "gusts", "gust_min_diff_mph": 5, "calm_text": "Calm"
         },
-        "symbol": { "wind_mph": 15, "gust_mph": 25 }
+        "symbol": { "wind_mph": 15, "gust_mph": 25, "conditions": true }
     },
     "social": {
         "enabled": false,
