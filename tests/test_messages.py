@@ -181,7 +181,8 @@ class Daemon(unittest.TestCase):
         self.assertIn("add a message", r["error"])
 
     def test_preview_now_and_validation(self):
-        r = self.d.preview({"config": {"messages": {"enabled": True, "items": [msg("Hi"), msg("Bye", picture="star")]}},
+        r = self.d.preview({"config": {"countdown": {"enabled": True},
+                                       "messages": {"enabled": True, "items": [msg("Hi"), msg("Bye", picture="star")]}},
                             "width": 192, "height": 96})
         self.assertEqual([x["slot"] for x in r["strips"]], ["message:1", "message:2", "countdown"])   # messages first by default
         self.assertTrue(self.d.update_config({"messages": {"items": [msg("x", color="red")]}}))
@@ -223,7 +224,7 @@ class TakingTurns(unittest.TestCase):
     def test_countdown_then_each_message(self):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host, "screen_seconds": 1},
-            "countdown": {"model": "P5 Panel",
+            "countdown": {"enabled": True, "model": "P5 Panel",
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "text_style": {"font": "", "size": 10}, "number_style": {"font": "", "size": 10}},
             "messages": {"enabled": True, "items": [msg("Hello", picture="star"), msg("Only {days} days")]},

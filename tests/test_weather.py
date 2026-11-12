@@ -364,9 +364,14 @@ class PreviewSequence(unittest.TestCase):
         self.d = self.mc.CountdownDaemon()
 
     def slots(self, cfg, **body):
+        cfg = {"countdown": {"enabled": True}, **cfg}
         r = self.d.preview({"config": cfg, "width": 192, "height": 96, **body})
         self.assertNotIn("error", r)
         return r, [x["slot"] for x in r["strips"]]
+
+    def test_every_page_off_is_blank(self):
+        r = self.d.preview({"config": {}, "width": 192, "height": 96})
+        self.assertEqual((r["strips"], r["strip"], r["blank_reason"]), ([], None, "every page is switched off"))
 
     def test_weather_off_shows_only_the_countdown(self):
         r, slots = self.slots({})

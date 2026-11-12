@@ -181,6 +181,7 @@ class Preview(unittest.TestCase):
         self.d = self.mc.CountdownDaemon()
 
     def run_preview(self, cfg, **body):
+        cfg = {"countdown": {"enabled": True}, **cfg}
         r = self.d.preview({"config": cfg, "width": 64, "height": 32, **body})
         self.assertNotIn("error", r)
         return r

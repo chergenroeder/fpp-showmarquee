@@ -163,6 +163,7 @@ class Preview(unittest.TestCase):
         self.d = self.mc.CountdownDaemon()
 
     def run_preview(self, cfg, **body):
+        cfg = {"countdown": {"enabled": True}, **cfg}
         r = self.d.preview({"config": cfg, "width": 192, "height": 96, **body})
         self.assertNotIn("error", r)
         return r
@@ -223,7 +224,7 @@ class TakingTurns(unittest.TestCase):
     def test_countdown_and_show_prep_take_turns(self):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host, "screen_seconds": 1},
-            "countdown": {"model": "P5 Panel",
+            "countdown": {"enabled": True, "model": "P5 Panel",
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "text_style": {"font": "", "size": 10}, "number_style": {"font": "", "size": 10}},
             "showprep": prep(app="pulsemesh"),

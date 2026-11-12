@@ -540,7 +540,7 @@ class CountdownDaemon:
     def set_enabled(self, value) -> dict:
         """On / off / toggle the countdown page and save it (FPP command "Show Marquee - Countdown")."""
         cfg = self.get_config()
-        cur = bool(cfg["countdown"].get("enabled", True))
+        cur = bool(cfg["countdown"].get("enabled", False))
         if value == "toggle":
             new = not cur
         elif isinstance(value, bool):
@@ -615,6 +615,7 @@ class CountdownDaemon:
             return {"error": "the custom target has no valid date"}
         mode = body.get("as", "now")
         weather_note = None
+        blank_reason = "the target has been reached"     # when nothing is left to show
         if mode == "weather":
             wcfg = cfg.get("weather") or {}
             reading = self.weather_reading()
@@ -645,7 +646,7 @@ class CountdownDaemon:
         sequence = [("countdown" if display is not None else mode, message)]
         if mode == "now":
             wcfg = cfg.get("weather") or {}
-            sequence = [("countdown", message)] if cd.get("enabled", True) else []
+            sequence = [("countdown", message)] if cd.get("enabled", False) else []
             if wcfg.get("enabled"):
                 reading = self.weather_reading()
                 page = weather_page(reading, wcfg, hour=now.hour) if reading is not None else None
@@ -671,7 +672,7 @@ class CountdownDaemon:
                                                            self.fill_values(cfg, now), now.date())]
             sequence = order_pages(sequence, cfg)
             if not sequence:
-                sequence = [("countdown", message)]
+                blank_reason = "every page is switched off"
         if mode == "social":
             scfg = cfg.get("social") or {}
             # Show the screens even if Social Media is switched off, so they can be set up first
@@ -730,6 +731,7 @@ class CountdownDaemon:
             "seconds": page_seconds(cfg),
             "strip": None,
             "strips": [],
+            "blank_reason": blank_reason,
         }
         renderer = Renderer(w, h, cd, font_path)
         text_style, number_style = renderer.text_style, renderer.number_style
@@ -816,7 +818,7 @@ class CountdownDaemon:
             "pillow": pillow_version(),
             "clock_synced": clock_synced(),
             "enable_output": bool(cfg.get("global", {}).get("enable_output", True)),
-            "enabled": bool(cd.get("enabled", True)),
+            "enabled": bool(cd.get("enabled", False)),
             "model": cd.get("model", ""),
             "target_type": (cd.get("target") or {}).get("type"),
             "config_errors": validate_config(cfg),
@@ -1003,7 +1005,7 @@ class CountdownDaemon:
             # Nothing to draw: make sure the model is off
             reason = ("output disabled" if not g.get("enable_output", True) else
                       "every section off"
-                      if not (cd.get("enabled", True) or wcfg.get("enabled") or scfg.get("enabled")
+                      if not (cd.get("enabled", False) or wcfg.get("enabled") or scfg.get("enabled")
                               or spcfg.get("enabled") or shcfg.get("enabled") or mscfg.get("enabled")
                               or shwcfg.get("enabled")) else
                       "no model chosen" if not model else "")
@@ -1067,7 +1069,7 @@ class CountdownDaemon:
                 shw = show_page(shwcfg, self.logos.id)
                 if shw is not None:
                     candidates.append((shw.slot, shw))
-                if cd.get("enabled", True):
+                if cd.get("enabled", False):
                     now = local_now()
                     target = resolve_target(cd.get("target") or {}, now)
                     if target is not None:

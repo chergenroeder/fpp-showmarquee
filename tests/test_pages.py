@@ -66,7 +66,7 @@ class Preview(unittest.TestCase):
         self.d = self.mc.CountdownDaemon()
 
     def test_now_follows_the_order(self):
-        cfg = {"schedule": {"enabled": True},
+        cfg = {"schedule": {"enabled": True}, "countdown": {"enabled": True},
                "messages": {"enabled": True, "items": [{"enabled": True, "text": "Hi"}]},
                "global": {"page_order": ["messages", "schedule", "countdown"]}}
         r = self.d.preview({"config": cfg, "width": 192, "height": 96})
@@ -114,7 +114,7 @@ class TakingTurns(unittest.TestCase):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host, "screen_seconds": 1,
                        "page_order": ["schedule", "messages", "countdown"]},
-            "countdown": {"model": "P5 Panel",
+            "countdown": {"enabled": True, "model": "P5 Panel",
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "text_style": {"font": "", "size": 10}, "number_style": {"font": "", "size": 10}},
             "schedule": {"enabled": True},

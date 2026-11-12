@@ -51,7 +51,7 @@ A sign for your light show, on an LED matrix. **Show Marquee** shows pages that 
    ```
    https://raw.githubusercontent.com/chergenroeder/fpp-showmarquee/master/pluginInfo.json
    ```
-3. Open **Content Setup → Show Marquee**. **Getting started** on the Overview tab walks you through the rest: choose your matrix (its overlay model) on the **Display** tab, turn on the pages you want, set each one up, and click **Save**.
+3. Open **Content Setup → Show Marquee**. **Getting started** on the Overview tab walks you through the rest: choose your matrix (its overlay model) on the **Display** tab, turn on the pages you want (every page starts off), set each one up, and click **Save**.
 
 The plugin starts with FPP and stops with it. To get new FPP commands after an update, use **Reinstall**, not just Update: only an install registers commands with FPP.
 

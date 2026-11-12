@@ -14,7 +14,7 @@
         "show_name": true
     },
     "countdown": {
-        "enabled": true,
+        "enabled": false,
         "model": "",
         "target": {
             "type": "christmas",

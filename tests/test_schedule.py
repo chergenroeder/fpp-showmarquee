@@ -221,7 +221,7 @@ class Daemon(unittest.TestCase):
         self.assertEqual(schedule_problems(sc), [])
 
     def test_preview(self):
-        r = self.d.preview({"config": {"schedule": weekend()}, "width": 192, "height": 96})
+        r = self.d.preview({"config": {"schedule": weekend(), "countdown": {"enabled": True}}, "width": 192, "height": 96})
         self.assertEqual([x["slot"] for x in r["strips"]], ["countdown", "schedule"])
         r = self.d.preview({"config": {"schedule": weekend(enabled=False)}, "width": 192, "height": 96,
                             "as": "schedule"})
@@ -270,7 +270,7 @@ class TakingTurns(unittest.TestCase):
     def test_countdown_and_schedule_take_turns(self):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host, "screen_seconds": 1},
-            "countdown": {"model": "P5 Panel",
+            "countdown": {"enabled": True, "model": "P5 Panel",
                           "target": {"type": "custom", "custom_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")},
                           "text_style": {"font": "", "size": 10}, "number_style": {"font": "", "size": 10}},
             "schedule": weekend(),

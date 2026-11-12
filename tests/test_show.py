@@ -190,6 +190,11 @@ class Daemon(unittest.TestCase):
     def tearDown(self):
         self.d.logos.remove()
 
+    def test_every_page_is_off_on_a_new_install(self):
+        cfg = self.mc.load_config()
+        self.assertEqual([k for k in ("show", "messages", "countdown", "schedule", "showprep", "social", "weather")
+                          if cfg[k]["enabled"]], [])
+
     def test_defaults_and_validation(self):
         self.assertEqual(self.mc.load_config()["show"], {"enabled": False, "name": "", "color": "text", "show_name": True})
         self.assertEqual(self.mc.load_config()["global"]["page_order"][0], "show")
@@ -200,7 +205,8 @@ class Daemon(unittest.TestCase):
         self.assertEqual(r["strips"][0]["message"], "Your Show Name")
         self.assertIn("sample name", r["note"])
         self.d.logos.save_base64(png_b64(40, 40))
-        self.assertEqual(self.d.update_config({"show": {"enabled": True, "name": "Smith Lights"}}), [])
+        self.assertEqual(self.d.update_config({"countdown": {"enabled": True},
+                                               "show": {"enabled": True, "name": "Smith Lights"}}), [])
         r = self.d.preview({"config": self.d.get_config(), "width": 192, "height": 96})
         self.assertEqual([x["slot"] for x in r["strips"]][:2], ["show", "countdown"])   # first, by default
         self.assertEqual(r["strips"][0]["message"], "[Logo] Smith Lights")

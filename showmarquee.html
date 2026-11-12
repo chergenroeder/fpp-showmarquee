@@ -1224,7 +1224,7 @@
     const list = (r.strips || []).map(x => x.message);
     $('#mc-preview-text').textContent = list.length
       ? list.map(m => '“' + m + '”').join(list.length > 1 ? '  →  ' : '') + (list.length > 1 ? '  (taking turns)' : '')
-      : (as === 'social' ? '' : '(blank: the target has been reached)');
+      : (as === 'social' ? '' : `(blank: ${r.blank_reason || 'the target has been reached'})`);
     warnEl.textContent = r.warning || '';
     const info = `Counting down to ${r.target.name || 'the target'}: ${r.target.when_text} (FPP local time)` + (r.target.repeats ? ', every year' : '');
     $('#mc-target-info').textContent = info;
@@ -1384,9 +1384,10 @@
     badge.textContent = online ? 'Online' : 'Offline';
     badge.className = 'badge ' + (online ? 'bg-success' : 'bg-danger');
     if (!online) { $('#mc-s-output').textContent = 'daemon not running'; return; }
-    const showing = s.showing && s.showing.message ? s.showing.message : (s.message && s.message.plain) || '';
+    // What the matrix is drawing now: nothing when the output is off or no page is on
+    const showing = s.showing && s.showing.slot ? s.showing.message || '' : '';
     lastStatus = s;
-    $('#mc-s-message').textContent = showing ? '“' + showing + '”' + (s.showing && s.showing.slot && s.showing.slot !== 'countdown' ? ` (${s.showing.slot})` : '') : '(blank)';
+    $('#mc-s-message').textContent = showing ? '“' + showing + '”' + (s.showing.slot !== 'countdown' ? ` (${s.showing.slot})` : '') : '(nothing)';
     const cdEl = $('#mc-s-countdown');
     if (cdEl) {
       cdEl.textContent = !s.enabled ? 'off' : (s.message && s.message.plain) ? s.message.plain

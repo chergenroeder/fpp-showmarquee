@@ -154,6 +154,7 @@ class DaemonLoop(OutputBase):
         errors = self.d.update_config({
             "global": {"fpp_host": self.fpp.host},
             "countdown": {
+                "enabled": True,
                 "model": model,
                 "target": {"type": "custom", "custom_date": when.strftime("%Y-%m-%d"),
                            "custom_time": when.strftime("%H:%M")},
