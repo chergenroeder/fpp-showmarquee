@@ -41,6 +41,7 @@
         <tr><td class="mc-k">Weather</td><td id="mc-s-weather">–</td></tr>
         <tr><td class="mc-k">Social media</td><td id="mc-s-social">–</td></tr>
         <tr><td class="mc-k">Show prep</td><td id="mc-s-showprep">–</td></tr>
+        <tr><td class="mc-k">Schedule</td><td id="mc-s-schedule">–</td></tr>
         <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
       </table>
     </div>
@@ -248,6 +249,83 @@
         </div>
       </div>
 
+      <div class="mc-section">5 · Daily Schedule</div>
+
+      <!-- Daily schedule -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Daily Schedule</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-sc-on" data-path="schedule.enabled">
+            <label class="form-check-label" for="mc-sc-on">Show the schedule</label></div>
+        </div>
+        <div class="card-body" id="mc-schedule-body">
+          <div class="mc-lbl">Show nights</div>
+          <div class="d-flex flex-wrap gap-1" id="mc-sc-nights" role="group" aria-label="Show nights"></div>
+
+          <div class="mc-lbl">Times</div>
+          <div class="btn-group btn-group-sm flex-wrap mb-2" role="group" aria-label="How the times are set">
+            <input type="radio" class="btn-check" name="mc-sc-mode" id="mc-sc-mode-same" value="same" data-path="schedule.mode">
+            <label class="btn btn-outline-primary" for="mc-sc-mode-same">Same every night</label>
+            <input type="radio" class="btn-check" name="mc-sc-mode" id="mc-sc-mode-weekend" value="weekend" data-path="schedule.mode">
+            <label class="btn btn-outline-primary" for="mc-sc-mode-weekend">Weeknights + weekends</label>
+            <input type="radio" class="btn-check" name="mc-sc-mode" id="mc-sc-mode-custom" value="custom" data-path="schedule.mode">
+            <label class="btn btn-outline-primary" for="mc-sc-mode-custom">Each night different</label>
+          </div>
+
+          <div class="mc-sc-panel" data-mode="same">
+            <div class="row g-2">
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-every-start">Starts</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-every-start" data-path="schedule.every.start"></div>
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-every-end">Ends</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-every-end" data-path="schedule.every.end"></div>
+            </div>
+          </div>
+
+          <div class="mc-sc-panel" data-mode="weekend">
+            <div class="small mb-1">Weekend nights <span class="mc-example">the nights with the weekend times</span></div>
+            <div class="d-flex flex-wrap gap-1 mb-2" id="mc-sc-weekend-nights" role="group" aria-label="Weekend nights"></div>
+            <div class="row g-2">
+              <div class="col-12 col-sm-2 small fw-bold d-flex align-items-end">Weeknights</div>
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-wn-start">Start</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-wn-start" data-path="schedule.weeknight.start"></div>
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-wn-end">End</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-wn-end" data-path="schedule.weeknight.end"></div>
+            </div>
+            <div class="row g-2 mt-0">
+              <div class="col-12 col-sm-2 small fw-bold d-flex align-items-end">Weekends</div>
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-we-start">Start</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-we-start" data-path="schedule.weekend.start"></div>
+              <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sc-we-end">End</label>
+                <input type="time" class="form-control form-control-sm" id="mc-sc-we-end" data-path="schedule.weekend.end"></div>
+            </div>
+          </div>
+
+          <div class="mc-sc-panel" data-mode="custom">
+            <table class="table table-sm align-middle mb-0" style="max-width: 26rem;">
+              <thead><tr><th class="small">Night</th><th class="small">Start</th><th class="small">End</th></tr></thead>
+              <tbody id="mc-sc-custom"></tbody>
+            </table>
+          </div>
+          <div class="small text-muted mt-1">An end at or before the start means the show runs past midnight (5:00 PM to 12:00 AM).</div>
+
+          <div class="row g-2 mt-2">
+            <div class="col-12 col-sm-6"><div class="small mb-1">On the matrix</div>
+              <div class="form-check"><input class="form-check-input" type="radio" name="mc-sc-show" id="mc-sc-show-week" value="week" data-path="schedule.show">
+                <label class="form-check-label" for="mc-sc-show-week">The week <span class="mc-example">tonight's line highlighted</span></label></div>
+              <div class="form-check"><input class="form-check-input" type="radio" name="mc-sc-show" id="mc-sc-show-tonight" value="tonight" data-path="schedule.show">
+                <label class="form-check-label" for="mc-sc-show-tonight">Tonight only <span class="mc-example">or the next show</span></label></div></div>
+            <div class="col-6 col-sm-3 mc-sc-week-only"><label class="form-label form-label-sm mb-0" for="mc-sc-title">Title</label>
+              <input type="text" class="form-control form-control-sm" id="mc-sc-title" maxlength="40" data-path="schedule.title"></div>
+            <div class="col-6 col-sm-3"><label class="form-label form-label-sm mb-0" for="mc-sc-clock">Clock</label>
+              <select class="form-select form-select-sm" id="mc-sc-clock" data-path="schedule.clock">
+                <option value="12">12-hour (5:30 PM)</option><option value="24">24-hour (17:30)</option></select></div>
+          </div>
+          <div class="small mt-2" id="mc-sc-summary"></div>
+          <div class="small mc-warn" id="mc-sc-warn"></div>
+          <div class="small text-muted mt-1">Nights with the same times share a line. The times use the Number style, the nights and title the Text style.</div>
+        </div>
+      </div>
+
       <div class="mc-section">Shared by all</div>
 
       <!-- Pages -->
@@ -258,7 +336,7 @@
             <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
               <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
           </div>
-          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen and the show prep page show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
+          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen, the show prep page and the schedule show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
         </div>
       </div>
 
@@ -311,6 +389,8 @@
             <label class="btn btn-outline-secondary" for="mc-as-social">Social</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-showprep" value="showprep">
             <label class="btn btn-outline-secondary" for="mc-as-showprep">Show prep</label>
+            <input type="radio" class="btn-check" name="mc-as" id="mc-as-schedule" value="schedule">
+            <label class="btn btn-outline-secondary" for="mc-as-schedule">Schedule</label>
           </div>
         </div>
         <div class="card-body">
@@ -469,6 +549,92 @@
     $('#mc-sp-warn').textContent = badLink ? 'The link must be a web address starting with https:// (or http://).' : '';
   }
 
+  // ── daily schedule ──
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function buildSchedule() {
+    const chip = (box, path, i) => {
+      const id = box.id + '-' + i;
+      box.insertAdjacentHTML('beforeend',
+        `<input type="checkbox" class="btn-check" id="${id}" data-path="${path}.${i}" autocomplete="off">` +
+        `<label class="btn btn-sm btn-outline-primary" for="${id}" style="min-width: 3.2rem;">${DAYS[i]}</label>`);
+    };
+    DAYS.forEach((_, i) => chip($('#mc-sc-nights'), 'schedule.nights', i));
+    DAYS.forEach((_, i) => chip($('#mc-sc-weekend-nights'), 'schedule.weekend_nights', i));
+    $('#mc-sc-custom').innerHTML = DAYS.map((d, i) =>
+      `<tr data-night="${i}"><td class="small fw-bold">${d}</td>` +
+      `<td><input type="time" class="form-control form-control-sm" aria-label="${d} start" data-path="schedule.custom.${i}.start"></td>` +
+      `<td><input type="time" class="form-control form-control-sm" aria-label="${d} end" data-path="schedule.custom.${i}.end"></td></tr>`).join('');
+  }
+  const validTime = t => /^([01]?\d|2[0-3]):[0-5]\d$/.test(String(t || '').trim());
+  // The same rules as countdown/schedule.py night_times()
+  function nightTimes(S) {
+    const nights = S.nights || [], weekend = S.weekend_nights || [], custom = S.custom || [];
+    return DAYS.map((_, i) => {
+      if (nights[i] === false) return null;
+      const p = S.mode === 'weekend' ? (weekend[i] ? S.weekend : S.weeknight)
+              : S.mode === 'custom' ? custom[i] : S.every;
+      return p && validTime(p.start) && validTime(p.end) ? [p.start, p.end] : null;
+    });
+  }
+  function fmtTime(t, clock, suffix = true) {
+    const [h, m] = t.split(':').map(Number);
+    if (clock === '24') return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    return String(h % 12 || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + (suffix ? (h < 12 ? ' AM' : ' PM') : '');
+  }
+  function fmtRange([a, b], clock) {
+    if (clock === '24') return fmtTime(a, clock) + '–' + fmtTime(b, clock);
+    const [ah] = a.split(':').map(Number), [bh] = b.split(':').map(Number);
+    const sameHalf = (ah < 12) === (bh < 12) && b > a;
+    return fmtTime(a, clock, !sameHalf) + '–' + fmtTime(b, clock);
+  }
+  function daySpan(days) {
+    if (days.length === 7) return 'Nightly';
+    const runs = [];
+    days.forEach(d => { const r = runs[runs.length - 1]; if (r && r[r.length - 1] + 1 === d) r.push(d); else runs.push([d]); });
+    if (runs.length > 1 && runs[0][0] === 0 && runs[runs.length - 1].slice(-1)[0] === 6) runs[runs.length - 1].push(...runs.shift());
+    const label = r => r.length === 1 ? DAYS[r[0]] : r.length === 2 ? `${DAYS[r[0]]} & ${DAYS[r[1]]}` : `${DAYS[r[0]]}–${DAYS[r[r.length - 1]]}`;
+    const labels = runs.map(label);
+    if (labels.length === 1) return labels[0];
+    return runs.some(r => r.length === 2) ? labels.join(', ') : labels.slice(0, -1).join(', ') + ' & ' + labels[labels.length - 1];
+  }
+  function refreshSchedule() {
+    const S = cfg.schedule || {};
+    $('#mc-schedule-body').style.opacity = S.enabled ? '' : '.55';
+    const mode = ['same', 'weekend', 'custom'].includes(S.mode) ? S.mode : 'same';
+    $$('.mc-sc-panel').forEach(el => el.classList.toggle('mc-hidden', el.dataset.mode !== mode));
+    $$('.mc-sc-week-only').forEach(el => el.classList.toggle('mc-hidden', S.show === 'tonight'));
+    const nights = S.nights || [];
+    // Weekend chips and custom rows only for show nights
+    DAYS.forEach((_, i) => {
+      const off = nights[i] === false;
+      const w = $('#mc-sc-weekend-nights-' + i); if (w) w.disabled = off;
+      $$(`#mc-sc-custom tr[data-night="${i}"] input`).forEach(el => { el.disabled = off; });
+      const row = $(`#mc-sc-custom tr[data-night="${i}"]`); if (row) row.style.opacity = off ? '.4' : '';
+    });
+    const times = nightTimes(S);
+    const groups = new Map();
+    times.forEach((t, i) => { if (t) { const k = t.join('-'); if (!groups.has(k)) groups.set(k, { t, days: [] }); groups.get(k).days.push(i); } });
+    const clock = String(S.clock) === '24' ? '24' : '12';
+    const lines = Array.from(groups.values()).map(g => `${daySpan(g.days)} ${fmtRange(g.t, clock)}`);
+    $('#mc-sc-summary').textContent = lines.length ? 'On the matrix: ' + lines.join(' · ') : '';
+    const warn = [];
+    if (!nights.some(x => x !== false)) warn.push('Choose at least one show night.');
+    else {
+      const missing = DAYS.filter((d, i) => nights[i] !== false && !times[i]);
+      if (missing.length) warn.push('Set a start and end time' + (mode === 'custom' ? ' for ' + missing.join(', ') : '') + '.');
+    }
+    $('#mc-sc-warn').textContent = warn.join(' ');
+  }
+  // Switching how the times are set starts from what's shown now, so nothing has to be typed twice
+  function onScheduleMode(newMode) {
+    const S = cfg.schedule;
+    const prev = nightTimes({ ...S, mode: S._prevMode || 'same', nights: DAYS.map(() => true) });
+    if (newMode === 'custom') S.custom = DAYS.map((_, i) => prev[i] ? { start: prev[i][0], end: prev[i][1] } : (S.custom || [])[i] || { start: '', end: '' });
+    if (newMode === 'weekend' && (S._prevMode || 'same') === 'same' && S.every) S.weeknight = { ...S.every };
+    delete S._prevMode;
+    toForm();
+  }
+
   // ── style cards ──
   function buildStyleCards() {
     $$('[data-style]').forEach(col => {
@@ -523,11 +689,16 @@
     } else if (el.dataset.path) {
       let v;
       if (el.type === 'checkbox') v = el.dataset.invert ? !el.checked : el.checked;
-      else if (el.type === 'radio') { if (!el.checked) return; v = el.value; }
+      else if (el.type === 'radio') {
+        if (!el.checked) return;
+        if (el.dataset.path === 'schedule.mode') cfg.schedule._prevMode = cfg.schedule.mode;
+        v = el.value;
+      }
       else if (el.dataset.type === 'number') { v = el.value === '' ? '' : Number(el.value); }
       else v = el.value;
       setPath(cfg, el.dataset.path, v);
       if (el.dataset.path === 'countdown.target.type') $('#mc-name').value = getPath(cfg, 'countdown.target.event_name.' + v) || '';
+      if (el.dataset.path === 'schedule.mode') { onScheduleMode(v); return; }
     } else return;
     refresh();
   }
@@ -562,6 +733,7 @@
     });
     refreshSocial();
     refreshShowPrep();
+    refreshSchedule();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
     $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
@@ -802,6 +974,9 @@
     const sp = s.showprep || {}, spEl = $('#mc-s-showprep');
     spEl.textContent = !sp.enabled ? 'off' : sp.problem ? sp.problem : `${sp.app_name}: QR to ${sp.link}`;
     spEl.className = sp.enabled && sp.problem ? 'mc-warn' : '';
+    const sc = s.schedule || {}, scEl = $('#mc-s-schedule');
+    scEl.textContent = !sc.enabled ? 'off' : (sc.problems || []).length ? sc.problems.join('; ') : (sc.summary || '–');
+    scEl.className = sc.enabled && (sc.problems || []).length ? 'mc-warn' : '';
     const o = s.output || {};
     const out = $('#mc-s-output');
     out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
@@ -817,6 +992,7 @@
   // ── start ──
   buildStyleCards();
   buildSiteRows();
+  buildSchedule();
   loadLogos();
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);

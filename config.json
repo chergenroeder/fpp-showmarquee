@@ -62,5 +62,23 @@
         "app": "",
         "message": "Scan to get the {app} app before the show",
         "link": ""
+    },
+    "schedule": {
+        "enabled": false,
+        "nights": [true, true, true, true, true, true, true],
+        "mode": "same",
+        "every": { "start": "17:30", "end": "22:00" },
+        "weekend_nights": [false, false, false, false, false, true, true],
+        "weeknight": { "start": "17:30", "end": "22:00" },
+        "weekend": { "start": "17:30", "end": "23:00" },
+        "custom": [
+            { "start": "17:30", "end": "22:00" }, { "start": "17:30", "end": "22:00" },
+            { "start": "17:30", "end": "22:00" }, { "start": "17:30", "end": "22:00" },
+            { "start": "17:30", "end": "22:00" }, { "start": "17:30", "end": "23:00" },
+            { "start": "17:30", "end": "23:00" }
+        ],
+        "show": "week",
+        "title": "Show Times",
+        "clock": "12"
     }
 }

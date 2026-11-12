@@ -1,6 +1,6 @@
 # fpp-matrixcountdown — Matrix Countdown Clock
 
-An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour. It can also show the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station, your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo, and a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**). Nothing scrolls: each one shows on its own, centered and still, for the number of seconds you choose (5 by default), then the next comes on.
+An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour. It can also show the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station, your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo, a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**), and your **show times**. Nothing scrolls: each one shows on its own, centered and still, for the number of seconds you choose (5 by default), then the next comes on.
 
 ```
 8 Days to Christmas          Christmas in 8 Days
@@ -16,7 +16,8 @@ An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**
 - **Number first or last:** "8 Days to Christmas" or "Christmas in 8 Days". The event name, joining words ("to" / "in") and unit words ("Day", "Days", ...) can all be changed.
 - **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
 - **Show prep** (optional): a QR code to the **PulseMesh** or **Tune2** app beside a message such as "Scan to get the PulseMesh app before the show".
-- **Pages, not scrolling:** the countdown, the weather page, each social media screen and the show prep page show one after another, held still, each for **Seconds per page** (default 5). A countdown wider than the panel goes on two lines.
+- **Daily schedule** (optional): your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", tonight highlighted) or just tonight's. Set them as the same every night, weeknights + weekends, or each night different.
+- **Pages, not scrolling:** the countdown, the weather page, each social media screen, the show prep page and the schedule show one after another, held still, each for **Seconds per page** (default 5). A countdown wider than the panel goes on two lines.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
 - **Weather** (optional): one still page with a **sun**, **moon** or **wind** symbol beside the temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source.
 - **Social media** (optional): each site's logo above your `@handle`, Sites with the same handle share one screen; different handles get a screen each, shown one after another.
@@ -57,13 +58,14 @@ rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
 | Status | Online/Offline, what the matrix shows now, output state and frame rate, the player's local time and whether its clock is synced to internet time. Start / Restart / Stop. |
 | Count down to | **Countdown on**; Christmas Day, New Year's Day or Custom date. Custom shows a date, a time (24-hour on the player) and **Repeat every year**. Event name. A line shows the exact moment it counts to. |
 | Message | Number first / last, Countdown timer / Hours only, and (folded) the joining and unit words. Each choice shows an example in your own words. |
-| Pages | **Seconds per page**: how long the countdown, the weather page, each social media screen and the show prep page show before the next one comes on (default 5). |
+| Pages | **Seconds per page**: how long each page (countdown, weather, each social media screen, show prep, schedule) shows before the next one comes on (default 5). |
 | Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
 | Weather | **Show weather**; where the weather comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off; wind direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading, where it came from and which symbol is up. |
 | Social Media | **Show social media**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
+| Daily Schedule | **Show the schedule**; the show nights; how the times are set (same every night, weeknights + weekends, each night different) and the times; the week or tonight only; title; 12- or 24-hour clock. A line shows what the matrix will say. |
 | Show Prep | **Show prep page**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. A line says where the QR code goes. |
 | Matrix | Overlay model, **Output enabled**; frame rate under Advanced. |
-| Preview | The matrix at the model's size, as it will look. **Now** plays the countdown, the weather page, the social screens and the show prep page in turn, each for the seconds per page. Preview as Now, 8 days out, Under a day, Weather (live weather, or a sample if none has arrived), Social (every social screen, even before Show social media is on) or Show prep. |
+| Preview | The matrix at the model's size, as it will look. **Now** plays the countdown, the weather page, the social screens, the show prep page and the schedule in turn, each for the seconds per page. Preview as Now, 8 days out, Under a day, Weather (live weather, or a sample if none has arrived), Social (every social screen, even before Show social media is on), Show prep or Schedule. |
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 
@@ -153,6 +155,31 @@ A page that tells viewers to get your show's audio app before the show: a QR cod
 - **Turns:** after the social media screens, for **Seconds per page**.
 - Nothing is sent anywhere: the link is only drawn in the code.
 
+## Daily schedule
+
+Your show times on the matrix.
+
+```
+ The week:                      Tonight only:
+ +------------------------+     +------------------------+
+ |       Show Times       |     |        Tonight         |
+ |  Sun–Thu   5–10 PM     |     |       5–10 PM          |
+ |  Fri & Sat 5–11 PM     |     |                        |
+ +------------------------+     +------------------------+
+```
+
+1. **Show nights:** click the nights the show runs (all seven to start). A dark night, like Mondays, is one click.
+2. **Times**, one of three ways:
+   - **Same every night:** one start and end.
+   - **Weeknights + weekends:** a start and end for weeknights and for weekends. Choose which nights are the weekend (Fri & Sat to start; Sat & Sun if you prefer).
+   - **Each night different:** a start and end for each night. Switching to it fills each night with the times you already had, so you only change the nights that differ.
+3. **On the matrix:** **The week** (nights with the same times share a line, tonight's line in the Number style) or **Tonight only** ("Tonight 5–10 PM", or "No show tonight" and the next show).
+4. **Title** ("Show Times") and **Clock** (12-hour "5:30 PM" or 24-hour "17:30").
+
+- **Past midnight:** an end at or before the start means the show runs past midnight: 5:00 PM to 12:00 AM reads "5 PM–12 AM".
+- **Grouping:** nights with the same times share one line, even when they aren't next to each other ("Mon, Wed & Fri 6–9 PM"), so a busy week still fits. If it doesn't, the title is left off first, and the preview says so.
+- **Tonight** follows the player's clock and date.
+
 ## FPP commands
 
 Use them anywhere FPP runs a command: a playlist **FPP Command** entry, the scheduler, command presets, MQTT, or another player's remote command.
@@ -207,8 +234,9 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/fonts.py` | Finding fonts, with a fallback. |
 | `countdown/weather.py` | Open-Meteo poller, Tempest UDP listener, day or night, and what goes on the weather page. |
 | `countdown/symbols.py` | The sun, moon and wind symbols (drawn in code). |
-| `countdown/still.py` | Still pages: the weather and show prep layouts, how long each page holds, and the cache shared with the social screens. |
+| `countdown/still.py` | Still pages: the weather, show prep and schedule layouts, how long each page holds, and the cache shared with the social screens. |
 | `countdown/showprep.py` | Show prep: the apps and their links, the page, and the QR code. |
+| `countdown/schedule.py` | Daily schedule: show nights and times, grouping and wording, the page. |
 | `countdown/social.py` | Social media screens: handles, grouping by handle, the logos (drawn in code) and the screen layout. |
 | `matrixcountdown.html` | The settings page. |
 | `commands/` | FPP commands. |

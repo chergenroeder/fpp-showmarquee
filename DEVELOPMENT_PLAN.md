@@ -642,3 +642,26 @@ Asked for: a section that tells viewers to download the show's audio app before 
 - [x] Dev server check, and a real scan: Chromium's `BarcodeDetector` read `https://pulsemesh.io/download` and `https://www.tune2.app/downloads` from the preview images.
 - [ ] On fpp-matrix.local: **Reinstall** (not just Update) so FPP installs python3-qrcode; then TESTING.md section 8, scanning from the street with an iPhone and an Android phone.
 
+---
+
+## Version 7 — Daily schedule (built 2026-11-11)
+
+Asked for: a section showing the show times, easy to set up for shows that run the same hours every night, longer hours on weekends, or a custom week (e.g. Sun–Thu ending earlier than Fri and Sat).
+
+**Design**
+- **Show nights first**, as seven day buttons, in every mode: a dark night (closed Mondays) is one click, whatever the times are.
+- **Three ways to set the times**, as one segmented choice: *Same every night* (one start/end), *Weeknights + weekends* (two start/ends, plus which nights are the weekend, Fri & Sat by default), *Each night different* (a start/end per night). All three are kept in the settings, so switching back and forth loses nothing; switching to *Each night different* fills each night with the times shown before, and *Same → Weeknights + weekends* carries the times over to weeknights.
+- **On the matrix**: *The week* (one line per set of times, nights grouped even when not next to each other: "Sun–Thu", "Fri & Sat", "Mon, Wed & Fri", "Nightly"; tonight's line in the Number style) or *Tonight only* ("Tonight 5–10 PM", or "No show tonight" / "Next: Sun 5–10 PM").
+- **Wording**: compact times ("5:30–10 PM", "5 PM–12 AM" past midnight, "11 AM–1:30 PM"), or 24-hour ("17:30–22:00"). Week order starts on Sunday; a run that wraps the week (Sat & Sun, Fri–Sun) is one label.
+- Later ideas: a season (first and last show dates); read the times from FPP's own scheduler; "Showing now until 10 PM" during the show.
+
+**Built**
+- [x] `countdown/schedule.py`: `night_times()`, `week_lines()`, `day_span()`, `format_range()`, `schedule_page()` (`SchedulePage(title, lines, kind)`), `schedule_status()`, `schedule_problems()` (what's missing, for the page) and `settings_problems()` (validation; empty times allowed while setting up).
+- [x] `still.py`: the week as a centered two-column table (nights, times), one size for all, shrinking to fit, the title dropped before text goes below size 8; the tonight page stacked and centered, larger.
+- [x] Daemon: `schedule` settings and validation, its turn after show prep, `status.schedule`, preview `as: schedule` (a sample when nothing is set) and in "Now". Defaults are a working schedule (every night, 5:30–10 PM) so switching it on shows something.
+- [x] Settings page: a "5 · Daily Schedule" card (show-night buttons, the three ways, a per-night table that greys out dark nights, week/tonight, title, clock, an "On the matrix" line using the same grouping as the daemon, warnings for missing times), a Schedule preview button, a status line.
+- [x] Docs: README (Daily schedule section), API.md, TESTING.md section 9, `pluginInfo.json`.
+- [x] Tests: 22 in `tests/test_schedule.py`. 234 in total, all passing.
+- [x] Dev server check: Same → Weeknights + weekends carried the times, Each night different filled from it, turning Monday off greyed its row; the card's line and the preview agreed ("Sun & Tue–Thu 5:30–10 PM · Fri & Sat 5:30–11 PM").
+- [ ] On fpp-matrix.local: TESTING.md section 9.
+

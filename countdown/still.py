@@ -1,11 +1,12 @@
 """Still pages: drawn once, held on the matrix for the seconds per page, never scrolled.
 
-Three kinds take turns with the countdown (also held still, see render.py):
+Four kinds take turns with the countdown (also held still, see render.py):
   weather.WeatherPage    a sun/moon/wind symbol beside the temperature, wind and
                          gust lines (drawn here)
   social.Screen          logos above an @handle (drawn by social.draw_screen)
   showprep.ShowPrepPage  a QR code to the show's audio app beside a message
                          (drawn here)
+  schedule.SchedulePage  the show times for the week or tonight (drawn here)
 
 is_still() tells the drawing loop which items are drawn here (the countdown is
 drawn by render.Renderer, centered), page_seconds() how long every page shows,
@@ -14,6 +15,7 @@ and StillCache draws each page once per panel and style.
 
 from typing import Dict, List, Optional, Tuple
 
+from .schedule import SchedulePage
 from .showprep import ShowPrepPage
 from .social import Screen
 from .weather import WeatherPage
@@ -24,7 +26,7 @@ LINE_GAP = 1
 
 
 def is_still(item) -> bool:
-    return isinstance(item, (Screen, WeatherPage, ShowPrepPage))
+    return isinstance(item, (Screen, WeatherPage, ShowPrepPage, SchedulePage))
 
 
 def page_seconds(cfg: dict) -> float:
@@ -259,6 +261,113 @@ def draw_show_prep(page: ShowPrepPage, panel_w: int, panel_h: int, number_style,
     return img, problem
 
 
+# ── Schedule page ─────────────────────────────────────────────────────────────
+
+def schedule_layout(page: SchedulePage, panel_w: int, panel_h: int, number_style, text_style,
+                    min_size: int = READABLE):
+    """(font size, show title, column gap) for the page, or (None, ...) if it can't fit.
+
+    The rows are a table: nights on the left, times on the right, the block
+    centered. Everything is one size, the Text style's, shrinking to fit; the
+    title goes before the text would go below min_size.
+    """
+    for with_title in ((True, False) if page.title else (False,)):
+        for size in range(max(int(text_style.size), int(number_style.size), min_size), min_size - 1, -1):
+            gap = max(2, round(size * 0.6))
+            tf, nf = text_style.font(size), number_style.font(size)
+            day_w = max((max(tf.getlength(ln.days), nf.getlength(ln.days)) for ln in page.lines), default=0)
+            time_w = max((nf.getlength(ln.times) for ln in page.lines), default=0)
+            row_w = day_w + (gap + time_w if time_w else 0)
+            title_w = tf.getlength(page.title) if with_title else 0
+            line_h = max(tf.getmetrics()[0], nf.getmetrics()[0]) + max(tf.getmetrics()[1], nf.getmetrics()[1])
+            rows = len(page.lines) + (1 if with_title else 0)
+            if max(row_w, title_w) <= panel_w and rows * line_h + LINE_GAP * (rows - 1) <= panel_h:
+                return size, with_title, gap
+    return None, False, 0
+
+
+def draw_schedule(page: SchedulePage, panel_w: int, panel_h: int, number_style, text_style):
+    """(image, problem): the schedule as a centered table."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (panel_w, panel_h))
+    problem = ""
+    size, with_title, gap = schedule_layout(page, panel_w, panel_h, number_style, text_style)
+    if size is None:
+        size, with_title, gap = schedule_layout(page, panel_w, panel_h, number_style, text_style, min_size=4)
+        problem = "the schedule is too small to read: use fewer different times or a smaller Text size"
+    if size is None:
+        return img, "the schedule doesn't fit the matrix"
+    if page.title and not with_title and not problem:
+        problem = "the title is left off so the times fit"
+    tf, nf = text_style.font(size), number_style.font(size)
+    asc = max(tf.getmetrics()[0], nf.getmetrics()[0])
+    line_h = asc + max(tf.getmetrics()[1], nf.getmetrics()[1])
+    day_w = max(max(tf.getlength(ln.days), nf.getlength(ln.days)) for ln in page.lines)
+    time_w = max(nf.getlength(ln.times) for ln in page.lines)
+    rows = len(page.lines) + (1 if with_title else 0)
+    y = (panel_h - (rows * line_h + LINE_GAP * (rows - 1))) // 2
+    draw = ImageDraw.Draw(img)
+
+    def put(x, text, style):
+        draw.fontmode = "L" if style.antialias else "1"
+        draw.text((x, y + asc), text, fill=style.color, font=style.font(size), anchor="ls")
+
+    if with_title:
+        put((panel_w - tf.getlength(page.title)) / 2, page.title, text_style)
+        y += line_h + LINE_GAP
+    if time_w:
+        x0 = (panel_w - (day_w + gap + time_w)) / 2
+        for ln in page.lines:
+            put(x0, ln.days, number_style if ln.today else text_style)
+            if ln.times:
+                put(x0 + day_w + gap, ln.times, number_style)
+            y += line_h + LINE_GAP
+    else:
+        for ln in page.lines:
+            put((panel_w - tf.getlength(ln.days)) / 2, ln.days, text_style)
+            y += line_h + LINE_GAP
+    return img, problem
+
+
+def draw_schedule_page(page: SchedulePage, panel_w, panel_h, number_style, text_style):
+    """(image, problem) for either kind of schedule page."""
+    if page.kind == "tonight":
+        return draw_tonight(page, panel_w, panel_h, number_style, text_style)
+    return draw_schedule(page, panel_w, panel_h, number_style, text_style)
+
+
+def draw_tonight(page: SchedulePage, panel_w, panel_h, number_style, text_style):
+    """The "tonight" page: each line centered, the days above the times."""
+    from .schedule import ScheduleLine
+    stacked = []
+    for ln in page.lines:
+        stacked.append(ScheduleLine(ln.days, ""))
+        if ln.times:
+            stacked.append(ScheduleLine(ln.times, "", True))     # the times in the Number style
+    return _draw_centered(SchedulePage("", tuple(stacked), "tonight"), panel_w, panel_h, number_style, text_style)
+
+
+def _draw_centered(page: SchedulePage, panel_w, panel_h, number_style, text_style):
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (panel_w, panel_h))
+    for minimum in (READABLE, 4):
+        for size in range(max(int(text_style.size), int(number_style.size)) + 6, minimum - 1, -1):
+            fonts = [(number_style if ln.today else text_style) for ln in page.lines]
+            widths = [st.font(size).getlength(ln.days) for ln, st in zip(page.lines, fonts)]
+            asc = max(st.font(size).getmetrics()[0] for st in fonts)
+            line_h = asc + max(st.font(size).getmetrics()[1] for st in fonts)
+            block = len(page.lines) * line_h + LINE_GAP * (len(page.lines) - 1)
+            if max(widths) <= panel_w and block <= panel_h:
+                y = (panel_h - block) // 2
+                draw = ImageDraw.Draw(img)
+                for ln, st, w in zip(page.lines, fonts, widths):
+                    draw.fontmode = "L" if st.antialias else "1"
+                    draw.text(((panel_w - w) / 2, y + asc), ln.days, fill=st.color, font=st.font(size), anchor="ls")
+                    y += line_h + LINE_GAP
+                return img, "" if minimum == READABLE else "the text is too small to read"
+    return img, "it doesn't fit the matrix"
+
+
 # ── Cache ─────────────────────────────────────────────────────────────────────
 
 class StillCache:
@@ -286,4 +395,6 @@ def draw(item, panel_w: int, panel_h: int, number_style, text_style):
         return draw_screen(item, panel_w, panel_h, text_style)[0]
     if isinstance(item, ShowPrepPage):
         return draw_show_prep(item, panel_w, panel_h, number_style, text_style)[0]
+    if isinstance(item, SchedulePage):
+        return draw_schedule_page(item, panel_w, panel_h, number_style, text_style)[0]
     return draw_weather_page(item, panel_w, panel_h, number_style, text_style)

@@ -123,7 +123,20 @@ set '{"global":{"screen_seconds":5},"showprep":{"enabled":true,"app":"pulsemesh"
 - [ ] Your own link (`"link":"https://example.com"`) replaces it; clearing it (`"link":""`) goes back to the app's page.
 - [ ] Try it at the brightness you run the show at: if phones struggle, lower the matrix brightness a little.
 
-## 9. Recovery
+## 9. Daily schedule
+
+Turn on **Show the schedule** on the settings page, then for each, check the card's "On the matrix" line, the preview and the matrix:
+
+- [ ] **Same every night**, 5:30 PM–10:00 PM: "Show Times" / "Nightly 5:30–10 PM", tonight's line in the Number style.
+- [ ] **Weeknights + weekends**: the weeknight times carry over from Same every night. Set weekends to end at 11:00 PM: "Sun–Thu 5:30–10 PM" / "Fri & Sat 5:30–11 PM".
+- [ ] Make the weekend Sat & Sun: "Mon–Fri …" / "Sat & Sun …".
+- [ ] **Each night different**: each night starts with the times above. Change Thursday: it gets its own line.
+- [ ] Turn Monday off: Monday's row greys out and Monday leaves the matrix.
+- [ ] An end of 12:00 AM reads "… PM–12 AM".
+- [ ] **Tonight only**: "Tonight 5:30–10 PM"; with tonight off, "No show tonight" and the next show.
+- [ ] **Clock** 24-hour: "17:30–22:00".
+
+## 10. Recovery
 
 - [ ] Restart fppd (**Status → Restart FPPD**): the countdown comes back by itself within ~5 s.
 - [ ] Reboot the player: the countdown starts on its own.
