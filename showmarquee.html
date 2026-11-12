@@ -31,6 +31,7 @@
     <span id="mc-badge" class="badge bg-secondary">Loading…</span>
     <span class="small text-muted" id="mc-s-output">–</span>
     <div class="ms-auto d-flex gap-1 align-items-center">
+      <button type="button" class="btn btn-sm btn-link" id="mc-start-show" title="Show the setup checklist on the Overview tab">Getting started</button>
       <a class="btn btn-sm btn-link" href="https://github.com/chergenroeder/fpp-showmarquee#readme" target="_blank" rel="noopener noreferrer"
          title="The full instructions, on GitHub">Help</a>
       <button type="button" class="btn btn-sm btn-outline-success" onclick="mcDaemon('start')">Start</button>
@@ -893,6 +894,7 @@
   }
 
   // ── getting started ──
+  let startForced = false;     // the header's Getting started link was clicked: show it until Hide
   function startDone() { try { return localStorage.getItem('showmarquee.started') === '1'; } catch (e) { return false; } }
   function updateStart() {
     const box = $('#mc-start');
@@ -912,7 +914,8 @@
         <span class="visually-hidden">${ok ? '(done)' : '(to do)'}</span></li>`).join('');
     const all = steps.every(st => st[0]);
     if (all) { try { localStorage.setItem('showmarquee.started', '1'); } catch (e) {} }
-    box.classList.toggle('mc-hidden', all || startDone());
+    // Shown while setting up for the first time, or on demand (the header's Getting started link) until Hide
+    box.classList.toggle('mc-hidden', !startForced && (all || startDone()));
   }
 
   function onOverviewClick(e) {
@@ -1397,8 +1400,15 @@
   });
   $('#mc-root').addEventListener('click', onOverviewClick);
   $('#mc-start-hide').addEventListener('click', () => {
+    startForced = false;
     try { localStorage.setItem('showmarquee.started', '1'); } catch (e) {}
     $('#mc-start').classList.add('mc-hidden');
+  });
+  $('#mc-start-show').addEventListener('click', () => {
+    startForced = true;
+    showTab('overview');
+    updateStart();
+    window.scrollTo(0, 0);
   });
   renderOverview();      // the default order until the settings load
   let startTab = (location.hash || '').slice(1);

@@ -26,6 +26,7 @@ curl -s $API/config > /tmp/mc-before.json
 
 - [ ] On a new install the page opens on **Overview** with **Getting started**: choosing the matrix, turning pages on and setting them up tick their steps off; after **Save** all four are ticked and it hides, and stays hidden after a reload.
 - [ ] **How it works** opens and closes; **Help** opens the README on GitHub.
+- [ ] On a player that's already set up, **Getting started** at the top shows the checklist (all ticked) on Overview until **Hide**.
 - [ ] Before a matrix is chosen the header says "not drawing: choose your matrix"; choosing a big matrix (96 tall) sets both style sizes to suit it (24) and says so.
 - [ ] A page that's off says "This page is off" at the top of its tab; its controls are still usable.
 - [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
