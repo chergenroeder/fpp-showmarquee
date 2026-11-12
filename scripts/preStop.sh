@@ -4,4 +4,4 @@
 . "$(dirname "$0")/daemon_lib.sh"
 
 mc_stop_daemon
-echo "matrixcountdown stopped"
+echo "showmarquee stopped"

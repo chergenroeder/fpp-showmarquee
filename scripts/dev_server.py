@@ -2,8 +2,8 @@
 """Work on the settings page without an FPP player.
 
 Starts a fake fppd (tests/fake_fpp.py, two models), the real daemon against it,
-and a page server that wraps matrixcountdown.html in Bootstrap the way FPP does
-and passes /api/plugin/fpp-matrixcountdown/* through to the daemon.
+and a page server that wraps showmarquee.html in Bootstrap the way FPP does
+and passes /api/plugin/fpp-showmarquee/* through to the daemon.
 
     .venv/bin/python scripts/dev_server.py
     open http://127.0.0.1:8765/            (add ?theme=dark for dark mode)
@@ -33,7 +33,7 @@ DAEMON_PORT = 32396
 env = dict(os.environ, MEDIADIR=os.path.join(work, "media"), LOGDIR=os.path.join(work, "logs"),
            MC_SHM_DIR=shm, MC_API_PORT=str(DAEMON_PORT))
 os.makedirs(os.path.join(work, "media", "config"))
-with open(os.path.join(work, "media", "config", "plugin.fpp-matrixcountdown.json"), "w") as f:
+with open(os.path.join(work, "media", "config", "plugin.fpp-showmarquee.json"), "w") as f:
     json.dump({"global": {"fpp_host": fpp.host}, "countdown": {"model": "P5 Panel"}}, f)
 # Some system fonts (macOS) so the font list isn't empty
 fonts = os.path.join(work, "media", "fonts"); os.makedirs(fonts)
@@ -41,13 +41,13 @@ for name in ("Arial Bold.ttf", "Arial.ttf", "Verdana Bold.ttf", "Courier New Bol
     src = os.path.join("/System/Library/Fonts/Supplemental", name)
     if os.path.exists(src):
         shutil.copy(src, os.path.join(fonts, name.replace(" ", "")))
-daemon = subprocess.Popen([os.path.join(PROJECT, ".venv/bin/python"), os.path.join(PROJECT, "matrixcountdown.py")], env=env)
+daemon = subprocess.Popen([os.path.join(PROJECT, ".venv/bin/python"), os.path.join(PROJECT, "showmarquee.py")], env=env)
 time.sleep(1.5)
 
 SHELL = """<!doctype html><html data-bs-theme="{theme}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-<title>Matrix Countdown (dev)</title></head><body>{page}</body></html>"""
+<title>Show Marquee (dev)</title></head><body>{page}</body></html>"""
 
 
 class H(BaseHTTPRequestHandler):
@@ -55,8 +55,8 @@ class H(BaseHTTPRequestHandler):
         pass
 
     def _proxy(self, method):
-        if self.path.startswith("/api/plugin/fpp-matrixcountdown/"):
-            url = f"http://127.0.0.1:{DAEMON_PORT}/api/plugin/matrixcountdown/" + self.path.split("/", 4)[4]
+        if self.path.startswith("/api/plugin/fpp-showmarquee/"):
+            url = f"http://127.0.0.1:{DAEMON_PORT}/api/plugin/showmarquee/" + self.path.split("/", 4)[4]
             n = int(self.headers.get("Content-Length", 0) or 0)
             req = urllib.request.Request(url, data=self.rfile.read(n) if n else None, method=method)
             req.add_header("Content-Type", "application/json")
@@ -66,7 +66,7 @@ class H(BaseHTTPRequestHandler):
             except urllib.error.HTTPError as e:
                 body, code = e.read(), 200   # FPP's PHP proxy passes error bodies on as 200
             except Exception:
-                body, code = json.dumps({"error": "matrixcountdown daemon not running"}).encode(), 200
+                body, code = json.dumps({"error": "showmarquee daemon not running"}).encode(), 200
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -79,7 +79,7 @@ class H(BaseHTTPRequestHandler):
             return
         if self.path.split("?")[0] == "/":
             theme = "dark" if "theme=dark" in self.path else "light"
-            with open(os.path.join(PROJECT, "matrixcountdown.html")) as f:
+            with open(os.path.join(PROJECT, "showmarquee.html")) as f:
                 page = SHELL.format(theme=theme, page=f.read())
             body = page.encode()
             self.send_response(200)

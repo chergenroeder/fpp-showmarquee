@@ -2,15 +2,15 @@
 
 $menuEntries = Array(
 	Array(
-		'text' => 'Matrix Countdown Clock',
+		'text' => 'Show Marquee',
 		'type' => 'content',
-		'page' => 'matrixcountdown.html',
+		'page' => 'showmarquee.html',
 		'wrap' => 1
 	),
 	Array(
-		'text' => 'Matrix Countdown Clock - Home',
+		'text' => 'Show Marquee - Home',
 		'type' => 'help',
-		'page' => 'https://github.com/chergenroeder/fpp-matrixcountdown',
+		'page' => 'https://github.com/chergenroeder/fpp-showmarquee',
 		'wrap' => 1
 	)
 );

@@ -1,6 +1,6 @@
-# Matrix Countdown Clock — Development Plan
+# Show Marquee — Development Plan
 
-FPP plugin (`fpp-matrixcountdown`) that shows a live countdown to a target date on a pixel-overlay matrix. It is built on the same base as **fpp-matrixscroller**: a Python daemon, a PHP API proxy, and an HTML settings page inside FPP.
+FPP plugin (`fpp-showmarquee`, called **Matrix Countdown Clock** / `fpp-matrixcountdown` until version 8) that shows a live countdown to a target date on a pixel-overlay matrix, and since then the weather, social media, show prep and show times as pages that take turns. Sections before version 8 use the old name. It is built on the same base as **fpp-matrixscroller**: a Python daemon, a PHP API proxy, and an HTML settings page inside FPP.
 
 ---
 
@@ -665,4 +665,17 @@ Asked for: a section showing the show times, easy to set up for shows that run t
 - [x] Dev server check: Same → Weeknights + weekends carried the times, Each night different filled from it, turning Monday off greyed its row; the card's line and the preview agreed ("Sun & Tue–Thu 5:30–10 PM · Fri & Sat 5:30–11 PM").
 - [ ] On fpp-matrix.local: TESTING.md section 9.
 - [x] Changed after a look at it on the dev server (2026-11-11): tonight's nights were drawn in the Number style, which made that line all one colour and looked off. Every line now keeps nights in the Text style and times in the Number style, and tonight gets a small ▸ (in the Number style's colour) in a narrow column on the left, kept on every line so the table doesn't shift. No pointer when there is only one line ("Nightly").
+
+---
+
+## Version 8 — Renamed to Show Marquee (2026-11-11)
+
+The plugin outgrew its name: the countdown is now one of five pages (countdown, weather, social media, show prep, schedule). It is now **Show Marquee**, after the sign outside a theater that says what's on and when.
+
+- Repository and plugin ID `fpp-matrixcountdown` → **`fpp-showmarquee`** (nothing was published yet, so no installs to migrate). This moves the plugin folder, `config/plugin.fpp-showmarquee.json`, `plugindata/fpp-showmarquee/`, `logs/plugin-fpp-showmarquee.log`, the API (`/api/plugin/fpp-showmarquee/…`) and the PHP endpoint functions (`fppshowmarquee…`).
+- `matrixcountdown.py` → `showmarquee.py`, `matrixcountdown.html` → `showmarquee.html`; the daemon's own API path `/api/plugin/showmarquee`; menu, page title and Open-Meteo User-Agent.
+- FPP commands: **Show Marquee - Countdown** (was "Matrix Countdown - State": it only ever turned the countdown page on and off, which no longer blanks the matrix now that other pages take turns) and **Show Marquee - Set Target**.
+- Kept as internal names: the `countdown/` package, `CountdownDaemon`, the `MC_*` test variables and the page's `mc-` ids.
+- New icon (`scripts/make_icon.py`): a marquee sign ringed with bulbs, its panel an LED matrix with red and green lines, on a post against a night sky. Checked at 256, 64 and 32 px.
+- `pluginInfo.json` description and privacy summary rewritten around the sign; README opening likewise.
 

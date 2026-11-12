@@ -1,5 +1,5 @@
 #!/bin/bash
-# fpp-matrixcountdown callbacks
+# fpp-showmarquee callbacks
 #
 # The plugin needs no playlist or media callbacks, but FPP only registers a
 # plugin's commands/descriptions.json at install time, without an fppd

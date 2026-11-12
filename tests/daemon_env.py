@@ -1,6 +1,6 @@
 """Import the daemon module once per test run, with throwaway paths.
 
-matrixcountdown.py fixes its media/log paths and log handler at import, so
+showmarquee.py fixes its media/log paths and log handler at import, so
 every test that needs it shares this one import and its temp media folder.
 """
 
@@ -21,12 +21,12 @@ def daemon_module():
         os.environ["MEDIADIR"] = media
         os.environ["LOGDIR"] = os.path.join(media, "logs")
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-        import matrixcountdown
-        if matrixcountdown.MEDIA_DIR != media:
-            raise RuntimeError("matrixcountdown was imported before tests/daemon_env.py")
-        matrixcountdown.CountdownDaemon.CHECK_S = 0.3
-        matrixcountdown.CountdownDaemon.RETRY_S = 0.3
-        _mc = matrixcountdown
+        import showmarquee
+        if showmarquee.MEDIA_DIR != media:
+            raise RuntimeError("showmarquee was imported before tests/daemon_env.py")
+        showmarquee.CountdownDaemon.CHECK_S = 0.3
+        showmarquee.CountdownDaemon.RETRY_S = 0.3
+        _mc = showmarquee
     return _mc
 
 

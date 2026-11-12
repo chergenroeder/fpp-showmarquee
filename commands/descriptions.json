@@ -1,6 +1,6 @@
 [
     {
-        "name": "Matrix Countdown - State",
+        "name": "Show Marquee - Countdown",
         "description": "Turn the countdown on or off and save it (the Countdown on switch). Off blanks the matrix and turns the overlay model off, so sequences show through.",
         "script": "state.sh",
         "args": [
@@ -10,7 +10,7 @@
         ]
     },
     {
-        "name": "Matrix Countdown - Set Target",
+        "name": "Show Marquee - Set Target",
         "description": "Change what the countdown counts down to, and save it.",
         "script": "set_target.sh",
         "args": [

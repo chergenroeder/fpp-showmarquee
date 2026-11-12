@@ -1,5 +1,5 @@
 #!/bin/bash
-# FPP command "Matrix Countdown - State": <On|Off|Toggle>
+# FPP command "Show Marquee - Countdown": <On|Off|Toggle> turns the countdown page on or off
 . "$(dirname "$0")/common.sh"
 
 STATE=$(mc_state "${1:-On}") || exit 1

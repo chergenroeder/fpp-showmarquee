@@ -10,17 +10,17 @@
 
 export PATH=/usr/local/bin:/usr/bin:/bin
 
-MC_API="${MC_API:-http://127.0.0.1:32330/api/plugin/matrixcountdown}"
+MC_API="${MC_API:-http://127.0.0.1:32330/api/plugin/showmarquee}"
 
 # mc_post <endpoint> <json body>; prints the daemon's reply, fails on an error
 mc_post() {
     local out
     out=$(curl -s --connect-timeout 1 --max-time 2 -X POST "$MC_API/$1" \
           -H 'Content-Type: application/json' -d "$2" -w '\n%{http_code}') \
-        || { echo "matrixcountdown: $1 request failed (daemon not running?)" >&2; return 1; }
+        || { echo "showmarquee: $1 request failed (daemon not running?)" >&2; return 1; }
     local code="${out##*$'\n'}" body="${out%$'\n'*}"
     if [ "$code" != "200" ]; then
-        echo "matrixcountdown: $1: $body" >&2
+        echo "showmarquee: $1: $body" >&2
         return 1
     fi
     echo "$body"
@@ -32,7 +32,7 @@ mc_state() {
         on|true|1)   echo true ;;
         off|false|0) echo false ;;
         toggle)      echo '"toggle"' ;;
-        *) echo "matrixcountdown: state must be On, Off or Toggle (got '$1')" >&2; return 1 ;;
+        *) echo "showmarquee: state must be On, Off or Toggle (got '$1')" >&2; return 1 ;;
     esac
 }
 

@@ -1,16 +1,16 @@
 {
-	"name": "Matrix Countdown Clock",
-	"repoName": "fpp-matrixcountdown",
+	"name": "Show Marquee",
+	"repoName": "fpp-showmarquee",
 	"author": "Chuck Hergenroeder",
-	"description": "Shows a live countdown to Christmas, New Year's Day or a date you choose on an LED matrix, held still in the center. The number and the text each have their own font, size and colour; under a day it switches to an HH:MM:SS timer or hours. Can also show your Facebook, Instagram, TikTok and YouTube handles with each site's logo, and a weather page with a sun, moon or wind symbol beside the temperature and wind, a show prep page with a QR code viewers scan to get the PulseMesh or Tune2 audio app, and your show times, each shown on its own, taking turns with the countdown for the seconds you choose. Weather comes from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
-	"homeURL": "https://github.com/chergenroeder/fpp-matrixcountdown",
-	"srcURL": "https://github.com/chergenroeder/fpp-matrixcountdown.git",
-	"bugURL": "https://github.com/chergenroeder/fpp-matrixcountdown/issues",
-	"iconURL": "https://raw.githubusercontent.com/chergenroeder/fpp-matrixcountdown/master/icon.png",
+	"description": "A sign for your light show on an LED matrix: pages that take turns, each held still for the seconds you choose. A countdown to Christmas, New Year's Day or a date you choose (its number and text each with their own font, size and colour; under a day an HH:MM:SS timer or hours); a weather page with a sun, moon or wind symbol beside the temperature and wind; your Facebook, Instagram, TikTok and YouTube handles with each site's logo; a show prep page with a QR code viewers scan to get the PulseMesh or Tune2 audio app; and your show times. Weather comes from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
+	"homeURL": "https://github.com/chergenroeder/fpp-showmarquee",
+	"srcURL": "https://github.com/chergenroeder/fpp-showmarquee.git",
+	"bugURL": "https://github.com/chergenroeder/fpp-showmarquee/issues",
+	"iconURL": "https://raw.githubusercontent.com/chergenroeder/fpp-showmarquee/master/icon.png",
 	"releaseNotesStyle": "gitHistory",
 
 	"privacy": {
-		"summary": "Draws a countdown and your social handles on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
+		"summary": "Draws your show's sign pages on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
 		"sends": [
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",
@@ -43,7 +43,7 @@
 			}
 		],
 		"closedCode": false,
-		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-matrixcountdown.log). Its settings (config/plugin.fpp-matrixcountdown.json) and a weather location you type in (plugindata/fpp-matrixcountdown/location.json) stay after uninstall."
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Its settings (config/plugin.fpp-showmarquee.json) and a weather location you type in (plugindata/fpp-showmarquee/location.json) stay after uninstall."
 	},
 
 	"dependencies": {

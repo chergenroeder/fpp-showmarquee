@@ -1,12 +1,12 @@
-# fpp-matrixcountdown REST API
+# fpp-showmarquee REST API
 
 All endpoints go through FPP's web server:
 
 ```
-http://<fpp-ip>/api/plugin/fpp-matrixcountdown/<endpoint>
+http://<fpp-ip>/api/plugin/fpp-showmarquee/<endpoint>
 ```
 
-FPP passes them on to the plugin's daemon, which listens only on the player itself (`http://127.0.0.1:32330/api/plugin/matrixcountdown/<endpoint>`).
+FPP passes them on to the plugin's daemon, which listens only on the player itself (`http://127.0.0.1:32330/api/plugin/showmarquee/<endpoint>`).
 
 Anyone who can open the player's FPP pages can use this API, as with FPP's own. Errors come back as `{"error": "..."}`; through FPP's proxy the HTTP status is 200 even then, so check for `error`.
 
@@ -176,7 +176,7 @@ The full settings:
 | `weather.enabled` | show weather (from the chosen source) |
 | `weather.source` | `open-meteo`, `tempest`, or `""` (not chosen: nothing is shown or sent). Settings saved before 2.1 with Weather on become `tempest`. |
 | `weather.open_meteo.use_fpp_location` | `true`: FPP's Latitude/Longitude (Settings → General); `false`: the location below |
-| `weather.open_meteo.latitude` / `longitude` | −90–90 / −180–180, or `null`. Kept in `plugindata/fpp-matrixcountdown/location.json` (mode 0600), never in the config file; `GET config` adds them and `POST config` stores them there. Required when `use_fpp_location` is `false`. |
+| `weather.open_meteo.latitude` / `longitude` | −90–90 / −180–180, or `null`. Kept in `plugindata/fpp-showmarquee/location.json` (mode 0600), never in the config file; `GET config` adds them and `POST config` stores them there. Required when `use_fpp_location` is `false`. |
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
 | `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
@@ -298,20 +298,20 @@ The social media logos as the plugin draws them, 48×48 base64 PNGs, for the set
 ```yaml
 rest_command:
   countdown_on:
-    url: http://<fpp-ip>/api/plugin/fpp-matrixcountdown/state
+    url: http://<fpp-ip>/api/plugin/fpp-showmarquee/state
     method: POST
     content_type: application/json
     payload: '{"enabled": true}'
   countdown_to_new_year:
-    url: http://<fpp-ip>/api/plugin/fpp-matrixcountdown/target
+    url: http://<fpp-ip>/api/plugin/fpp-showmarquee/target
     method: POST
     content_type: application/json
     payload: '{"type": "newyear"}'
 
 sensor:
   - platform: rest
-    name: Matrix countdown
-    resource: http://<fpp-ip>/api/plugin/fpp-matrixcountdown/status
+    name: Show Marquee
+    resource: http://<fpp-ip>/api/plugin/fpp-showmarquee/status
     value_template: "{{ value_json.message.plain }}"
     scan_interval: 30
 ```

@@ -1,5 +1,5 @@
 #!/bin/bash
-# FPP command "Matrix Countdown - Set Target":
+# FPP command "Show Marquee - Set Target":
 #   <Christmas|New Year's Day|Custom> [date YYYY-MM-DD] [time HH:MM] [event name] [repeat yearly true|false]
 . "$(dirname "$0")/common.sh"
 
@@ -7,7 +7,7 @@ case "$(echo "${1:-}" | tr '[:upper:]' '[:lower:]')" in
     christmas*)   TYPE=christmas ;;
     new*)         TYPE=newyear ;;
     custom)       TYPE=custom ;;
-    *) echo "matrixcountdown: target must be Christmas, New Year's Day or Custom (got '${1:-}')" >&2; exit 1 ;;
+    *) echo "showmarquee: target must be Christmas, New Year's Day or Custom (got '${1:-}')" >&2; exit 1 ;;
 esac
 
 BODY="{\"type\": \"$TYPE\""

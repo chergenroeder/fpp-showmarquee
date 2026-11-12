@@ -99,7 +99,7 @@ class Fetch(unittest.TestCase):
         self.assertEqual(q["current"][0].split(","), ["temperature_2m", "relative_humidity_2m", "wind_speed_10m",
                                                       "wind_direction_10m", "wind_gusts_10m", "is_day"])
         self.assertEqual((q["wind_speed_unit"], q["timeformat"]), (["ms"], ["unixtime"]))
-        self.assertEqual(headers.get("User-Agent"), "fpp-matrixcountdown (FPP plugin)")
+        self.assertEqual(headers.get("User-Agent"), "fpp-showmarquee (FPP plugin)")
 
     def test_http_error_gives_the_reason(self):
         self.om.status, self.om.body = 400, {"error": True, "reason": "Latitude must be in range"}

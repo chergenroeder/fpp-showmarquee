@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fpp-matrixcountdown daemon
+fpp-showmarquee daemon
 
 Draws a live countdown (to Christmas, New Year's Day or a custom date) on one
 FPP pixel-overlay model by writing frames into the model's overlay buffer.
@@ -44,7 +44,7 @@ from countdown.weather import (NO_LOCATION, Location, OpenMeteoPoller, Reading, 
 # ── Paths ────────────────────────────────────────────────────────────────────
 # FPP exports MEDIADIR/LOGDIR to the processes it launches; fall back to the
 # default install paths when run by hand.
-PLUGIN_NAME  = "fpp-matrixcountdown"
+PLUGIN_NAME  = "fpp-showmarquee"
 PLUGIN_DIR   = os.path.dirname(os.path.abspath(__file__))
 MEDIA_DIR    = os.environ.get("MEDIADIR", "/home/fpp/media")
 LOG_DIR      = os.environ.get("LOGDIR", os.path.join(MEDIA_DIR, "logs"))
@@ -57,7 +57,7 @@ LOCATION_PATH = os.path.join(DATA_DIR, "location.json")
 LOG_PATH     = os.path.join(LOG_DIR, f"plugin-{PLUGIN_NAME}.log")  # FPP rotates plugin-<repo>.log
 API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
-API_PREFIX   = "/api/plugin/matrixcountdown"
+API_PREFIX   = "/api/plugin/showmarquee"
 
 SCHEMA_VERSION = 5   # 2: weather.source; 3: social media screens; 4: weather page; 5: one seconds per page, no scrolling
 
@@ -83,7 +83,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.handlers.WatchedFileHandler(LOG_PATH)],
 )
-log = logging.getLogger("matrixcountdown")
+log = logging.getLogger("showmarquee")
 
 
 # Crashes go to the same log. The start scripts send stdout/stderr nowhere
@@ -474,7 +474,7 @@ class CountdownDaemon:
         self.cfg = load_config()
         self._cfg_version = 0
         apply_log_level()
-        log.info("matrixcountdown @ %s starting as uid %d (Pillow %s)",
+        log.info("showmarquee @ %s starting as uid %d (Pillow %s)",
                  GIT_COMMIT, os.geteuid(), pillow_version() or "NOT installed")
         # Output state, written by the loop thread, read by get_status()
         self._out_state = "starting"     # drawing | blank | off | error | starting
@@ -568,7 +568,7 @@ class CountdownDaemon:
         log.info("Config reloaded")
 
     def set_enabled(self, value) -> dict:
-        """On / off / toggle the countdown and save it (FPP command "State")."""
+        """On / off / toggle the countdown page and save it (FPP command "Show Marquee - Countdown")."""
         cfg = self.get_config()
         cur = bool(cfg["countdown"].get("enabled", True))
         if value == "toggle":

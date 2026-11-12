@@ -222,7 +222,7 @@ class TempestListener:
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_FIELDS = ("temperature_2m", "relative_humidity_2m", "wind_speed_10m",
                      "wind_direction_10m", "wind_gusts_10m", "is_day")
-USER_AGENT = "fpp-matrixcountdown (FPP plugin)"
+USER_AGENT = "fpp-showmarquee (FPP plugin)"
 
 
 @dataclass(frozen=True)

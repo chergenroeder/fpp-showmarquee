@@ -1,35 +1,35 @@
 <?php
 
 /*
- * Plugin API endpoints for fpp-matrixcountdown.
- * FPP mounts these under /api/plugin/fpp-matrixcountdown/
+ * Plugin API endpoints for fpp-showmarquee.
+ * FPP mounts these under /api/plugin/fpp-showmarquee/
  * and proxies them to the Python daemon on port 32330.
  *
  * Function name: hyphens removed from plugin name per FPP convention.
  */
 
-define('FPPMC_DAEMON_BASE', 'http://localhost:32330/api/plugin/matrixcountdown/');
+define('FPPMC_DAEMON_BASE', 'http://localhost:32330/api/plugin/showmarquee/');
 
-function getEndpointsfppmatrixcountdown() {
+function getEndpointsfppshowmarquee() {
     return array(
-        array('method' => 'GET',  'endpoint' => 'status',         'callback' => 'fppmatrixcountdownStatus'),
-        array('method' => 'GET',  'endpoint' => 'config',         'callback' => 'fppmatrixcountdownGetConfig'),
-        array('method' => 'POST', 'endpoint' => 'config',         'callback' => 'fppmatrixcountdownPostConfig'),
-        array('method' => 'POST', 'endpoint' => 'reload',         'callback' => 'fppmatrixcountdownReload'),
-        array('method' => 'POST', 'endpoint' => 'preview',        'callback' => 'fppmatrixcountdownPreview'),
-        array('method' => 'POST', 'endpoint' => 'state',          'callback' => 'fppmatrixcountdownState'),
-        array('method' => 'POST', 'endpoint' => 'target',         'callback' => 'fppmatrixcountdownTarget'),
-        array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppmatrixcountdownModels'),
-        array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppmatrixcountdownFonts'),
-        array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppmatrixcountdownVersion'),
-        array('method' => 'GET',  'endpoint' => 'logos',          'callback' => 'fppmatrixcountdownLogos'),
-        array('method' => 'POST', 'endpoint' => 'daemon/start',   'callback' => 'fppmatrixcountdownDaemonStart'),
-        array('method' => 'POST', 'endpoint' => 'daemon/stop',    'callback' => 'fppmatrixcountdownDaemonStop'),
-        array('method' => 'POST', 'endpoint' => 'daemon/restart', 'callback' => 'fppmatrixcountdownDaemonRestart'),
+        array('method' => 'GET',  'endpoint' => 'status',         'callback' => 'fppshowmarqueeStatus'),
+        array('method' => 'GET',  'endpoint' => 'config',         'callback' => 'fppshowmarqueeGetConfig'),
+        array('method' => 'POST', 'endpoint' => 'config',         'callback' => 'fppshowmarqueePostConfig'),
+        array('method' => 'POST', 'endpoint' => 'reload',         'callback' => 'fppshowmarqueeReload'),
+        array('method' => 'POST', 'endpoint' => 'preview',        'callback' => 'fppshowmarqueePreview'),
+        array('method' => 'POST', 'endpoint' => 'state',          'callback' => 'fppshowmarqueeState'),
+        array('method' => 'POST', 'endpoint' => 'target',         'callback' => 'fppshowmarqueeTarget'),
+        array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppshowmarqueeModels'),
+        array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppshowmarqueeFonts'),
+        array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppshowmarqueeVersion'),
+        array('method' => 'GET',  'endpoint' => 'logos',          'callback' => 'fppshowmarqueeLogos'),
+        array('method' => 'POST', 'endpoint' => 'daemon/start',   'callback' => 'fppshowmarqueeDaemonStart'),
+        array('method' => 'POST', 'endpoint' => 'daemon/stop',    'callback' => 'fppshowmarqueeDaemonStop'),
+        array('method' => 'POST', 'endpoint' => 'daemon/restart', 'callback' => 'fppshowmarqueeDaemonRestart'),
     );
 }
 
-function fppmatrixcountdownDaemonRequest($path, $method = 'GET') {
+function fppshowmarqueeDaemonRequest($path, $method = 'GET') {
     $opts = array(
         'http' => array(
             'method'        => $method,
@@ -47,7 +47,7 @@ function fppmatrixcountdownDaemonRequest($path, $method = 'GET') {
     $ctx  = stream_context_create($opts);
     $resp = @file_get_contents(FPPMC_DAEMON_BASE . $path, false, $ctx);
     if ($resp === false) {
-        return json(array('error' => 'matrixcountdown daemon not running'));
+        return json(array('error' => 'showmarquee daemon not running'));
     }
     $data = json_decode($resp, true);
     if ($data === null) {
@@ -56,24 +56,24 @@ function fppmatrixcountdownDaemonRequest($path, $method = 'GET') {
     return json($data);
 }
 
-function fppmatrixcountdownStatus()        { return fppmatrixcountdownDaemonRequest('status'); }
-function fppmatrixcountdownGetConfig()     { return fppmatrixcountdownDaemonRequest('config'); }
-function fppmatrixcountdownPostConfig()    { return fppmatrixcountdownDaemonRequest('config', 'POST'); }
-function fppmatrixcountdownReload()        { return fppmatrixcountdownDaemonRequest('reload', 'POST'); }
-function fppmatrixcountdownPreview()       { return fppmatrixcountdownDaemonRequest('preview', 'POST'); }
-function fppmatrixcountdownState()         { return fppmatrixcountdownDaemonRequest('state', 'POST'); }
-function fppmatrixcountdownTarget()        { return fppmatrixcountdownDaemonRequest('target', 'POST'); }
-function fppmatrixcountdownModels()        { return fppmatrixcountdownDaemonRequest('models'); }
-function fppmatrixcountdownFonts()         { return fppmatrixcountdownDaemonRequest('fonts'); }
-function fppmatrixcountdownVersion()       { return fppmatrixcountdownDaemonRequest('version'); }
-function fppmatrixcountdownLogos()         { return fppmatrixcountdownDaemonRequest('logos'); }
-function fppmatrixcountdownDaemonStop()    { return fppmatrixcountdownDaemonRequest('daemon/stop', 'POST'); }
-function fppmatrixcountdownDaemonRestart() { return fppmatrixcountdownDaemonRequest('daemon/restart', 'POST'); }
+function fppshowmarqueeStatus()        { return fppshowmarqueeDaemonRequest('status'); }
+function fppshowmarqueeGetConfig()     { return fppshowmarqueeDaemonRequest('config'); }
+function fppshowmarqueePostConfig()    { return fppshowmarqueeDaemonRequest('config', 'POST'); }
+function fppshowmarqueeReload()        { return fppshowmarqueeDaemonRequest('reload', 'POST'); }
+function fppshowmarqueePreview()       { return fppshowmarqueeDaemonRequest('preview', 'POST'); }
+function fppshowmarqueeState()         { return fppshowmarqueeDaemonRequest('state', 'POST'); }
+function fppshowmarqueeTarget()        { return fppshowmarqueeDaemonRequest('target', 'POST'); }
+function fppshowmarqueeModels()        { return fppshowmarqueeDaemonRequest('models'); }
+function fppshowmarqueeFonts()         { return fppshowmarqueeDaemonRequest('fonts'); }
+function fppshowmarqueeVersion()       { return fppshowmarqueeDaemonRequest('version'); }
+function fppshowmarqueeLogos()         { return fppshowmarqueeDaemonRequest('logos'); }
+function fppshowmarqueeDaemonStop()    { return fppshowmarqueeDaemonRequest('daemon/stop', 'POST'); }
+function fppshowmarqueeDaemonRestart() { return fppshowmarqueeDaemonRequest('daemon/restart', 'POST'); }
 
-function fppmatrixcountdownDaemonStart() {
+function fppshowmarqueeDaemonStart() {
     global $settings;
-    $plugin_dir = $settings['pluginDirectory'] . '/fpp-matrixcountdown';
-    $daemon     = $plugin_dir . '/matrixcountdown.py';
+    $plugin_dir = $settings['pluginDirectory'] . '/fpp-showmarquee';
+    $daemon     = $plugin_dir . '/showmarquee.py';
     $alive = @file_get_contents(FPPMC_DAEMON_BASE . 'status');
     if ($alive !== false) {
         return json(array('status' => 'already_running'));

@@ -28,7 +28,7 @@ class CommandsBase(unittest.TestCase):
     def setUpClass(cls):
         cls.mc = daemon_module()
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), cls.mc.ApiHandler)
-        cls.base = f"http://127.0.0.1:{cls.server.server_address[1]}/api/plugin/matrixcountdown"
+        cls.base = f"http://127.0.0.1:{cls.server.server_address[1]}/api/plugin/showmarquee"
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
 
     @classmethod
@@ -153,7 +153,7 @@ class Scripts(CommandsBase):
         self.assertIn("custom_date", r.stderr)
 
     def test_daemon_not_running(self):
-        env = dict(os.environ, MC_API="http://127.0.0.1:1/api/plugin/matrixcountdown")
+        env = dict(os.environ, MC_API="http://127.0.0.1:1/api/plugin/showmarquee")
         r = subprocess.run(["bash", os.path.join(COMMANDS, "state.sh"), "On"], env=env,
                            capture_output=True, text=True, timeout=10)
         self.assertNotEqual(r.returncode, 0)
@@ -180,7 +180,7 @@ class Scripts(CommandsBase):
         with open(os.path.join(COMMANDS, "descriptions.json")) as f:
             for cmd in json.load(f):
                 self.assertTrue(os.access(os.path.join(COMMANDS, cmd["script"]), os.X_OK), cmd["script"])
-                self.assertTrue(cmd["name"].startswith("Matrix Countdown - "))
+                self.assertTrue(cmd["name"].startswith("Show Marquee - "))
 
 
 if __name__ == "__main__":

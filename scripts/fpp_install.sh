@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# fpp-matrixcountdown install script (FPP runs it as root)
+# fpp-showmarquee install script (FPP runs it as root)
 
 PLUGIN_DIR=$(cd "$(dirname "$0")/.." && pwd)
 . "$PLUGIN_DIR/scripts/daemon_lib.sh"
 
-chmod +x "$PLUGIN_DIR/matrixcountdown.py"
+chmod +x "$PLUGIN_DIR/showmarquee.py"
 chmod +x "$PLUGIN_DIR"/scripts/*.sh "$PLUGIN_DIR"/scripts/*.py
 # fppd runs these directly (FPP commands and the callbacks script)
 chmod +x "$PLUGIN_DIR/callbacks.sh" "$PLUGIN_DIR"/commands/*.sh
@@ -27,4 +27,4 @@ python3 -c "import qrcode" 2>/dev/null \
 mc_stop_daemon
 mc_start_daemon
 
-echo "fpp-matrixcountdown install complete"
+echo "fpp-showmarquee install complete"

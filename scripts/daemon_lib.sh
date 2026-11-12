@@ -7,7 +7,7 @@
 # reports failure rather than letting the caller start a second daemon beside it.
 
 MC_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-MC_DAEMON="$MC_PLUGIN_DIR/matrixcountdown.py"
+MC_DAEMON="$MC_PLUGIN_DIR/showmarquee.py"
 
 # FPP's scripts/common sets MEDIADIR, LOGDIR and the rest, so a relocated
 # media folder works. It isn't written for `set -eu`, which our install
@@ -36,7 +36,7 @@ mc_stop_daemon() {
     local pids
     pids=$(mc_daemon_pids)
     if [ -n "$pids" ]; then
-        echo "Stopping matrixcountdown (PID $(echo $pids))..."
+        echo "Stopping showmarquee (PID $(echo $pids))..."
         kill $pids 2>/dev/null || true
         for _ in $(seq 1 20); do
             [ -z "$(mc_daemon_pids)" ] && break
@@ -50,7 +50,7 @@ mc_stop_daemon() {
     fi
     pids=$(mc_daemon_pids)
     if [ -n "$pids" ]; then
-        echo "ERROR: could not stop matrixcountdown (PID $(echo $pids), owner $(ps -o user= -p $(echo $pids | cut -d' ' -f1))); run as root" >&2
+        echo "ERROR: could not stop showmarquee (PID $(echo $pids), owner $(ps -o user= -p $(echo $pids | cut -d' ' -f1))); run as root" >&2
         return 1
     fi
 }
@@ -60,16 +60,16 @@ mc_start_daemon() {
     local pids
     pids=$(mc_daemon_pids)
     if [ -n "$pids" ]; then
-        echo "matrixcountdown already running (PID $(echo $pids))"
+        echo "showmarquee already running (PID $(echo $pids))"
         return 0
     fi
     mkdir -p "$MC_LOGDIR"
     local commit
     commit=$(git -C "$MC_PLUGIN_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
-    echo "Starting matrixcountdown daemon @ $commit..."
+    echo "Starting showmarquee daemon @ $commit..."
     # The daemon writes its own log, crashes included, through a handler that
     # follows FPP's log rotation; a redirect here would hold the file open and
     # keep writing to the rotated copy.
     MEDIADIR="$MC_MEDIADIR" LOGDIR="$MC_LOGDIR" python3 "$MC_DAEMON" >/dev/null 2>&1 </dev/null &
-    echo "matrixcountdown started (PID $!)"
+    echo "showmarquee started (PID $!)"
 }

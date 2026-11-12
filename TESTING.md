@@ -3,10 +3,10 @@
 A pass over everything on a real player before a release. About 20 minutes.
 Run the `curl` lines on the player itself (`ssh fpp@<fpp-ip>`); they talk to
 FPP's web server on `localhost`. Watch the matrix and the plugin page
-(**Content Setup → Matrix Countdown Clock**) side by side.
+(**Content Setup → Show Marquee**) side by side.
 
 ```bash
-API=http://localhost/api/plugin/fpp-matrixcountdown
+API=http://localhost/api/plugin/fpp-showmarquee
 # Set any part of the settings (the rest is kept); prints {"status": "saved"}
 set() { curl -s -X POST -H 'Content-Type: application/json' -d "$1" $API/config; echo; }
 ```
@@ -73,8 +73,8 @@ set "{\"countdown\":{\"target\":{\"type\":\"custom\",\"custom_date\":\"2020-01-0
 
 From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 
-- [ ] **Matrix Countdown - State**: Off blanks the matrix; On brings it back; Toggle flips it.
-- [ ] **Matrix Countdown - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
+- [ ] **Show Marquee - Countdown**: Off takes the countdown page out of the turns (with no other page on, the matrix goes blank); On brings it back; Toggle flips it.
+- [ ] **Show Marquee - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
 
 ## 6. Weather page
 

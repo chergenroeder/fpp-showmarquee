@@ -1,6 +1,6 @@
-# fpp-matrixcountdown — Matrix Countdown Clock
+# fpp-showmarquee — Show Marquee
 
-An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**, **New Year's Day**, or a **date you choose**. The number and the text each have their own font, size and colour. It can also show the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station, your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo, a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**), and your **show times**. Nothing scrolls: each one shows on its own, centered and still, for the number of seconds you choose (5 by default), then the next comes on.
+A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); and your **show times**. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
 
 ```
 8 Days to Christmas          Christmas in 8 Days
@@ -37,9 +37,9 @@ An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**
 1. In FPP go to **Content Setup → Plugin Manager**.
 2. Paste this into **Add Plugin from URL** (or the URL box) and click **Install**:
    ```
-   https://raw.githubusercontent.com/chergenroeder/fpp-matrixcountdown/master/pluginInfo.json
+   https://raw.githubusercontent.com/chergenroeder/fpp-showmarquee/master/pluginInfo.json
    ```
-3. Open **Content Setup → Matrix Countdown Clock**, choose your overlay model under **Matrix**, and click **Save**.
+3. Open **Content Setup → Show Marquee**, choose your overlay model under **Matrix**, and click **Save**.
 
 The plugin starts with FPP and stops with it. To get new FPP commands after an update, use **Reinstall**, not just Update: only an install registers commands with FPP.
 
@@ -48,7 +48,7 @@ The plugin starts with FPP and stops with it. To get new FPP commands after an u
 Uninstalling stops the plugin. Your settings are kept, so a reinstall picks them up again. To remove them too:
 
 ```bash
-rm -f /home/fpp/media/config/plugin.fpp-matrixcountdown.json
+rm -f /home/fpp/media/config/plugin.fpp-showmarquee.json
 ```
 
 ## The settings page
@@ -95,7 +95,7 @@ Turn on **Show weather**, then choose where the weather comes from. Nothing is s
 
 [Open-Meteo](https://open-meteo.com/) is a free weather service: no account or API key, and it covers the whole world. Its readings are model data for your area, updated every 15 minutes, not a station in your yard.
 
-- **Location:** FPP's own **Latitude** and **Longitude** (FPP **Settings → General**). To use somewhere else, turn on **Use a different location** and type a latitude and longitude. A location typed here is kept on the player in `plugindata/fpp-matrixcountdown/location.json` (readable by its owner only), not in FPP's settings backup.
+- **Location:** FPP's own **Latitude** and **Longitude** (FPP **Settings → General**). To use somewhere else, turn on **Use a different location** and type a latitude and longitude. A location typed here is kept on the player in `plugindata/fpp-showmarquee/location.json` (readable by its owner only), not in FPP's settings backup.
 - **What is sent:** only the latitude and longitude, rounded to 2 decimals (about 1 km), to `api.open-meteo.com` over HTTPS, every 15 minutes (just after :00, :15, :30, :45) while Show weather is on with Open-Meteo chosen.
 - **Old readings:** a reading is skipped once 45 minutes old (three missed updates). A failed update is retried after 1, 2, 4 and 8 minutes, and the last reading stays up meanwhile.
 - Weather data by Open-Meteo.com, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
@@ -105,7 +105,7 @@ Turn on **Show weather**, then choose where the weather comes from. Nothing is s
 For Tempest owners whose Tempest hub is on the same network as the FPP player (the Pi). The hub broadcasts its readings on that network (UDP port 50222), and the plugin picks them up; no internet needed. A player on a different network (e.g. FPP's own Wi-Fi) hears nothing. To check, run this on the player and look for `heard from: ... hub(s): HB-...`:
 
 ```bash
-python3 /home/fpp/media/plugins/fpp-matrixcountdown/scripts/tempest_listen.py
+python3 /home/fpp/media/plugins/fpp-showmarquee/scripts/tempest_listen.py
 ```
 
 - **Updates:** temperature and sunlight about once a minute, wind every 3 seconds. A page that's up shows new readings as they arrive.
@@ -186,14 +186,14 @@ Use them anywhere FPP runs a command: a playlist **FPP Command** entry, the sche
 
 | Command | Arguments |
 |---|---|
-| **Matrix Countdown - State** | `On`, `Off` or `Toggle`. Off blanks the matrix and turns the overlay model off, so sequences show through. Saved. |
-| **Matrix Countdown - Set Target** | `Christmas`, `New Year's Day` or `Custom`, then optional *date* (YYYY-MM-DD), *time* (HH:MM), *event name*, *repeat every year* (true/false). Blank optional arguments keep what's saved. Saved. |
+| **Show Marquee - Countdown** | `On`, `Off` or `Toggle`: turns the countdown page on or off (the **Countdown on** switch). The other pages keep taking turns; with every page off, the matrix goes blank and the overlay model turns off, so sequences show through. Saved. |
+| **Show Marquee - Set Target** | `Christmas`, `New Year's Day` or `Custom`, then optional *date* (YYYY-MM-DD), *time* (HH:MM), *event name*, *repeat every year* (true/false). Blank optional arguments keep what's saved. Saved. |
 
 For example, show "Opening Night" until the show, then switch back to Christmas afterwards. That takes two scheduler entries running **Set Target**.
 
 ## Troubleshooting
 
-The **Output** line on the settings page says what's wrong. The log is `/home/fpp/media/logs/plugin-fpp-matrixcountdown.log`; set **Settings → Logs → Plugin** to Debug for more detail.
+The **Output** line on the settings page says what's wrong. The log is `/home/fpp/media/logs/plugin-fpp-showmarquee.log`; set **Settings → Logs → Plugin** to Debug for more detail.
 
 | Output says | Fix |
 |---|---|
@@ -226,7 +226,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 
 | Path | |
 |---|---|
-| `matrixcountdown.py` | The daemon: settings, REST API on 127.0.0.1:32330, the drawing loop. |
+| `showmarquee.py` | The daemon: settings, REST API on 127.0.0.1:32330, the drawing loop. |
 | `countdown/timecalc.py` | Which moment to count to, and what the number reads. |
 | `countdown/message.py` | The message as number and text pieces. |
 | `countdown/render.py` | Pillow drawing of the countdown, centered. |
@@ -238,7 +238,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/showprep.py` | Show prep: the apps and their links, the page, and the QR code. |
 | `countdown/schedule.py` | Daily schedule: show nights and times, grouping and wording, the page. |
 | `countdown/social.py` | Social media screens: handles, grouping by handle, the logos (drawn in code) and the screen layout. |
-| `matrixcountdown.html` | The settings page. |
+| `showmarquee.html` | The settings page. |
 | `commands/` | FPP commands. |
 | `scripts/` | Install, start/stop, and the dev tools. |
 | [TESTING.md](TESTING.md) | Hardware test checklist. |

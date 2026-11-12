@@ -1,4 +1,4 @@
-"""Countdown logic, rendering and FPP output for fpp-matrixcountdown.
+"""Countdown logic, rendering and FPP output for fpp-showmarquee.
 
 Modules arrive by phase (see DEVELOPMENT_PLAN.md):
   timecalc.py  - resolve_target(), compute_display()   (Phase 2)
