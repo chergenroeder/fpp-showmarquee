@@ -38,7 +38,7 @@ from countdown.schedule import settings_problems as schedule_settings_problems
 from countdown.showprep import (APPS, MESSAGE_MAX, ShowPrepPage, link_problem, show_prep_page,
                                 show_prep_status)
 from countdown.social import SITES, Screen, clean_handle, handle_problem, social_screens, social_status
-from countdown.still import StillCache, is_still, page_seconds
+from countdown.still import StillCache, is_still, order_pages, page_order_problems, page_seconds
 from countdown.timecalc import compute_display, local_now, resolve_target
 from countdown.weather import (NO_LOCATION, Location, OpenMeteoPoller, Reading, TempestListener, compass,
                                WeatherPage, c_to_f, make_location, ms_to_mph, parse_coord, weather_page)
@@ -436,6 +436,7 @@ def validate_config(cfg: dict) -> List[str]:
         errors.append(f"showprep.message must be at most {MESSAGE_MAX} characters")
     errors += schedule_settings_problems(cfg.get("schedule") or {})
     errors += messages_settings_problems(cfg.get("messages") or {})
+    errors += page_order_problems(cfg)
     return errors
 
 
@@ -623,7 +624,7 @@ class CountdownDaemon:
         """The message as the matrix would draw it, from unsaved form settings.
 
         body: {"config": {...partial config...}, "width": w, "height": h,
-               "as": "now" | "days" | "under_day" | "weather" | "social" | "showprep" | "schedule"}
+               "as": "now" | "countdown" | "days" | "under_day" | "weather" | "social" | "showprep" | "schedule" | "messages"}
         Returns the drawn strip as a PNG (base64) plus what the page needs to
         animate it the same way the daemon moves it.
         """
@@ -700,6 +701,7 @@ class CountdownDaemon:
                 sequence.append((sched.slot, sched))
             sequence += [(m.slot, m) for m in message_pages(cfg.get("messages") or {},
                                                            self.fill_values(cfg, now), now.date())]
+            sequence = order_pages(sequence, cfg)
             if not sequence:
                 sequence = [("countdown", message)]
         if mode == "social":
@@ -1073,8 +1075,9 @@ class CountdownDaemon:
                 return renderer.frame(item)
 
             try:
-                # What takes turns: the countdown, the weather page, then one
-                # still screen per social media handle
+                # What takes turns: the countdown, the weather page, one still
+                # screen per social media handle, show prep, the schedule and the
+                # messages, sorted into the order chosen (global.page_order)
                 candidates = []
                 if cd.get("enabled", True):
                     now = local_now()
@@ -1099,6 +1102,7 @@ class CountdownDaemon:
                 if mscfg.get("enabled"):
                     now_l = local_now()
                     candidates.extend((m.slot, m) for m in message_pages(mscfg, self.fill_values(cfg, now_l), now_l.date()))
+                candidates = order_pages(candidates, cfg)       # the order chosen on the Overview tab
                 available = [(n, m) for n, m in candidates if is_still(m) or not m.blank]
 
                 if not available:

@@ -216,6 +216,7 @@ The full settings:
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
 | `global.fps` | 1–60 (FPP's own output rate caps it) |
+| `global.page_order` | the sections in the order their pages take turns: any of `countdown`, `weather`, `social`, `showprep`, `schedule`, `messages`, each once. Sections left out follow in that usual order. A section's own pages (each social screen, each message) keep their own order. |
 | `global.screen_seconds` | 1–600, default 5: how long each page (the countdown, the weather page, each social media screen) shows before the next. Nothing scrolls. Settings from before schema 5 take their old Static hold time, else the weather's or social media's seconds. |
 
 ### `POST config`
@@ -263,7 +264,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now`, `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set), `messages` (every message with text, even switched off or outside its dates, with sample values and a `note` for fill-ins that have nothing yet; an `error` when there's no message with text). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now` (every page in turn, in `page_order`), `countdown` (just the countdown, now), `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set), `messages` (every message with text, even switched off or outside its dates, with sample values and a `note` for fill-ins that have nothing yet; an `error` when there's no message with text). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {

@@ -54,20 +54,20 @@ rm -f /home/fpp/media/config/plugin.fpp-showmarquee.json
 
 ## The settings page
 
-| Section | What it does |
+At the top: the plugin's status (Online, drawing at N fps, or what's wrong) with Start / Restart / Stop, then a row of tabs. The preview on the right shows the tab you're on; **Save** at the bottom saves every tab at once. If no matrix is chosen yet, a banner on every tab points to Display. The page opens on the tab you used last.
+
+| Tab | What it does |
 |---|---|
-| Status | Online/Offline, what the matrix shows now, output state and frame rate, the player's local time and whether its clock is synced to internet time. Start / Restart / Stop. |
-| Count down to | **Countdown on**; Christmas Day, New Year's Day or Custom date. Custom shows a date, a time (24-hour on the player) and **Repeat every year**. Event name. A line shows the exact moment it counts to. |
-| Message | Number first / last, Countdown timer / Hours only, and (folded) the joining and unit words. Each choice shows an example in your own words. |
-| Pages | **Seconds per page**: how long each page (countdown, weather, each social media screen, show prep, schedule, each of your messages) shows before the next one comes on (default 5). |
-| Number style / Text style | Font (fonts found on the player), size, colour, smooth edges. |
-| Weather | **Show weather**; where the weather comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off; wind direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading, where it came from and which symbol is up. |
-| Social Media | **Show social media**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
-| Daily Schedule | **Show the schedule**; the show nights; how the times are set (same every night, weeknights + weekends, each night different) and the times; the week or tonight only; title; 12- or 24-hour clock. A line shows what the matrix will say. |
-| Custom Messages | **Show my messages**; **Add message**; for each: on/off, the text (Enter for a new line), colour, picture, always or between two dates; ▲ ▼ to reorder, ✕ to delete; fill-in buttons; whether each is showing now, and why not. |
-| Show Prep | **Show prep page**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. A line says where the QR code goes. |
-| Matrix | Overlay model, **Output enabled**; frame rate under Advanced. |
-| Preview | The matrix at the model's size, as it will look. **Now** plays the countdown, the weather page, the social screens, the show prep page, the schedule and your messages in turn, each for the seconds per page. Preview as Now, 8 days out, Under a day, Weather (live weather, or a sample if none has arrived), Social (every social screen, even before Show social media is on), Show prep, Schedule or Messages. |
+| **Overview** | **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. The preview plays every page in turn, as the matrix does. |
+| **Countdown** | **Countdown on**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
+| **Weather** | **Show weather**; where it comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
+| **Social** | **Show social media**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
+| **Show prep** | **Show prep page**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. |
+| **Schedule** | **Show the schedule**; the show nights; same every night, weeknights + weekends, or each night different, and the times; the week or tonight only; title; 12- or 24-hour clock. |
+| **Messages** | **Show my messages**; **Add message**; for each: on/off, the text, colour, picture, always or between two dates; ▲ ▼ ✕; fill-in buttons; whether each is showing now, and why not. |
+| **Display** | The **Number style** and **Text style** (font, size, colour, smooth edges) that every page uses; the overlay model, **Output enabled**, the player's local time; frame rate under Advanced. |
+
+A small dot on a tab (and on its Overview line) means that page needs something before it can show, such as a weather source or an app for show prep.
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 

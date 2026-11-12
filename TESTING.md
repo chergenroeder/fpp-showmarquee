@@ -22,6 +22,16 @@ curl -s $API/config > /tmp/mc-before.json
 - [ ] Status shows **Online**, Output **drawing at ~20 fps**, and FPP local time is right and **synced to internet time**.
 - [ ] The preview shows no "font isn't on this player" warning (or names the font it uses instead).
 
+## 0b. The settings page
+
+- [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
+- [ ] **Edit** opens that page's tab; the preview shows just that page. Reloading the page comes back to the same tab.
+- [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round).
+- [ ] Move Schedule up with ▲ and **Save**: the matrix shows the schedule right after the countdown.
+- [ ] A section that needs something (Weather on with no source) has a dot on its tab and its Overview line.
+- [ ] With no overlay model chosen, a banner on every tab points to **Display**.
+- [ ] On a phone the tabs scroll sideways and nothing else does.
+
 ## 1. Number order (days)
 
 Set Christmas, then each order. Check both the matrix and the page preview.

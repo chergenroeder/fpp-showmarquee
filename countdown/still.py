@@ -39,6 +39,45 @@ def page_seconds(cfg: dict) -> float:
         return 5.0
 
 
+SECTIONS = ("countdown", "weather", "social", "showprep", "schedule", "messages")
+
+
+def page_order(cfg: dict) -> list:
+    """The sections in the order their pages take turns: global.page_order,
+    with any section it leaves out added at the end in the usual order."""
+    want = (cfg.get("global") or {}).get("page_order")
+    want = [s for s in want if s in SECTIONS] if isinstance(want, list) else []
+    order = list(dict.fromkeys(want))
+    return order + [s for s in SECTIONS if s not in order]
+
+
+def section_of(slot: str) -> str:
+    """ "social:facebook+youtube" -> "social"; "message:2" -> "messages"; "weather" -> "weather" """
+    head = slot.split(":", 1)[0]
+    return "messages" if head == "message" else head
+
+
+def order_pages(items: list, cfg: dict) -> list:
+    """(slot, page) pairs sorted by their section's place in page_order; a
+    section's own pages (social screens, messages) keep their order."""
+    rank = {s: i for i, s in enumerate(page_order(cfg))}
+    return sorted(items, key=lambda it: rank.get(section_of(it[0]), len(rank)))
+
+
+def page_order_problems(cfg: dict) -> list:
+    v = (cfg.get("global") or {}).get("page_order")
+    if v is None:
+        return []
+    if not isinstance(v, list) or not all(isinstance(s, str) for s in v):
+        return ["global.page_order must be a list of section names"]
+    bad = [s for s in v if s not in SECTIONS]
+    if bad:
+        return [f"global.page_order: unknown section {bad[0]!r} (sections: {', '.join(SECTIONS)})"]
+    if len(set(v)) != len(v):
+        return ["global.page_order lists a section twice"]
+    return []
+
+
 # ── Weather page layout ───────────────────────────────────────────────────────
 
 def _ink(font, text) -> Tuple[int, int, int, int]:

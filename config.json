@@ -4,7 +4,8 @@
         "enable_output": true,
         "fpp_host": "localhost",
         "fps": 20,
-        "screen_seconds": 5
+        "screen_seconds": 5,
+        "page_order": ["countdown", "weather", "social", "showprep", "schedule", "messages"]
     },
     "countdown": {
         "enabled": true,

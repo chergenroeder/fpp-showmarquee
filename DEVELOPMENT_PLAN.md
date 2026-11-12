@@ -713,3 +713,24 @@ Seen on the matrix: beside a sun or moon, "8 mph NW" didn't tell viewers it was 
 - The layout now picks, for each version of the page, the symbol size that leaves the text largest (it used to take the biggest symbol that fit, which squeezed "Wind 18 mph NW" to size 11 on a 192 × 96 panel; now every line keeps the style's size, 16).
 - Tests: the label, changing and clearing it, its place in the shortening order, kept on a 64-wide panel. 258 in total.
 
+---
+
+## Version 10 — Tabbed settings page and page order (built 2026-11-11)
+
+Asked for: a review of the settings page's flow, and tabs if FPP allows them.
+
+**What was wrong with the one long page**: six numbered sections, then "Shared by all", then the Matrix card, so everything needed scrolling; the overlay model (needed before anything shows) was last; no single view of which pages are on, in what order, or which one has a problem; eight preview mode buttons wrapping; a seven-row status box repeating the cards.
+
+**Tabs in FPP**: plugin pages sit inside FPP's page with Bootstrap 5 (FPP's own settings use tabs). The tabs use Bootstrap's `nav-tabs` look but are switched by our own script, so they don't depend on FPP loading Bootstrap's script.
+
+**Built**
+- Header: name, Online badge with the output state, Start / Restart / Stop. A banner on every tab when no overlay model is chosen, linking to Display.
+- Tabs: **Overview**, Countdown, Weather, Social, Show prep, Schedule, Messages, **Display**. The section cards moved into their tabs unchanged; a dot marks a tab (and its Overview line) that needs something (weather source, social handle, show prep app, schedule times, overlay model). The tab is kept in the address (`#schedule`) and remembered for next time.
+- **Overview**: "What's on the matrix": each section in rotation order with its on/off switch (kept in step with the switch on its own tab), a live one-line summary (the old status lines), ▲ ▼ to reorder, and Edit; **Seconds per page**; what the matrix shows now.
+- **Display**: the Number and Text styles, the Matrix card (overlay model, Output enabled, FPP local time, Advanced).
+- **Preview** follows the tab: Overview and Display play every page in turn; a section's tab shows just that section; the Countdown tab keeps Now / 8 days out / Under a day. The eight mode buttons are gone.
+- **Page order** (new): `global.page_order` (default countdown, weather, social, show prep, schedule, messages). `still.order_pages()` sorts the pages by it in the drawing loop and the preview; sections left out follow in the usual order; validation rejects unknown or repeated sections. New preview mode `countdown` (just the countdown, now).
+- Tests: 9 in `tests/test_pages.py` (order, completion of partial orders, sorting, validation, preview, saving, the drawing loop following the order). 267 in total.
+- Checked on the dev server: Overview list and summaries, Edit to a tab, the preview per tab, ▲ reordering the preview's rotation at once, the switches in step, the warning dots, the Countdown tab's own modes, the Display tab, phone width (no sideways scroll; the tabs scroll).
+- [ ] On fpp-matrix.local: TESTING.md section 0b, inside FPP's own page.
+

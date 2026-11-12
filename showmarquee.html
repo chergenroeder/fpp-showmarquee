@@ -13,46 +13,60 @@
   #mc-root .mc-savebar { position: sticky; bottom: 0; z-index: 5; background: var(--bs-body-bg); border-top: 1px solid var(--bs-border-color, #dee2e6); }
   #mc-root .mc-warn { color: var(--bs-warning-text-emphasis, #997404); }
   #mc-root .mc-err { color: var(--bs-danger, #dc3545); }
-  #mc-root .mc-section { font-size: .8em; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
-                         color: var(--bs-secondary-color, #6c757d); margin: 4px 0 8px; }
   #mc-root .mc-logo { width: 24px; height: 24px; image-rendering: auto; }
+  #mc-root .mc-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%;
+                     background: var(--bs-warning, #ffc107); margin-left: .35rem; vertical-align: middle; }
+  #mc-root #mc-tabs .nav-link { white-space: nowrap; padding: .4rem .7rem; }
+  #mc-root #mc-ov-list .list-group-item { padding: .45rem .6rem; }
   #mc-root td.mc-k { color: var(--bs-secondary-color, #6c757d); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
 <div class="container-fluid px-3 py-3" id="mc-root">
 
-  <!-- Status -->
-  <div class="card mb-3">
-    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <strong>Show Marquee</strong>
-        <span id="mc-badge" class="badge bg-secondary">Loading…</span>
-      </div>
-      <div class="d-flex gap-1">
-        <button type="button" class="btn btn-sm btn-outline-success" onclick="mcDaemon('start')">Start</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mcDaemon('restart')">Restart</button>
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="mcDaemon('stop')">Stop</button>
-      </div>
-    </div>
-    <div class="card-body py-2">
-      <table class="small mb-0">
-        <tr><td class="mc-k">Now showing</td><td id="mc-s-message">–</td></tr>
-        <tr><td class="mc-k">Output</td><td id="mc-s-output">–</td></tr>
-        <tr><td class="mc-k">Weather</td><td id="mc-s-weather">–</td></tr>
-        <tr><td class="mc-k">Social media</td><td id="mc-s-social">–</td></tr>
-        <tr><td class="mc-k">Show prep</td><td id="mc-s-showprep">–</td></tr>
-        <tr><td class="mc-k">Schedule</td><td id="mc-s-schedule">–</td></tr>
-        <tr><td class="mc-k">Messages</td><td id="mc-s-messages">–</td></tr>
-        <tr><td class="mc-k">FPP local time</td><td id="mc-s-time">–</td></tr>
-      </table>
+  <!-- Header -->
+  <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+    <strong class="fs-5">Show Marquee</strong>
+    <span id="mc-badge" class="badge bg-secondary">Loading…</span>
+    <span class="small text-muted" id="mc-s-output">–</span>
+    <div class="ms-auto d-flex gap-1">
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="mcDaemon('start')">Start</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mcDaemon('restart')">Restart</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="mcDaemon('stop')">Stop</button>
     </div>
   </div>
+  <div class="alert alert-warning py-2 small mc-hidden" id="mc-model-banner">Choose your matrix (its overlay model) on the
+    <a href="#display" data-goto="display">Display</a> tab: nothing shows on it until you do.</div>
+  <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="mc-tabs" role="tablist">
+    <li class="nav-item"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="showprep" role="tab">Show prep<span class="mc-dot mc-hidden" data-dot="showprep" title="Needs attention"></span></button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="schedule" role="tab">Schedule<span class="mc-dot mc-hidden" data-dot="schedule" title="Needs attention"></span></button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="messages" role="tab">Messages</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-tab="display" role="tab">Display<span class="mc-dot mc-hidden" data-dot="display" title="Needs attention"></span></button></li>
+  </ul>
 
   <div class="row g-3">
     <div class="col-lg-7">
 
-      <div class="mc-section">1 · Countdown</div>
-
+      <div class="mc-pane" data-pane="overview">
+      <!-- Overview -->
+      <div class="card mb-3">
+        <div class="card-header"><strong>What's on the matrix</strong></div>
+        <div class="card-body">
+          <div class="small text-muted mb-2">Pages take turns in this order. Switch a page on or off, move it with ▲ ▼, or <strong>Edit</strong> it.</div>
+          <div class="list-group mb-3" id="mc-ov-list"></div>
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
+              <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
+          </div>
+          <div class="small text-muted mt-1">Nothing scrolls: each page shows on its own for this many seconds. Each social media screen and each message is a page of its own.</div>
+          <div class="small mt-3">Matrix showing now: <span id="mc-s-message">–</span></div>
+        </div>
+      </div>
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="countdown">
       <!-- Target -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -125,9 +139,8 @@
           </details>
         </div>
       </div>
-
-      <div class="mc-section">2 · Weather</div>
-
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="weather">
       <!-- Weather -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -202,9 +215,8 @@
           <div class="small mt-2" id="mc-w-live"></div>
         </div>
       </div>
-
-      <div class="mc-section">3 · Social Media</div>
-
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="social">
       <!-- Social media -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -220,9 +232,8 @@
           <div class="small text-muted mt-1">The handle uses the Text style's font and colour, shrinking if it's too wide. Logos are trademarks of their owners.</div>
         </div>
       </div>
-
-      <div class="mc-section">4 · Show Prep</div>
-
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="showprep">
       <!-- Show prep -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -251,9 +262,8 @@
           <div class="small text-muted mt-1">The app's name uses the Number style, the rest of the message the Text style. Shorter links make smaller codes, which can be drawn with more LEDs per square (easier to scan).</div>
         </div>
       </div>
-
-      <div class="mc-section">5 · Daily Schedule</div>
-
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="schedule">
       <!-- Daily schedule -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -328,9 +338,8 @@
           <div class="small text-muted mt-1">Nights with the same times share a line. The times use the Number style, the nights and title the Text style.</div>
         </div>
       </div>
-
-      <div class="mc-section">6 · Custom Messages</div>
-
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="messages">
       <!-- Custom messages -->
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -350,21 +359,8 @@
           <div class="small text-muted mt-1">A message whose fill-in has nothing to show right now (no weather for <code>{temp}</code>, no show tonight for <code>{tonight}</code>) is skipped until it does.</div>
         </div>
       </div>
-
-      <div class="mc-section">Shared by all</div>
-
-      <!-- Pages -->
-      <div class="card mb-3">
-        <div class="card-header"><strong>Pages</strong></div>
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
-              <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
-          </div>
-          <div class="small text-muted mt-2">Nothing scrolls. The countdown, the weather page, each social media screen, the show prep page, the schedule and each of your messages show on their own, one after another, each for this many seconds. A countdown wider than the matrix goes on two lines.</div>
-        </div>
       </div>
-
+      <div class="mc-pane mc-hidden" data-pane="display">
       <!-- Styles -->
       <div class="row g-3 mb-3">
         <div class="col-md-6" data-style="number_style"></div>
@@ -384,6 +380,7 @@
             </div>
           </div>
           <div class="small mc-warn mt-2" id="mc-model-warn"></div>
+          <div class="small mt-2">FPP local time: <span id="mc-s-time">–</span></div>
           <details class="mt-2">
             <summary class="small">Advanced</summary>
             <div class="row g-2 mt-1">
@@ -394,30 +391,21 @@
           </details>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- Preview -->
     <div class="col-lg-5">
       <div class="card mb-3" style="position: sticky; top: .5rem;">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <strong>Preview</strong>
-          <div class="btn-group btn-group-sm" role="group" aria-label="Preview as">
+          <strong id="mc-preview-title">Preview</strong>
+          <div class="btn-group btn-group-sm mc-hidden" id="mc-cd-modes" role="group" aria-label="Preview the countdown">
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-now" value="now" checked>
             <label class="btn btn-outline-secondary" for="mc-as-now">Now</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-days" value="days">
             <label class="btn btn-outline-secondary" for="mc-as-days">8 days out</label>
             <input type="radio" class="btn-check" name="mc-as" id="mc-as-under" value="under_day">
             <label class="btn btn-outline-secondary" for="mc-as-under">Under a day</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-weather" value="weather">
-            <label class="btn btn-outline-secondary" for="mc-as-weather">Weather</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-social" value="social">
-            <label class="btn btn-outline-secondary" for="mc-as-social">Social</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-showprep" value="showprep">
-            <label class="btn btn-outline-secondary" for="mc-as-showprep">Show prep</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-schedule" value="schedule">
-            <label class="btn btn-outline-secondary" for="mc-as-schedule">Schedule</label>
-            <input type="radio" class="btn-check" name="mc-as" id="mc-as-messages" value="messages">
-            <label class="btn btn-outline-secondary" for="mc-as-messages">Messages</label>
           </div>
         </div>
         <div class="card-body">
@@ -766,6 +754,85 @@
     fillMessageControls();
   }
 
+  // ── tabs and the overview ──
+  const SECTIONS = [['countdown', 'Countdown', 'countdown.enabled'], ['weather', 'Weather', 'weather.enabled'],
+                    ['social', 'Social media', 'social.enabled'], ['showprep', 'Show prep', 'showprep.enabled'],
+                    ['schedule', 'Schedule', 'schedule.enabled'], ['messages', 'Messages', 'messages.enabled']];
+  const SEC = Object.fromEntries(SECTIONS.map(x => [x[0], x]));
+  const TABS = ['overview', ...SECTIONS.map(x => x[0]), 'display'];
+  let tab = 'overview';
+  let lastStatus = null;
+  // The same rules as countdown/still.py page_order()
+  function pageOrder() {
+    const g = cfg ? (cfg.global = cfg.global || {}) : {};
+    const order = [...new Set((Array.isArray(g.page_order) ? g.page_order : []).filter(k => SEC[k]))];
+    SECTIONS.forEach(([k]) => { if (!order.includes(k)) order.push(k); });
+    return order;
+  }
+  function renderOverview() {
+    const order = pageOrder();
+    $('#mc-ov-list').innerHTML = order.map((k, i) => {
+      const [, name, path] = SEC[k];
+      return `<div class="list-group-item d-flex align-items-center gap-2" data-ov="${k}">
+        <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-ov-${k}" data-path="${path}" aria-label="${name} on"></div>
+        <div class="flex-grow-1" style="min-width: 0;">
+          <div class="small fw-bold">${i + 1}. ${name}<span class="mc-dot mc-hidden" data-dot="${k}" title="Needs attention"></span></div>
+          <div class="small text-truncate" id="mc-s-${k}">–</div></div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Move ${name}">
+          <button type="button" class="btn btn-outline-secondary" data-ov-move="-1" data-k="${k}" aria-label="Move ${name} earlier" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="btn btn-outline-secondary" data-ov-move="1" data-k="${k}" aria-label="Move ${name} later" ${i === order.length - 1 ? 'disabled' : ''}>▼</button></div>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-goto="${k}">Edit</button>
+      </div>`;
+    }).join('');
+  }
+  function previewMode() {
+    if (tab === 'countdown') {
+      const v = $('input[name="mc-as"]:checked').value;
+      return v === 'now' ? 'countdown' : v;      // just the countdown, as it reads now
+    }
+    return ['weather', 'social', 'showprep', 'schedule', 'messages'].includes(tab) ? tab : 'now';
+  }
+  function showTab(t, keepScroll) {
+    if (!TABS.includes(t)) t = 'overview';
+    tab = t;
+    $$('#mc-tabs [data-tab]').forEach(b => { b.classList.toggle('active', b.dataset.tab === t); b.setAttribute('aria-selected', b.dataset.tab === t); });
+    $$('.mc-pane').forEach(p => p.classList.toggle('mc-hidden', p.dataset.pane !== t));
+    $('#mc-cd-modes').classList.toggle('mc-hidden', t !== 'countdown');
+    $('#mc-preview-title').textContent = SEC[t] ? 'Preview: ' + SEC[t][1] : 'Preview: every page in turn';
+    try { localStorage.setItem('showmarquee.tab', t); } catch (e) {}
+    try { history.replaceState(null, '', '#' + t); } catch (e) {}
+    if (!keepScroll) { const tabs = $('#mc-tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView(); }
+    if (cfg) schedulePreview(0);
+  }
+  // A small dot on a tab (and its overview row) when that page needs attention
+  function updateDots() {
+    if (!cfg) return;
+    const dot = (k, on) => $$(`[data-dot="${k}"]`).forEach(d => d.classList.toggle('mc-hidden', !on));
+    const W = cfg.weather || {}, S = cfg.social || {}, P = cfg.showprep || {}, C = cfg.schedule || {};
+    const ws = (lastStatus && lastStatus.weather) || {};
+    dot('weather', !!W.enabled && (!W.source || (!!ws.error && ws.temp_f == null && ws.wind_mph == null)));
+    const so = socialScreens(S);
+    dot('social', !!S.enabled && (so.problems.length > 0 || !so.screens.length));
+    dot('showprep', !!P.enabled && !APPS[P.app]);
+    dot('schedule', !!C.enabled && !!$('#mc-sc-warn').textContent);
+    dot('display', !cfg.countdown.model);
+    $('#mc-model-banner').classList.toggle('mc-hidden', !!cfg.countdown.model || tab === 'display');
+  }
+  function onOverviewClick(e) {
+    const go = e.target.closest('[data-goto]');
+    if (go) { e.preventDefault(); showTab(go.dataset.goto); return; }
+    const mv = e.target.closest('[data-ov-move]');
+    if (!mv || !cfg) return;
+    const order = pageOrder(), i = order.indexOf(mv.dataset.k), j = i + Number(mv.dataset.ovMove);
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    cfg.global.page_order = order;
+    renderOverview(); toForm();
+    if (lastStatus) applyStatus(lastStatus);
+    const again = $(`[data-ov-move="${mv.dataset.ovMove}"][data-k="${mv.dataset.k}"]`);
+    if (again && !again.disabled) again.focus();
+  }
+
   // ── style cards ──
   function buildStyleCards() {
     $$('[data-style]').forEach(col => {
@@ -829,6 +896,9 @@
       else if (el.dataset.type === 'number') { v = el.value === '' ? '' : Number(el.value); }
       else v = el.value;
       setPath(cfg, el.dataset.path, v);
+      if (el.type === 'checkbox') $$('input[type="checkbox"][data-path]').forEach(o => {
+        if (o !== el && o.dataset.path === el.dataset.path) o.checked = el.checked;
+      });
       if (el.dataset.path === 'countdown.target.type') $('#mc-name').value = getPath(cfg, 'countdown.target.event_name.' + v) || '';
       if (el.dataset.path === 'schedule.mode') { onScheduleMode(v); return; }
     } else return;
@@ -867,6 +937,7 @@
     refreshShowPrep();
     refreshSchedule();
     refreshMessages();
+    updateDots();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
     $('#mc-save').textContent = dirty ? 'Save *' : 'Save';
@@ -898,7 +969,7 @@
   async function loadPreview() {
     const seq = ++previewSeq;
     const size = panelSize();
-    const as = $('input[name="mc-as"]:checked').value;
+    const as = previewMode();
     let r;
     try { r = await post('preview', { config: cfg, width: size.w, height: size.h, as }); }
     catch (e) { r = { error: 'daemon not running' }; }
@@ -983,7 +1054,7 @@
       notify('Could not load settings: ' + (e.message || e) + '. Is the daemon running?', true);
       return;
     }
-    fillFonts(); fillModels(); renderMessages(); toForm();
+    fillFonts(); fillModels(); renderMessages(); renderOverview(); toForm();
     $('#mc-save-msg').textContent = '';
   }
   window.mcLoad = mcLoad;
@@ -1032,7 +1103,7 @@
       return base;
     };
     cfg = merge(JSON.parse(JSON.stringify(cfg)), data);
-    fillFonts(); fillModels(); renderMessages(); toForm();
+    fillFonts(); fillModels(); renderMessages(); renderOverview(); toForm();
     notify('Settings loaded from ' + file.name + ': check them, then Save');
   }
 
@@ -1064,13 +1135,23 @@
   async function loadStatus() {
     let s = null;
     try { s = await api('status'); } catch (e) {}
+    applyStatus(s);
+  }
+  function applyStatus(s) {
     const badge = $('#mc-badge');
     const online = s && s.running;
     badge.textContent = online ? 'Online' : 'Offline';
     badge.className = 'badge ' + (online ? 'bg-success' : 'bg-danger');
     if (!online) { $('#mc-s-output').textContent = 'daemon not running'; return; }
     const showing = s.showing && s.showing.message ? s.showing.message : (s.message && s.message.plain) || '';
+    lastStatus = s;
     $('#mc-s-message').textContent = showing ? '“' + showing + '”' + (s.showing && s.showing.slot && s.showing.slot !== 'countdown' ? ` (${s.showing.slot})` : '') : '(blank)';
+    const cdEl = $('#mc-s-countdown');
+    if (cdEl) {
+      cdEl.textContent = !s.enabled ? 'off' : (s.message && s.message.plain) ? s.message.plain
+        : s.target ? '(blank: the date has passed)' : 'the custom date is missing';
+      cdEl.className = 'small text-truncate';
+    }
     const w = s.weather || {};
     lastWeather = w; showLocation();
     const om = w.source === 'open-meteo';
@@ -1125,6 +1206,10 @@
     timeEl.textContent = `${s.local_time} (${s.timezone})${clock}`;
     timeEl.className = s.clock_synced === false ? 'mc-warn' : '';
     $('#mc-version').textContent = s.commit;
+    $$('[id^="mc-s-"]').forEach(el => {
+      if (el.closest('#mc-ov-list')) { el.title = el.textContent; el.classList.add('small', 'text-truncate'); }
+    });
+    updateDots();
   }
 
   // ── start ──
@@ -1151,6 +1236,12 @@
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);
   $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => schedulePreview(0)));
+  $('#mc-tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
+  $('#mc-root').addEventListener('click', onOverviewClick);
+  renderOverview();      // the default order until the settings load
+  let startTab = (location.hash || '').slice(1);
+  if (!TABS.includes(startTab)) { try { startTab = localStorage.getItem('showmarquee.tab') || 'overview'; } catch (e) { startTab = 'overview'; } }
+  showTab(startTab, true);
   $('#mc-upload').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) mcUpload(f); });
   window.addEventListener('beforeunload', e => { if (cfg && JSON.stringify(cfg) !== saved) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -1162,7 +1253,7 @@
   mcLoad().then(loadStatus);
   setInterval(loadStatus, 2000);
   // Keep the "Now" preview current (the number changes over time)
-  setInterval(() => { if (cfg && $('#mc-as-now').checked) schedulePreview(0); }, 1000);
+  setInterval(() => { if (cfg && ['now', 'countdown'].includes(previewMode())) schedulePreview(0); }, 1000);
   requestAnimationFrame(draw);
 })();
 </script>
