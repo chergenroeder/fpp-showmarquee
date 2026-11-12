@@ -664,4 +664,5 @@ Asked for: a section showing the show times, easy to set up for shows that run t
 - [x] Tests: 22 in `tests/test_schedule.py`. 234 in total, all passing.
 - [x] Dev server check: Same → Weeknights + weekends carried the times, Each night different filled from it, turning Monday off greyed its row; the card's line and the preview agreed ("Sun & Tue–Thu 5:30–10 PM · Fri & Sat 5:30–11 PM").
 - [ ] On fpp-matrix.local: TESTING.md section 9.
+- [x] Changed after a look at it on the dev server (2026-11-11): tonight's nights were drawn in the Number style, which made that line all one colour and looked off. Every line now keeps nights in the Text style and times in the Number style, and tonight gets a small ▸ (in the Number style's colour) in a narrow column on the left, kept on every line so the table doesn't shift. No pointer when there is only one line ("Nightly").
 

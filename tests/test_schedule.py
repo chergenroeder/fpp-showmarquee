@@ -156,6 +156,26 @@ class Drawing(unittest.TestCase):
         self.assertTrue(rows_red and rows_green)
         self.assertLess(min(rows_red), min(rows_green))       # the title (Text style) above the times
 
+    def test_same_colours_on_every_line_and_a_pointer_to_tonight(self):
+        img, _problem = self.draw(weekend(title=""))           # Friday: the Fri & Sat line
+        px = img.load()
+        green = [(x, y) for x in range(192) for y in range(96) if px[x, y] == (0, 255, 0)]
+        red = [(x, y) for x in range(192) for y in range(96) if px[x, y] == (255, 0, 0)]
+        rows = sorted({y for _x, y in red})
+        top_half = [y for y in rows if y < (rows[0] + rows[-1]) / 2]
+        # the pointer: green to the left of all the red (the nights), on the second (tonight's) line only
+        pointer = [(x, y) for x, y in green if x < min(x for x, _ in red)]
+        self.assertTrue(pointer)
+        self.assertTrue(all(y > max(top_half) for _x, y in pointer))
+        # the nights stay red on tonight's line: some red on the lower line too
+        self.assertTrue(any(y > max(top_half) for y in rows))
+        # one line (Nightly): no pointer
+        img, _problem = self.draw(same(title=""))
+        px = img.load()
+        red_x = [x for x in range(192) for y in range(96) if px[x, y] == (255, 0, 0)]
+        green_x = [x for x in range(192) for y in range(96) if px[x, y] == (0, 255, 0)]
+        self.assertGreater(min(green_x), min(red_x))
+
     def test_seven_different_nights_fit_a_96_tall_matrix(self):
         c = [t(f"{16 + i % 3}:00", f"{21 + i % 2}:30") for i in range(7)]
         img, problem = self.draw({"enabled": True, "mode": "custom", "custom": c})

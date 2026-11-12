@@ -127,8 +127,8 @@ set '{"global":{"screen_seconds":5},"showprep":{"enabled":true,"app":"pulsemesh"
 
 Turn on **Show the schedule** on the settings page, then for each, check the card's "On the matrix" line, the preview and the matrix:
 
-- [ ] **Same every night**, 5:30 PM–10:00 PM: "Show Times" / "Nightly 5:30–10 PM", tonight's line in the Number style.
-- [ ] **Weeknights + weekends**: the weeknight times carry over from Same every night. Set weekends to end at 11:00 PM: "Sun–Thu 5:30–10 PM" / "Fri & Sat 5:30–11 PM".
+- [ ] **Same every night**, 5:30 PM–10:00 PM: "Show Times" / "Nightly 5:30–10 PM" (one line, so no pointer).
+- [ ] **Weeknights + weekends**: the weeknight times carry over from Same every night. Set weekends to end at 11:00 PM: "Sun–Thu 5:30–10 PM" / "Fri & Sat 5:30–11 PM", every row's nights in the Text style and times in the Number style, and a small ▸ in front of tonight's line.
 - [ ] Make the weekend Sat & Sun: "Mon–Fri …" / "Sat & Sun …".
 - [ ] **Each night different**: each night starts with the times above. Change Thursday: it gets its own line.
 - [ ] Turn Monday off: Monday's row greys out and Monday leaves the matrix.

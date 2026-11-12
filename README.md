@@ -16,7 +16,7 @@ An FPP plugin that shows a live countdown on an LED matrix: to **Christmas Day**
 - **Number first or last:** "8 Days to Christmas" or "Christmas in 8 Days". The event name, joining words ("to" / "in") and unit words ("Day", "Days", ...) can all be changed.
 - **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
 - **Show prep** (optional): a QR code to the **PulseMesh** or **Tune2** app beside a message such as "Scan to get the PulseMesh app before the show".
-- **Daily schedule** (optional): your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", tonight highlighted) or just tonight's. Set them as the same every night, weeknights + weekends, or each night different.
+- **Daily schedule** (optional): your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", a ▸ pointing to tonight) or just tonight's. Set them as the same every night, weeknights + weekends, or each night different.
 - **Pages, not scrolling:** the countdown, the weather page, each social media screen, the show prep page and the schedule show one after another, held still, each for **Seconds per page** (default 5). A countdown wider than the panel goes on two lines.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
 - **Weather** (optional): one still page with a **sun**, **moon** or **wind** symbol beside the temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source.
@@ -173,7 +173,7 @@ Your show times on the matrix.
    - **Same every night:** one start and end.
    - **Weeknights + weekends:** a start and end for weeknights and for weekends. Choose which nights are the weekend (Fri & Sat to start; Sat & Sun if you prefer).
    - **Each night different:** a start and end for each night. Switching to it fills each night with the times you already had, so you only change the nights that differ.
-3. **On the matrix:** **The week** (nights with the same times share a line, tonight's line in the Number style) or **Tonight only** ("Tonight 5–10 PM", or "No show tonight" and the next show).
+3. **On the matrix:** **The week** (nights with the same times share a line; the nights are in the Text style and the times in the Number style on every line, with a small ▸ in front of tonight's line) or **Tonight only** ("Tonight 5–10 PM", or "No show tonight" and the next show).
 4. **Title** ("Show Times") and **Clock** (12-hour "5:30 PM" or 24-hour "17:30").
 
 - **Past midnight:** an end at or before the start means the show runs past midnight: 5:00 PM to 12:00 AM reads "5 PM–12 AM".

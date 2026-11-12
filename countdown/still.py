@@ -269,7 +269,8 @@ def schedule_layout(page: SchedulePage, panel_w: int, panel_h: int, number_style
 
     The rows are a table: nights on the left, times on the right, the block
     centered. Everything is one size, the Text style's, shrinking to fit; the
-    title goes before the text would go below min_size.
+    title goes before the text would go below min_size. With more than one
+    line, a narrow column on the left holds the pointer to tonight's line.
     """
     for with_title in ((True, False) if page.title else (False,)):
         for size in range(max(int(text_style.size), int(number_style.size), min_size), min_size - 1, -1):
@@ -277,13 +278,20 @@ def schedule_layout(page: SchedulePage, panel_w: int, panel_h: int, number_style
             tf, nf = text_style.font(size), number_style.font(size)
             day_w = max((max(tf.getlength(ln.days), nf.getlength(ln.days)) for ln in page.lines), default=0)
             time_w = max((nf.getlength(ln.times) for ln in page.lines), default=0)
-            row_w = day_w + (gap + time_w if time_w else 0)
+            row_w = _mark_w(page, size) + day_w + (gap + time_w if time_w else 0)
             title_w = tf.getlength(page.title) if with_title else 0
             line_h = max(tf.getmetrics()[0], nf.getmetrics()[0]) + max(tf.getmetrics()[1], nf.getmetrics()[1])
             rows = len(page.lines) + (1 if with_title else 0)
             if max(row_w, title_w) <= panel_w and rows * line_h + LINE_GAP * (rows - 1) <= panel_h:
                 return size, with_title, gap
     return None, False, 0
+
+
+def _mark_w(page: SchedulePage, size: int) -> int:
+    """Width of the column for tonight's pointer (with its gap); 0 with one line, where it would say nothing."""
+    if len(page.lines) < 2:
+        return 0
+    return max(2, round(size * 0.4)) + max(2, round(size * 0.35))
 
 
 def draw_schedule(page: SchedulePage, panel_w: int, panel_h: int, number_style, text_style):
@@ -302,8 +310,9 @@ def draw_schedule(page: SchedulePage, panel_w: int, panel_h: int, number_style, 
     tf, nf = text_style.font(size), number_style.font(size)
     asc = max(tf.getmetrics()[0], nf.getmetrics()[0])
     line_h = asc + max(tf.getmetrics()[1], nf.getmetrics()[1])
-    day_w = max(max(tf.getlength(ln.days), nf.getlength(ln.days)) for ln in page.lines)
+    day_w = max(tf.getlength(ln.days) for ln in page.lines)
     time_w = max(nf.getlength(ln.times) for ln in page.lines)
+    mark_w = _mark_w(page, size)
     rows = len(page.lines) + (1 if with_title else 0)
     y = (panel_h - (rows * line_h + LINE_GAP * (rows - 1))) // 2
     draw = ImageDraw.Draw(img)
@@ -316,11 +325,18 @@ def draw_schedule(page: SchedulePage, panel_w: int, panel_h: int, number_style, 
         put((panel_w - tf.getlength(page.title)) / 2, page.title, text_style)
         y += line_h + LINE_GAP
     if time_w:
-        x0 = (panel_w - (day_w + gap + time_w)) / 2
+        x0 = (panel_w - (mark_w + day_w + gap + time_w)) / 2
         for ln in page.lines:
-            put(x0, ln.days, number_style if ln.today else text_style)
+            if ln.today and mark_w:
+                # Tonight: a small pointer in the times' colour, as tall as a capital letter
+                cap = max(3, round(tf.getbbox("H", anchor="ls")[1] * -1))
+                w = max(2, round(size * 0.4))
+                top = y + asc - cap
+                draw.polygon([(x0, top), (x0, top + cap - 1), (x0 + w - 1, top + (cap - 1) / 2)],
+                             fill=number_style.color)
+            put(x0 + mark_w, ln.days, text_style)
             if ln.times:
-                put(x0 + day_w + gap, ln.times, number_style)
+                put(x0 + mark_w + day_w + gap, ln.times, number_style)
             y += line_h + LINE_GAP
     else:
         for ln in page.lines:
