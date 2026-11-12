@@ -2,8 +2,8 @@
 """
 fpp-showmarquee daemon
 
-Draws the sign's pages (countdown, weather, social media, show prep, schedule
-and custom messages) on one FPP pixel-overlay model, taking turns, by writing
+Draws the sign's pages (show name and logo, countdown, weather, social media,
+show prep, schedule and custom messages) on one FPP pixel-overlay model, taking turns, by writing
 frames into the model's overlay buffer. Keeps the settings, runs the weather
 source, and serves a REST API on 127.0.0.1:32330 that FPP's web server
 proxies to (api.php).
@@ -37,6 +37,8 @@ from countdown.schedule import (SchedulePage, format_range, night_times, schedul
 from countdown.schedule import settings_problems as schedule_settings_problems
 from countdown.showprep import (APPS, MESSAGE_MAX, ShowPrepPage, link_problem, show_prep_page,
                                 show_prep_status)
+from countdown.show import LogoError, LogoStore, ShowPage, show_page, show_status
+from countdown.show import settings_problems as show_settings_problems
 from countdown.social import SITES, Screen, clean_handle, handle_problem, social_screens, social_status
 from countdown.still import StillCache, is_still, order_pages, page_order_problems, page_seconds
 from countdown.timecalc import compute_display, local_now, resolve_target
@@ -56,6 +58,7 @@ DEFAULT_CFG  = os.path.join(PLUGIN_DIR, "config.json")
 # FPP's crash bundles and settings backups copy config/ (template guideline 14.11).
 DATA_DIR     = os.path.join(MEDIA_DIR, "plugindata", PLUGIN_NAME)
 LOCATION_PATH = os.path.join(DATA_DIR, "location.json")
+LOGO_PATH    = os.path.join(DATA_DIR, "logo.png")        # the Show page's uploaded logo
 LOG_PATH     = os.path.join(LOG_DIR, f"plugin-{PLUGIN_NAME}.log")  # FPP rotates plugin-<repo>.log
 API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
@@ -398,6 +401,7 @@ def validate_config(cfg: dict) -> List[str]:
         errors.append(f"showprep.message must be at most {MESSAGE_MAX} characters")
     errors += schedule_settings_problems(cfg.get("schedule") or {})
     errors += messages_settings_problems(cfg.get("messages") or {})
+    errors += show_settings_problems(cfg.get("show") or {})
     errors += page_order_problems(cfg)
     if (cfg.get("weather") or {}).get("units", "imperial") not in ("imperial", "metric"):
         errors.append("weather.units must be \"imperial\" (°F, mph) or \"metric\" (°C, km/h)")
@@ -453,6 +457,7 @@ class CountdownDaemon:
         self._showing = {"slot": None, "message": ""}   # what the loop is drawing now
         self._listener = None    # TempestListener | OpenMeteoPoller | None
         self._listener_lock = threading.Lock()
+        self.logos = LogoStore(LOGO_PATH)
 
     def _global(self) -> dict:
         return self.cfg.get("global", {})
@@ -583,14 +588,15 @@ class CountdownDaemon:
         """The message as the matrix would draw it, from unsaved form settings.
 
         body: {"config": {...partial config...}, "width": w, "height": h,
-               "as": "now" | "countdown" | "days" | "under_day" | "weather" | "social" | "showprep" | "schedule" | "messages"}
+               "as": "now" | "countdown" | "days" | "under_day" | "show" | "weather" | "social" | "showprep" | "schedule" | "messages"}
         Returns the drawn strip as a PNG (base64) plus what the page needs to
         animate it the same way the daemon moves it.
         """
         try:
             from countdown.render import Renderer
             from countdown.social import draw_screen
-            from countdown.still import draw_message, draw_schedule_page, draw_show_prep, draw_weather_page
+            from countdown.still import (draw_message, draw_schedule_page, draw_show_page, draw_show_prep,
+                                         draw_weather_page)
         except ImportError:
             return {"error": "Pillow is not installed"}
         cfg = _deep_merge(load_defaults(), body.get("config") or {})
@@ -652,6 +658,9 @@ class CountdownDaemon:
                 if page is not None:
                     sequence.append((page.slot, page))
             sequence += [(sc.slot, sc) for sc in social_screens(cfg.get("social") or {})]
+            shw = show_page(cfg.get("show") or {}, self.logos.id)
+            if shw is not None:
+                sequence.append((shw.slot, shw))
             prep = show_prep_page(cfg.get("showprep") or {})
             if prep is not None:
                 sequence.append((prep.slot, prep))
@@ -671,6 +680,13 @@ class CountdownDaemon:
                 shown = [Screen(tuple(k for k, _ in SITES), "YourHandle")]
                 weather_note = "sample handle (no site is on with a handle)"
             sequence = [(sc.slot, sc) for sc in shown]
+        if mode == "show":
+            # Show the page even if it's switched off, so it can be set up first
+            shw = show_page(cfg.get("show") or {}, self.logos.id, force=True)
+            if shw is None:
+                shw = show_page({"name": "Your Show Name"}, force=True)
+                weather_note = "sample name (type your show's name or upload a logo)"
+            sequence = [(shw.slot, shw)]
         if mode == "showprep":
             # Show the page even if Show Prep is switched off, so it can be set up first
             spcfg = cfg.get("showprep") or {}
@@ -730,6 +746,10 @@ class CountdownDaemon:
                 strip, problem = draw_schedule_page(msg, w, h, number_style, text_style)
                 if problem:
                     notes.append("Schedule: " + problem + ".")
+            elif isinstance(msg, ShowPage):
+                strip, problem = draw_show_page(msg, w, h, number_style, text_style)
+                if problem:
+                    notes.append("Show: " + problem + ".")
             elif isinstance(msg, ShowPrepPage):
                 strip, problem = draw_show_prep(msg, w, h, number_style, text_style)
                 if problem:
@@ -808,6 +828,7 @@ class CountdownDaemon:
             "weather": self.weather_status(cfg),
             "social": social_status(cfg.get("social") or {}),
             "showprep": show_prep_status(cfg.get("showprep") or {}),
+            "show": show_status(cfg.get("show") or {}, self.logos.info()),
             "schedule": schedule_status(cfg.get("schedule") or {}, now),
             "messages": messages_status(cfg.get("messages") or {}, self.fill_values(cfg, now), now.date()),
         }
@@ -975,6 +996,7 @@ class CountdownDaemon:
             spcfg = cfg.get("showprep") or {}
             shcfg = cfg.get("schedule") or {}
             mscfg = cfg.get("messages") or {}
+            shwcfg = cfg.get("show") or {}
             if not errors:
                 self._ensure_listener(cfg)
 
@@ -982,7 +1004,8 @@ class CountdownDaemon:
             reason = ("output disabled" if not g.get("enable_output", True) else
                       "every section off"
                       if not (cd.get("enabled", True) or wcfg.get("enabled") or scfg.get("enabled")
-                              or spcfg.get("enabled") or shcfg.get("enabled") or mscfg.get("enabled")) else
+                              or spcfg.get("enabled") or shcfg.get("enabled") or mscfg.get("enabled")
+                              or shwcfg.get("enabled")) else
                       "no model chosen" if not model else "")
             if reason or errors:
                 if out is not None:
@@ -1036,10 +1059,14 @@ class CountdownDaemon:
                 return renderer.frame(item)
 
             try:
-                # What takes turns: the countdown, the weather page, one still
-                # screen per social media handle, show prep, the schedule and the
-                # messages, sorted into the order chosen (global.page_order)
+                # What takes turns: the show's name and logo, the countdown, the
+                # weather page, one still screen per social media handle, show prep,
+                # the schedule and the messages, sorted into the order chosen
+                # (global.page_order)
                 candidates = []
+                shw = show_page(shwcfg, self.logos.id)
+                if shw is not None:
+                    candidates.append((shw.slot, shw))
                 if cd.get("enabled", True):
                     now = local_now()
                     target = resolve_target(cd.get("target") or {}, now)
@@ -1155,10 +1182,14 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    MAX_BODY = 12 * 1024 * 1024     # a logo upload (base64) is the largest body
+
     def _read_json(self):
         length = int(self.headers.get("Content-Length", 0) or 0)
         if length == 0:
             return {}
+        if length > self.MAX_BODY:
+            return None
         try:
             return json.loads(self.rfile.read(length))
         except Exception:
@@ -1187,6 +1218,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"commit": GIT_COMMIT})
         elif route == "logos":
             self._send_json(200, logo_pngs())
+        elif route == "logo":
+            info = _daemon.logos.info()
+            self._send_json(200, {"logo": None if info is None else {**info, "png": _daemon.logos.png_base64()}})
         else:
             self._send_json(404, {"error": "Not found"})
 
@@ -1221,6 +1255,24 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self._send_json(400, {"error": "Body must be a JSON object"})
             result = _daemon.preview(body)
             self._send_json(400 if "error" in result else 200, result)
+        elif route == "logo":
+            body = self._read_json()
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Body must be a JSON object (at most 12 MB)"})
+            try:
+                info = _daemon.logos.save_base64(body.get("image") or "")
+            except LogoError as e:
+                return self._send_json(400, {"error": f"Logo not saved: {e}"})
+            except ImportError:
+                return self._send_json(400, {"error": "Logo not saved: Pillow is not installed"})
+            log.info("Show logo uploaded (%dx%d)", info["width"], info["height"])
+            _daemon._wake.set()
+            self._send_json(200, {"logo": info})
+        elif route == "logo/delete":
+            _daemon.logos.remove()
+            log.info("Show logo removed")
+            _daemon._wake.set()
+            self._send_json(200, {"logo": None})
         elif route == "reload":
             _daemon.reload_config()
             self._send_json(200, {"status": "reloaded"})

@@ -92,6 +92,15 @@ From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 - [ ] **Show Marquee - Countdown**: Off takes the countdown page out of the turns (with no other page on, the matrix goes blank); On brings it back; Toggle flips it.
 - [ ] **Show Marquee - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
 
+## 5b. Show page
+
+- [ ] On the **Show** tab, type the show's name and turn the page on: the preview shows it as large as fits; **Save**: it's the first page on the matrix.
+- [ ] **Upload logo** with a square logo: the preview shows it on the left, the name beside it; **Replace logo** and **Remove** appear. On the matrix it changes without pressing Save.
+- [ ] A wide logo (a banner) goes above the name. Turn off **Show the name with the logo**: the logo fills the matrix on its own.
+- [ ] A logo with a transparent or black border is trimmed so it fills its space. A non-image file says "Logo not saved: …".
+- [ ] **Remove** asks first, then the page shows just the name. With no name and no logo the tab has a dot.
+- [ ] Uninstall removes the logo; on FPP 10.4+ a **Reinstall** keeps it.
+
 ## 6. Weather page
 
 Choose Open-Meteo (or the Tempest) in the Weather card, then:

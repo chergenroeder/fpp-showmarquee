@@ -6,6 +6,7 @@ FPP's Plugin Manager shows the commit history as the release notes for each upda
 
 A sign for your light show on an LED matrix: pages that take turns, each held still and centered for **Seconds per page**, in the order you choose.
 
+- **Show**: your show's name, an uploaded logo, or both.
 - **Countdown** to Christmas, New Year's Day or a date you choose, with **Repeat every year**, "8 Days to Christmas" or "Christmas in 8 Days", and an HH:MM:SS timer (or hours, then minutes) under a day.
 - **Weather** from Open-Meteo or your own WeatherFlow Tempest station: temperature and wind in °F and mph or °C and km/h, beside a symbol for the weather (sun, moon, partly cloudy, cloudy, fog, wind, rain, sleet, snow or thunderstorm).
 - **Social media**: each site's logo above your `@handle`, for Facebook, Instagram, TikTok and YouTube; sites with the same handle share a screen.

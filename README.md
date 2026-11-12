@@ -1,11 +1,15 @@
 # fpp-showmarquee — Show Marquee
 
-A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind), from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); your **show times**; and **your own messages**, each with an optional colour, holiday picture and dates. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
+A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): your **show's name and logo**; a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind), from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); your **show times**; and **your own messages**, each with an optional colour, holiday picture and dates. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
 
 ```
- Countdown             Weather               Social media
- 44 Days to Christmas  (sun) 72°F            [f] [◎] [♪] [▶]
-                             Wind 8 mph NW   @SmithFamilyLights
+ Show                  Countdown             Weather
+ [logo] Smith Family   44 Days to Christmas  (sun) 72°F
+        Lights                                     Wind 8 mph NW
+
+ Social media
+ [f] [◎] [♪] [▶]
+ @SmithFamilyLights
 
  Show prep             Schedule              Your messages
  [QR] Scan to get the  Show Times            (tree) Merry Christmas!
@@ -15,8 +19,9 @@ A sign for your light show, on an LED matrix. **Show Marquee** shows pages that 
 
 ## Features
 
-**Six kinds of page**, each optional, taking turns on the matrix in the order you choose, each held still for **Seconds per page** (5 by default):
+**Seven kinds of page**, each optional, taking turns on the matrix in the order you choose, each held still for **Seconds per page** (5 by default):
 
+- **Show**: your show's name, its logo (uploaded from the settings page), or both. The name is drawn as large as fits; with a logo it goes beside it, or under a wide one.
 - **Countdown** to Christmas, New Year's Day or a date you choose (with **Repeat every year** for birthdays and anniversaries). "8 Days to Christmas" or "Christmas in 8 Days"; under a day, a ticking **HH:MM:SS** timer or hours, then minutes. Counts by the player's own clock, daylight saving included. At zero the matrix goes blank for the rest of that day, then Christmas and New Year's count to next year.
 - **Weather**: a symbol for the weather (**sun**, **moon**, **partly cloudy**, **cloudy**, **rain**, **sleet**, **snow**, **thunderstorm**, **fog** or **wind**) beside the temperature and wind, in **°F and mph** or **°C and km/h**, from **Open-Meteo** over the internet (no account or key) or your own **WeatherFlow Tempest** station on your network (no internet). You pick the source.
 - **Social media**: each site's logo above your `@handle`, for Facebook, Instagram, TikTok and YouTube. Sites with the same handle share one screen; different handles get a screen each.
@@ -61,6 +66,7 @@ At the top: the plugin's status (Online, drawing at N fps, or what's wrong), **G
 | Tab | What it does |
 |---|---|
 | **Overview** | Until the setup is done once, **Getting started**: four steps (choose your matrix, turn on the pages you want, set up each page, Save) that tick themselves off, then hide for good (or click Hide); the **Getting started** link at the top brings it back. **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. A folded **How it works** sums up how pages take turns, get skipped and get saved. The preview plays every page in turn, as the matrix does. |
+| **Show** | **Show on the matrix**; the show name and its colour; **Upload logo** (saved on the player at once), **Remove**, and **Show the name with the logo**. |
 | **Countdown** | **Show on the matrix**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
 | **Weather** | **Show on the matrix**; where it comes from (Open-Meteo or Tempest); units (°F and mph, or °C and km/h); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
 | **Social** | **Show on the matrix**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
@@ -140,6 +146,18 @@ On the **Social** tab, turn on **Show on the matrix**, then switch on each site 
 - **Style:** the handle uses the **Text style**'s font and colour. It starts at that size and shrinks if it's too wide; if it still doesn't fit at the smallest size the preview warns you and its ends are cut off, so pick a narrower font.
 - **Handles:** up to 30 letters, digits, dots, underscores and dashes. A site that's on with no handle is skipped, and the page says so.
 - Nothing is sent anywhere: the plugin only draws what you type. Facebook, Instagram, TikTok and YouTube logos are trademarks of their owners, shown only to point people to your own profiles.
+
+## Show
+
+A page for your show's name, its logo, or both. It comes first in the rotation unless you move it.
+
+1. On the **Show** tab, turn on **Show on the matrix** and type the show's name (Enter starts a new line on the matrix).
+2. Optionally, **Upload logo**: PNG, JPG, GIF (its first frame), WebP or SVG. With a logo, **Show the name with the logo** can be turned off to show the logo on its own.
+3. **Colour:** the Text style's (default), the Number style's, or your own. The name uses the Text style's font.
+
+- **Layout:** the name alone is centered and drawn as large as fits (it isn't held to the Text style's size). A logo alone fills as much of the matrix as it can, keeping its shape. With both, the logo goes on the left and the name beside it; a logo much wider than the matrix's shape goes on top, with the name under it. If the name can't be read beside the logo, the logo shrinks; if it still can't, only the logo shows and the preview says so.
+- **The logo** is saved on the player as soon as you upload it (it doesn't wait for **Save**), in `plugindata/fpp-showmarquee/logo.png`. Your browser shrinks it before sending; the player keeps it at most 512 pixels on its longer side, and trims edges that wouldn't light an LED (transparent or black) so the logo fills its space. Transparent parts show as black. Bright, bold logos read best on LEDs: check the preview.
+- **Not in Download settings:** the logo stays on the player. On a new player, upload it again. Uninstalling removes it; a Reinstall keeps it on FPP 10.4 and later.
 
 ## Show prep
 
@@ -271,6 +289,7 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/showprep.py` | Show prep: the apps and their links, the page, and the QR code. |
 | `countdown/schedule.py` | Daily schedule: show nights and times, grouping and wording, the page. |
 | `countdown/messages.py` | Custom messages: fill-ins, date windows, the pages. |
+| `countdown/show.py` | The Show page: the name, and the uploaded logo (kept on the player). |
 | `countdown/social.py` | Social media screens: handles, grouping by handle, the logos (drawn in code) and the screen layout. |
 | `showmarquee.html` | The settings page. |
 | `commands/` | FPP commands. |

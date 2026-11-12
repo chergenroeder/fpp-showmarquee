@@ -23,6 +23,9 @@ function getEndpointsfppshowmarquee() {
         array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppshowmarqueeFonts'),
         array('method' => 'GET',  'endpoint' => 'version',        'callback' => 'fppshowmarqueeVersion'),
         array('method' => 'GET',  'endpoint' => 'logos',          'callback' => 'fppshowmarqueeLogos'),
+        array('method' => 'GET',  'endpoint' => 'logo',           'callback' => 'fppshowmarqueeGetLogo'),
+        array('method' => 'POST', 'endpoint' => 'logo',           'callback' => 'fppshowmarqueePostLogo'),
+        array('method' => 'POST', 'endpoint' => 'logo/delete',    'callback' => 'fppshowmarqueeDeleteLogo'),
         array('method' => 'POST', 'endpoint' => 'daemon/start',   'callback' => 'fppshowmarqueeDaemonStart'),
         array('method' => 'POST', 'endpoint' => 'daemon/stop',    'callback' => 'fppshowmarqueeDaemonStop'),
         array('method' => 'POST', 'endpoint' => 'daemon/restart', 'callback' => 'fppshowmarqueeDaemonRestart'),
@@ -67,6 +70,9 @@ function fppshowmarqueeModels()        { return fppshowmarqueeDaemonRequest('mod
 function fppshowmarqueeFonts()         { return fppshowmarqueeDaemonRequest('fonts'); }
 function fppshowmarqueeVersion()       { return fppshowmarqueeDaemonRequest('version'); }
 function fppshowmarqueeLogos()         { return fppshowmarqueeDaemonRequest('logos'); }
+function fppshowmarqueeGetLogo()       { return fppshowmarqueeDaemonRequest('logo'); }
+function fppshowmarqueePostLogo()      { return fppshowmarqueeDaemonRequest('logo', 'POST'); }
+function fppshowmarqueeDeleteLogo()    { return fppshowmarqueeDaemonRequest('logo/delete', 'POST'); }
 function fppshowmarqueeDaemonStop()    { return fppshowmarqueeDaemonRequest('daemon/stop', 'POST'); }
 function fppshowmarqueeDaemonRestart() { return fppshowmarqueeDaemonRequest('daemon/restart', 'POST'); }
 

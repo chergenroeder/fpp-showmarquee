@@ -20,6 +20,8 @@
   #mc-root #mc-ov-list .list-group-item { padding: .45rem .6rem; }
   /* A link inside a coloured banner takes the banner's own text colour, so it reads in light and dark mode */
   #mc-root .mc-inherit-link { color: inherit !important; font-weight: 600; text-decoration: underline; }
+  #mc-root .mc-show-thumb { width: 8rem; height: 4rem; display: flex; align-items: center; justify-content: center; }
+  #mc-root .mc-show-thumb img { max-width: 100%; max-height: 100%; image-rendering: auto; }
   #mc-root td.mc-k { color: var(--bs-secondary-color); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
@@ -43,6 +45,7 @@
     <a href="#display" data-goto="display" class="alert-link mc-inherit-link">Display</a> tab: nothing shows on it until you do.</div>
   <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="mc-tabs" role="tablist">
     <li class="nav-item" role="presentation"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="show" role="tab">Show<span class="mc-dot mc-hidden" data-dot="show" title="Needs attention"></span></button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
     <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
@@ -88,6 +91,48 @@
               <li>The <strong>Number style</strong> and <strong>Text style</strong> on the Display tab colour every page. A dot on a tab means that page needs something before it can show.</li>
             </ul>
           </details>
+        </div>
+      </div>
+      </div>
+      <div class="mc-pane mc-hidden" data-pane="show">
+      <!-- Show -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Show</strong>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-sh-on" data-path="show.enabled">
+            <label class="form-check-label" for="mc-sh-on">Show on the matrix</label></div>
+        </div>
+        <div class="card-body" id="mc-show-body">
+          <div class="small text-muted mb-2">Your show's name, its logo, or both, on a page of their own.</div>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-8"><label class="form-label form-label-sm mb-0" for="mc-sh-name">Show name <span class="mc-example">Enter starts a new line</span></label>
+              <textarea class="form-control form-control-sm" id="mc-sh-name" rows="2" maxlength="80" placeholder="Smith Family Lights" data-path="show.name"></textarea></div>
+            <div class="col-12 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-sh-color">Colour</label>
+              <div class="d-flex gap-1">
+                <select class="form-select form-select-sm" id="mc-sh-color" data-show="color">
+                  <option value="text">Text style</option><option value="number">Number style</option><option value="own">Own colour</option></select>
+                <input type="color" class="form-control form-control-sm mc-color" id="mc-sh-color-own" data-show="color-own" aria-label="Show name colour"></div></div>
+          </div>
+          <fieldset class="mt-3 p-2 rounded border">
+            <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Logo <span class="fw-normal text-muted">(optional)</span></legend>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <div class="mc-show-thumb bg-black rounded border"><img id="mc-sh-logo" alt="Your logo" class="mc-hidden"><span class="small text-secondary" id="mc-sh-nologo">No logo</span></div>
+              <div class="d-flex flex-column gap-1">
+                <div class="d-flex gap-1">
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="mc-sh-upload">Upload logo</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger mc-hidden" id="mc-sh-remove">Remove</button>
+                </div>
+                <input type="file" id="mc-sh-file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" class="d-none">
+                <span class="small" id="mc-sh-logo-msg"></span>
+              </div>
+            </div>
+            <div class="form-check mt-2 mc-hidden" id="mc-sh-name-row"><input class="form-check-input" type="checkbox" id="mc-sh-showname" data-path="show.show_name">
+              <label class="form-check-label" for="mc-sh-showname">Show the name with the logo</label>
+              <div class="small text-muted">Off: the logo shows on its own, as large as the matrix allows.</div></div>
+            <div class="small text-muted mt-2">PNG, JPG, GIF, WebP or SVG. It's saved on the player as soon as you upload it (no need to Save), shrunk to at most 512 pixels, and its transparent or black edges are trimmed so it fills the matrix. Transparent parts show as black. It isn't part of <strong>Download settings</strong>: on a new player, upload it again.</div>
+          </fieldset>
+          <div class="small mc-warn mt-2" id="mc-sh-warn"></div>
+          <div class="small text-muted mt-1">The name is drawn as large as fits, in the Text style's font. With a logo, the name goes beside it, or under it when the logo is wide. Colourful, bright logos with bold shapes look best on LEDs: check the preview.</div>
         </div>
       </div>
       </div>
@@ -428,7 +473,7 @@
         <div class="col-md-6" data-style="number_style"></div>
         <div class="col-md-6" data-style="text_style"></div>
       </div>
-      <div class="small text-muted mb-3">These two styles colour every page. <strong>Number style</strong>: the countdown's number, the temperature, the show times and the show prep app's name. <strong>Text style</strong>: the words around them, the wind, the @handles, the show prep message and your messages (unless you give a message its own colour).</div>
+      <div class="small text-muted mb-3">These two styles colour every page. <strong>Number style</strong>: the countdown's number, the temperature, the show times and the show prep app's name. <strong>Text style</strong>: the words around them, the wind, the @handles, the show prep message, your messages and the show name (unless you give them their own colour).</div>
       </div>
     </div>
 
@@ -788,8 +833,82 @@
     fillMessageControls();
   }
 
+  // ── show ──
+  let logoInfo = null;          // the uploaded logo {id, width, height}, or null
+  function showColor() {
+    const S = cfg.show = cfg.show || {};
+    const own = S.color && S.color !== 'text' && S.color !== 'number';
+    $('#mc-sh-color').value = own ? 'own' : (S.color || 'text');
+    $('#mc-sh-color-own').value = own ? S.color : '#ffffff';
+    $('#mc-sh-color-own').classList.toggle('mc-hidden', !own);
+  }
+  function onShowControl(el) {
+    const S = cfg.show = cfg.show || {};
+    if (el.dataset.show === 'color') S.color = el.value === 'own' ? ($('#mc-sh-color-own').value || '#ffffff') : el.value;
+    else S.color = el.value;
+    refresh();
+  }
+  const showName = () => String((cfg.show || {}).name || '').trim();
+  function refreshShow() {
+    const S = cfg.show || {};
+    showColor();
+    $('#mc-sh-name-row').classList.toggle('mc-hidden', !logoInfo);
+    $('#mc-sh-remove').classList.toggle('mc-hidden', !logoInfo);
+    $('#mc-sh-upload').textContent = logoInfo ? 'Replace logo' : 'Upload logo';
+    const nothing = !showName() && !logoInfo;
+    $('#mc-sh-warn').textContent = S.enabled && nothing ? "Type your show's name or upload a logo: the page doesn't show until you do." : '';
+  }
+  function setLogo(info, png) {
+    logoInfo = info || null;
+    const img = $('#mc-sh-logo');
+    if (logoInfo && png) img.src = 'data:image/png;base64,' + png;
+    img.classList.toggle('mc-hidden', !logoInfo);
+    $('#mc-sh-nologo').classList.toggle('mc-hidden', !!logoInfo);
+    if (cfg) { refresh(); schedulePreview(0); }
+  }
+  async function loadShowLogo() {
+    try { const r = await api('logo'); setLogo(r.logo, r.logo && r.logo.png); } catch (e) {}
+  }
+  // The browser shrinks the picture (and turns any format it can show into a
+  // PNG) before sending it, so even a large photo uploads quickly
+  function shrinkToPng(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 512 / Math.max(img.naturalWidth || 512, img.naturalHeight || 512));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round((img.naturalWidth || 512) * k));
+        c.height = Math.max(1, Math.round((img.naturalHeight || 512) * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/png'));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("that file isn't an image this browser can open")); };
+      img.src = url;
+    });
+  }
+  async function uploadLogo(file) {
+    const msg = $('#mc-sh-logo-msg');
+    msg.textContent = 'Uploading…'; msg.className = 'small text-muted';
+    let r;
+    try { r = await post('logo', { image: await shrinkToPng(file) }); }
+    catch (e) { r = { error: 'Logo not saved: ' + (e.message || 'the daemon is not running') }; }
+    if (r.error || !r.logo) { msg.textContent = r.error || 'Logo not saved'; msg.className = 'small mc-err'; return; }
+    msg.textContent = `Saved on the player (${r.logo.width}×${r.logo.height}).`; msg.className = 'small text-success';
+    await loadShowLogo();
+    setTimeout(loadStatus, 300);
+  }
+  async function removeLogo() {
+    if (!confirm('Remove the logo from the player?')) return;
+    try { await post('logo/delete'); } catch (e) {}
+    const msg = $('#mc-sh-logo-msg');
+    msg.textContent = 'Logo removed.'; msg.className = 'small text-muted';
+    setLogo(null);
+    setTimeout(loadStatus, 300);
+  }
+
   // ── tabs and the overview ──
-  const SECTIONS = [['countdown', 'Countdown', 'countdown.enabled'], ['weather', 'Weather', 'weather.enabled'],
+  const SECTIONS = [['show', 'Show', 'show.enabled'], ['countdown', 'Countdown', 'countdown.enabled'], ['weather', 'Weather', 'weather.enabled'],
                     ['social', 'Social media', 'social.enabled'], ['showprep', 'Show prep', 'showprep.enabled'],
                     ['schedule', 'Schedule', 'schedule.enabled'], ['messages', 'Messages', 'messages.enabled']];
   const SEC = Object.fromEntries(SECTIONS.map(x => [x[0], x]));
@@ -824,7 +943,7 @@
       const v = $('input[name="mc-as"]:checked').value;
       return v === 'now' ? 'countdown' : v;      // just the countdown, as it reads now
     }
-    return ['weather', 'social', 'showprep', 'schedule', 'messages'].includes(tab) ? tab : 'now';
+    return ['show', 'weather', 'social', 'showprep', 'schedule', 'messages'].includes(tab) ? tab : 'now';
   }
   function showTab(t, keepScroll) {
     if (!TABS.includes(t)) t = 'overview';
@@ -858,6 +977,7 @@
     dot('schedule', !!C.enabled && !!$('#mc-sc-warn').textContent);
     const M = cfg.messages || {};
     dot('messages', !!M.enabled && !(Array.isArray(M.items) ? M.items : []).some(m => m && m.enabled !== false && String(m.text || '').trim()));
+    dot('show', !!(cfg.show || {}).enabled && !showName() && !logoInfo);
     dot('display', !cfg.countdown.model);
     $('#mc-model-banner').classList.toggle('mc-hidden', !!cfg.countdown.model || tab === 'display');
     updateStart();
@@ -880,7 +1000,7 @@
   // A section that's off says so at the top, rather than being faded (which made
   // its controls look unusable): it can be set up first and switched on after.
   function offNotes() {
-    [['#mc-weather-body', 'weather.enabled'], ['#mc-social-body', 'social.enabled'],
+    [['#mc-show-body', 'show.enabled'], ['#mc-weather-body', 'weather.enabled'], ['#mc-social-body', 'social.enabled'],
      ['#mc-showprep-body', 'showprep.enabled'], ['#mc-schedule-body', 'schedule.enabled'],
      ['#mc-messages-body', 'messages.enabled']].forEach(([sel, path]) => {
       const body = $(sel);
@@ -986,6 +1106,7 @@
   function onInput(e) {
     const el = e.target;
     if (el.dataset.ms && onMessageControl(e)) return;
+    if (el.dataset.show) { onShowControl(el); return; }
     if (el.id === 'mc-name') {
       setPath(cfg, 'countdown.target.event_name.' + getPath(cfg, 'countdown.target.type'), el.value);
     } else if (el.dataset.path) {
@@ -1044,6 +1165,7 @@
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
+    refreshShow();
     refreshSocial();
     refreshShowPrep();
     refreshSchedule();
@@ -1188,10 +1310,12 @@
     const W = cfg.weather || {}, S = cfg.social || {};
     const noScreens = S.enabled && !socialScreens(S).screens.length;
     const P = cfg.showprep || {}, noApp = P.enabled && !APPS[P.app];
+    const noShow = (cfg.show || {}).enabled && !showName() && !logoInfo;
     notify(W.enabled && !W.source ? 'Saved. Choose where the weather comes from for it to show.'
          : noScreens ? 'Saved. Turn on a site and enter its handle for social media to show.'
-         : noApp ? 'Saved. Choose the app for the show prep page to show.' : 'Saved',
-           (W.enabled && !W.source) || noScreens || noApp);
+         : noApp ? 'Saved. Choose the app for the show prep page to show.'
+         : noShow ? "Saved. Type your show's name or upload a logo for the Show page to show." : 'Saved',
+           (W.enabled && !W.source) || noScreens || noApp || noShow);
     setTimeout(loadStatus, 600);
   };
 
@@ -1310,6 +1434,10 @@
       : (so.screens || []).length ? so.screens.map(x => x.plain).join(' → ') + (soProblems.length ? ' · ' + soProblems.join('; ') : '')
       : 'no screens: ' + (soProblems.join('; ') || 'turn on a site and enter its handle');
     soEl.className = so.enabled && soProblems.length ? 'mc-warn' : '';
+    const sh = s.show || {}, shEl = $('#mc-s-show');
+    shEl.textContent = !sh.enabled ? 'off' : sh.problem ? sh.problem
+      : (sh.plain || '').replace('[Logo]', 'logo' + (sh.plain === '[Logo]' ? ' only' : ' +')).trim();
+    shEl.className = sh.enabled && sh.problem ? 'mc-warn' : '';
     const sp = s.showprep || {}, spEl = $('#mc-s-showprep');
     spEl.textContent = !sp.enabled ? 'off' : sp.problem ? sp.problem : `${sp.app_name}: QR to ${sp.link}`;
     spEl.className = sp.enabled && sp.problem ? 'mc-warn' : '';
@@ -1323,7 +1451,7 @@
     if (cfg) fillMessageControls();
     const o = s.output || {};
     const out = $('#mc-s-output');
-    const anyOn = !!s.enabled || ['weather', 'social', 'showprep', 'schedule', 'messages'].some(k => (s[k] || {}).enabled);
+    const anyOn = !!s.enabled || ['show', 'weather', 'social', 'showprep', 'schedule', 'messages'].some(k => (s[k] || {}).enabled);
     out.textContent = o.state === 'drawing' ? `drawing at ${o.fps} fps`
       : o.state === 'off' ? 'not drawing: ' + (!s.model ? 'choose your matrix (Display tab)'
                                              : s.enable_output === false ? 'output is turned off (Display tab)'
@@ -1349,7 +1477,7 @@
   function overviewPending() {
     if (!cfg || !lastStatus) return;
     const s = lastStatus;
-    const saved = { countdown: s.enabled, weather: (s.weather || {}).enabled, social: (s.social || {}).enabled,
+    const saved = { show: (s.show || {}).enabled, countdown: s.enabled, weather: (s.weather || {}).enabled, social: (s.social || {}).enabled,
                     showprep: (s.showprep || {}).enabled, schedule: (s.schedule || {}).enabled,
                     messages: (s.messages || {}).enabled };
     SECTIONS.forEach(([k, , path]) => {
@@ -1390,6 +1518,10 @@
   ['focusin', 'input', 'mousedown'].forEach(ev => $('#mc-root').addEventListener(ev, markMessage));
   $('#mc-messages-body').addEventListener('click', messageButtons);
   loadLogos();
+  loadShowLogo();
+  $('#mc-sh-upload').addEventListener('click', () => $('#mc-sh-file').click());
+  $('#mc-sh-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) uploadLogo(f); });
+  $('#mc-sh-remove').addEventListener('click', removeLogo);
   $('#mc-root').addEventListener('input', onInput);
   $('#mc-root').addEventListener('change', onInput);
   $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => schedulePreview(0)));

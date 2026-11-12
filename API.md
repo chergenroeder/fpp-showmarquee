@@ -64,6 +64,10 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
     ],
     "problems": { "tiktok": "TikTok is on but has no handle" }
   },
+  "show": {
+    "enabled": true, "showing": true, "problem": "", "plain": "[Logo] Smith Family Lights",
+    "logo": { "id": "3f2a9c01b7de", "width": 300, "height": 300 }
+  },
   "showprep": {
     "enabled": true, "app": "pulsemesh", "app_name": "PulseMesh",
     "link": "https://pulsemesh.io/download", "own_link": false, "problem": "",
@@ -90,11 +94,12 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `target` | `null` if a custom target has no valid date. `display` is `days`, `hms`, `hours`, `minutes` or `blank`. |
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
-| `showing` | What the matrix is drawing now: `slot` is `countdown`, `weather` (the weather page), `social:<sites>`, `showprep`, `schedule` or `message:<n>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
+| `showing` | What the matrix is drawing now: `slot` is `show`, `countdown`, `weather` (the weather page), `social:<sites>`, `showprep`, `schedule` or `message:<n>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
 | `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `page` is what the weather page shows now (`symbol` is `sun`, `moon`, `partly_day`, `partly_night`, `cloud`, `fog`, `wind`, `rain`, `sleet`, `snow` or `storm`; `lines` are the temperature, wind and gust lines that are on and fresh), or `null` when there's nothing to show. `is_day` and `day_from` (`open-meteo`, `tempest` or `clock`) say how the sun or moon was chosen. `condition` is the sky (`clear`, `partly`, `cloudy`, `fog`, `rain`, `sleet`, `snow` or `storm`, or `null` when not known or `symbol.conditions` is off) and `condition_from` where it came from (`open-meteo` or `tempest`). `solar_wm2` and `lux` are the Tempest's light readings (`null` with Open-Meteo). |
 | `social` | `screens`: the social media screens in the order they show, one per distinct handle (sites with the same handle, ignoring case and `@`, share a screen). `problems`: sites that are on but can't show, by site key. |
 | `messages` | One entry per message, in order: `showing` now or not, and `why` not (`switched off`, `no text`, `outside its dates`, `nothing for {temp} right now`). `showing` at the top counts them. |
 | `schedule` | `summary` is the week as the matrix groups it. `problems` says what's missing (no show nights, a start or end time not set). In `plain`, `*` marks tonight's line. |
+| `show` | `logo` is the uploaded logo (`null` for none). `problem` is set when the page is on but has neither a name nor a logo. |
 | `showprep` | `link` is what the QR code opens (`own_link` when it's yours rather than the app's). `problem` says why the page can't show or is incomplete: no app chosen, a bad link, or the QR code library missing. |
 
 ### `GET version`
@@ -154,6 +159,7 @@ The full settings:
       "youtube":   { "enabled": false, "handle": "" }
     }
   },
+  "show": { "enabled": true, "name": "Smith Family Lights", "color": "text", "show_name": true },
   "showprep": {
     "enabled": false,
     "app": "",
@@ -211,6 +217,10 @@ The full settings:
 | `schedule.show` | `week` or `tonight` |
 | `schedule.title` | up to 40 characters, `""` for none (week page only) |
 | `schedule.clock` | `"12"` (5:30 PM) or `"24"` (17:30) |
+| `show.enabled` | show the Show page |
+| `show.name` | the show's name, up to 80 characters; `\n` starts a new line |
+| `show.color` | `text`, `number` or `#rrggbb` |
+| `show.show_name` | with a logo uploaded: `false` shows the logo on its own (without a logo the name always shows) |
 | `showprep.enabled` | show the show prep page |
 | `showprep.app` | `pulsemesh`, `tune2`, or `""` (not chosen: no page) |
 | `showprep.message` | up to 120 characters; `{app}` becomes the app's name |
@@ -219,7 +229,7 @@ The full settings:
 | `*_style.size` | 4–128 |
 | `*_style.color` | `#rrggbb` |
 | `global.fps` | 1–60 (FPP's own output rate caps it) |
-| `global.page_order` | the sections in the order their pages take turns: any of `countdown`, `weather`, `social`, `showprep`, `schedule`, `messages`, each once. Sections left out follow in that usual order. A section's own pages (each social screen, each message) keep their own order. |
+| `global.page_order` | the sections in the order their pages take turns: any of `show`, `countdown`, `weather`, `social`, `showprep`, `schedule`, `messages`, each once (default in that order). Sections left out follow in that usual order. A section's own pages (each social screen, each message) keep their own order. |
 | `global.screen_seconds` | 1–600, default 5: how long each page (the countdown, the weather page, each social media screen) shows before the next. Nothing scrolls. |
 
 ### `POST config`
@@ -267,7 +277,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 { "config": { "countdown": { "layout": { "number_position": "last" } } }, "width": 192, "height": 96, "as": "now" }
 ```
 
-`as`: `now` (every page in turn, in `page_order`), `countdown` (just the countdown, now), `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set), `messages` (every message with text, even switched off or outside its dates, with sample values and a `note` for fill-ins that have nothing yet; an `error` when there's no message with text). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
+`as`: `now` (every page in turn, in `page_order`), `countdown` (just the countdown, now), `days` (8 days before the target), `under_day` (8 h 14 m 32 s before), `show` (the Show page, even with it switched off; a sample name and a `note` when there's no name or logo), `weather`, `social` (every social media screen, even with Social Media switched off; a sample with all four logos and a `note` when no site has a handle), `showprep` (the show prep page, even with it switched off; a PulseMesh sample and a `note` when no app is chosen), `schedule` (the schedule page, even with it switched off; a sample and a `note` when no times are set), `messages` (every message with text, even switched off or outside its dates, with sample values and a `note` for fill-ins that have nothing yet; an `error` when there's no message with text). `weather` uses the live reading, or a sample (72°F, 8 mph NW, gusts 15) with a `note` when there is none; it is an `error` when Temperature and Wind are both off. Unlike `POST config`, `config` here is laid over the **defaults**, not the saved settings.
 
 ```json
 {
@@ -285,7 +295,7 @@ Draws a message the way the matrix would, from settings that don't have to be sa
 }
 ```
 
-`strips` lists what takes turns, in order: with `as: "now"`, `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle, then with Show Prep on `showprep`, then with Daily Schedule on `schedule`, then with Custom Messages on `message:1`, `message:2`, … (those showing now). The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, when a handle is too wide for the panel even at the smallest size, or when the show prep page's QR code or message doesn't fit (or the QR code library is missing).
+`strips` lists what takes turns, in `page_order`: with `as: "now"`, the `show` page (when on), `countdown`, then with Weather on the `weather` page (live, or a sample with a `note` if none has arrived), then with Social Media on one `social:<sites>` screen per handle, then with Show Prep on `showprep`, then with Daily Schedule on `schedule`, then with Custom Messages on `message:1`, `message:2`, … (those showing now). The other modes return one (`social` returns every screen). Each item is `{"slot", "message", "strip", "strip_width", "strip_height"}`, and every `strip` is the whole panel-sized picture: nothing scrolls, each page shows on its own for `seconds` (`global.screen_seconds`). The top-level `strip` is the first. A blank countdown is left out; `strip` is `null` when nothing is left. `warning` appears when a font was replaced, when a handle is too wide for the panel even at the smallest size, or when the show prep page's QR code or message doesn't fit (or the QR code library is missing).
 
 ---
 
@@ -298,6 +308,14 @@ Pixel overlay models in FPP: `[{"name": "P5 Panel", "width": 192, "height": 96}]
 ### `GET fonts`
 
 Font names the plugin can draw with: `["C059-Bold", "DejaVuSans", "DejaVuSans-Bold", ...]`. Add `?refresh=1` to rescan after adding fonts (to `/home/fpp/media/fonts/`, for example).
+
+### `GET logo`, `POST logo`, `POST logo/delete`
+
+The Show page's logo, kept on the player (`plugindata/fpp-showmarquee/logo.png`), not in the settings.
+
+- `GET logo`: `{"logo": {"id", "width", "height", "png": "<base64 PNG>"}}`, or `{"logo": null}`.
+- `POST logo` with `{"image": "<base64 image or data: URL>"}` (PNG, JPG, GIF, WebP; at most 8 MB and 4096 × 4096): trims transparent and black edges, shrinks it to at most 512 pixels, saves it and returns `{"logo": {"id", "width", "height"}}`. A bad image is a 400 with `error` ("Logo not saved: …").
+- `POST logo/delete`: removes it; `{"logo": null}`.
 
 ### `GET logos`
 

@@ -2,7 +2,7 @@
 	"name": "Show Marquee",
 	"repoName": "fpp-showmarquee",
 	"author": "Chuck Hergenroeder",
-	"description": "A sign for your light show on an LED matrix: pages that take turns, each held still for the seconds you choose. A countdown to Christmas, New Year's Day or a date you choose (its number and text each with their own font, size and colour; under a day an HH:MM:SS timer or hours); a weather page with a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind) beside the temperature and wind; your Facebook, Instagram, TikTok and YouTube handles with each site's logo; a show prep page with a QR code viewers scan to get the PulseMesh or Tune2 audio app; your show times; and your own messages, with a colour, a holiday picture and dates for each. Weather comes from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
+	"description": "A sign for your light show on an LED matrix: pages that take turns, each held still for the seconds you choose. Your show's name and logo; a countdown to Christmas, New Year's Day or a date you choose (its number and text each with their own font, size and colour; under a day an HH:MM:SS timer or hours); a weather page with a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind) beside the temperature and wind; your Facebook, Instagram, TikTok and YouTube handles with each site's logo; a show prep page with a QR code viewers scan to get the PulseMesh or Tune2 audio app; your show times; and your own messages, with a colour, a holiday picture and dates for each. Weather comes from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
 	"homeURL": "https://github.com/chergenroeder/fpp-showmarquee",
 	"srcURL": "https://github.com/chergenroeder/fpp-showmarquee.git",
 	"bugURL": "https://github.com/chergenroeder/fpp-showmarquee/issues",
@@ -32,6 +32,13 @@
 				"keptDays": null,
 				"canDelete": true,
 				"where": "/home/fpp/media/plugindata/fpp-showmarquee/location.json"
+			},
+			{
+				"what": "your show's logo, if you upload one for the Show page",
+				"about": "operator",
+				"keptDays": null,
+				"canDelete": true,
+				"where": "/home/fpp/media/plugindata/fpp-showmarquee/logo.png"
 			}
 		],
 		"sensors": [],
@@ -51,7 +58,7 @@
 			}
 		],
 		"closedCode": false,
-		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Uninstalling removes its settings (config/plugin.fpp-showmarquee.json) and a weather location you type in (plugindata/fpp-showmarquee/); a Reinstall keeps them on FPP 10.4 and later. The show prep page's QR code holds a link to the app's download page (pulsemesh.io or tune2.app, or a link you type in): viewers' phones open it, the plugin itself never contacts those sites."
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Uninstalling removes its settings (config/plugin.fpp-showmarquee.json) and what it keeps in plugindata/fpp-showmarquee/ (a weather location you type in, the Show page's logo); a Reinstall keeps them on FPP 10.4 and later. The show prep page's QR code holds a link to the app's download page (pulsemesh.io or tune2.app, or a link you type in): viewers' phones open it, the plugin itself never contacts those sites."
 	},
 
 	"dependencies": {

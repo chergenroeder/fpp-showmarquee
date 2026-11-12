@@ -30,16 +30,16 @@ def g(order):
 class Order(unittest.TestCase):
     def test_default(self):
         self.assertEqual(page_order({}), list(SECTIONS))
-        self.assertEqual(SECTIONS, ("countdown", "weather", "social", "showprep", "schedule", "messages"))
+        self.assertEqual(SECTIONS, ("show", "countdown", "weather", "social", "showprep", "schedule", "messages"))
 
     def test_partial_or_messy_orders_are_completed(self):
         self.assertEqual(page_order(g(["schedule", "countdown"])),
-                         ["schedule", "countdown", "weather", "social", "showprep", "messages"])
-        self.assertEqual(page_order(g(["messages", "nope", "messages"]))[:2], ["messages", "countdown"])
+                         ["schedule", "countdown", "show", "weather", "social", "showprep", "messages"])
+        self.assertEqual(page_order(g(["messages", "nope", "messages"]))[:2], ["messages", "show"])
         self.assertEqual(page_order(g("weather")), list(SECTIONS))
 
     def test_section_of(self):
-        self.assertEqual([section_of(s) for s in ("countdown", "weather", "social:facebook+youtube", "showprep",
+        self.assertEqual([section_of(s) for s in ("show", "countdown", "weather", "social:facebook+youtube", "showprep",
                                                   "schedule", "message:3")], list(SECTIONS))
 
     def test_sorting_keeps_each_sections_own_order(self):

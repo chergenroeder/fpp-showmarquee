@@ -1,6 +1,7 @@
 """Still pages: drawn once, held on the matrix for the seconds per page, never scrolled.
 
-Five kinds take turns with the countdown (also held still, see render.py):
+Six kinds take turns with the countdown (also held still, see render.py):
+  show.ShowPage          the show's name, its uploaded logo, or both (drawn here)
   weather.WeatherPage    a sun/moon/wind symbol beside the temperature, wind and
                          gust lines (drawn here)
   social.Screen          logos above an @handle (drawn by social.draw_screen)
@@ -18,6 +19,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .messages import MessagePage
 from .schedule import SchedulePage
+from .show import ShowPage
 from .showprep import ShowPrepPage
 from .social import Screen
 from .weather import WeatherPage
@@ -28,7 +30,7 @@ LINE_GAP = 1
 
 
 def is_still(item) -> bool:
-    return isinstance(item, (Screen, WeatherPage, ShowPrepPage, SchedulePage, MessagePage))
+    return isinstance(item, (Screen, WeatherPage, ShowPrepPage, SchedulePage, MessagePage, ShowPage))
 
 
 def page_seconds(cfg: dict) -> float:
@@ -39,7 +41,7 @@ def page_seconds(cfg: dict) -> float:
         return 5.0
 
 
-SECTIONS = ("countdown", "weather", "social", "showprep", "schedule", "messages")
+SECTIONS = ("show", "countdown", "weather", "social", "showprep", "schedule", "messages")
 
 
 def page_order(cfg: dict) -> list:
@@ -440,8 +442,8 @@ def _draw_centered(page: SchedulePage, panel_w, panel_h, number_style, text_styl
 
 # ── Custom message page ───────────────────────────────────────────────────────
 
-def message_style(page: MessagePage, number_style, text_style):
-    """The style the message is drawn in: the Text or Number style, or the
+def message_style(page, number_style, text_style):
+    """The style a message (or the show name) is drawn in: the Text or Number style, or the
     Text style's font in the message's own colour."""
     from dataclasses import replace
     from .render import parse_color
@@ -452,13 +454,15 @@ def message_style(page: MessagePage, number_style, text_style):
     return replace(text_style, color=parse_color(page.color, text_style.color))
 
 
-def custom_message_layout(page: MessagePage, width: int, height: int, style, min_size: int = READABLE):
+def custom_message_layout(page, width: int, height: int, style, min_size: int = READABLE,
+                          start: Optional[int] = None):
     """(size, wrapped lines) for the text in width x height, or (None, []).
 
     The user's own line breaks are kept; a line too wide is wrapped at spaces.
-    One size for every line: the style's size, shrinking until it all fits.
+    One size for every line: the style's size (or `start`), shrinking until it
+    all fits.
     """
-    for size in range(max(int(style.size), min_size), min_size - 1, -1):
+    for size in range(max(int(start or style.size), min_size), min_size - 1, -1):
         font = style.font(size)
         out: List[str] = []
         ok = True
@@ -534,6 +538,110 @@ def draw_message(page: MessagePage, panel_w: int, panel_h: int, number_style, te
     return img, problem
 
 
+# ── Show page ─────────────────────────────────────────────────────────────────
+
+LOGO_ABOVE = 0.75     # a logo this much as wide (relative to the panel's shape) or wider goes above the name
+
+
+def _fit(w: int, h: int, box_w: int, box_h: int) -> Tuple[int, int]:
+    """w x h scaled to fit box_w x box_h, keeping its shape (it may grow)."""
+    if w <= 0 or h <= 0 or box_w <= 0 or box_h <= 0:
+        return 0, 0
+    k = min(box_w / w, box_h / h)
+    return max(1, int(w * k)), max(1, int(h * k))
+
+
+def show_layout(page: ShowPage, logo_size: Optional[Tuple[int, int]], panel_w: int, panel_h: int, style):
+    """Where things go: (logo_box, text_box, size, lines, problem).
+
+    logo_box is (x, y, w, h) or None; text_box is (x, y, w, h) or None, with
+    the text's size and wrapped lines. Beside: the logo on the left, the name
+    to its right; above: a wide logo over the name. Each tries the logo at a
+    few sizes, largest first, keeping the first that lets the name be read.
+    The name is a headline: as large as fits (never smaller than its style's
+    size allows), not capped at the style's size.
+    """
+    start = max(int(style.size), panel_h)
+    if not logo_size or not logo_size[0]:
+        size, lines = custom_message_layout(page, panel_w, panel_h, style, start=start)
+        problem = ""
+        if size is None:
+            size, lines = custom_message_layout(page, panel_w, panel_h, style, min_size=4, start=start)
+            problem = "the name is too small to read: shorten it or use a smaller size"
+        if size is None:
+            return None, None, None, [], "the name doesn't fit the matrix: shorten it"
+        return None, (0, 0, panel_w, panel_h), size, lines, problem
+    lw, lh = logo_size
+    if not page.lines:
+        fw, fh = _fit(lw, lh, panel_w, panel_h)
+        return ((panel_w - fw) // 2, (panel_h - fh) // 2, fw, fh), None, None, [], ""
+    gap = max(2, panel_w // 32)
+    above = lw / lh >= LOGO_ABOVE * panel_w / panel_h
+    shares = (0.6, 0.5, 0.4, 0.3) if above else (0.5, 0.4, 0.3, 0.25)
+
+    def attempt(share, min_size):
+        if above:
+            fw, fh = _fit(lw, lh, panel_w, int(panel_h * share))
+            tw, th = panel_w, panel_h - fh - gap
+        else:
+            fw, fh = _fit(lw, lh, int(panel_w * share), panel_h)
+            tw, th = panel_w - fw - gap, panel_h
+        if tw <= 0 or th <= 0:
+            return None
+        size, lines = custom_message_layout(page, tw, th, style, min_size=min_size, start=start)
+        return None if size is None else (fw, fh, tw, th, size, lines)
+
+    problem = ""
+    got = next((a for a in (attempt(sh, READABLE) for sh in shares) if a), None)
+    if got is None:
+        got = attempt(shares[-1], 4)
+        problem = "the name is too small to read beside the logo: shorten it, or turn off Show the name"
+    if got is None:
+        fw, fh = _fit(lw, lh, panel_w, panel_h)
+        return ((panel_w - fw) // 2, (panel_h - fh) // 2, fw, fh), None, None, [], \
+            "the name doesn't fit beside the logo, so only the logo shows: shorten it"
+    fw, fh, tw, th, size, lines = got
+    font = style.font(size)
+    asc, desc = font.getmetrics()
+    text_w = max(int(font.getlength(ln)) for ln in lines)
+    text_h = len(lines) * (asc + desc) + LINE_GAP * (len(lines) - 1)
+    # The logo and the name are centered together as one group
+    if above:
+        y0 = (panel_h - (fh + gap + text_h)) // 2
+        return ((panel_w - fw) // 2, y0, fw, fh), (0, y0 + fh + gap, panel_w, text_h), size, lines, problem
+    x0 = (panel_w - (fw + gap + text_w)) // 2
+    return (x0, (panel_h - fh) // 2, fw, fh), (x0 + fw + gap, 0, text_w, panel_h), size, lines, problem
+
+
+def draw_show_page(page: ShowPage, panel_w: int, panel_h: int, number_style, text_style):
+    """(image, problem): the logo, the name, or the logo beside (or above) the name."""
+    from PIL import Image, ImageDraw
+    from .show import logo_image
+    img = Image.new("RGB", (panel_w, panel_h))
+    logo = logo_image(page.logo) if page.logo else None
+    if logo is None and not page.lines:
+        return img, "the logo is missing: upload it again"
+    style = message_style(page, number_style, text_style)
+    logo_box, text_box, size, lines, problem = show_layout(page, logo.size if logo is not None else None,
+                                                           panel_w, panel_h, style)
+    if logo_box is not None and logo is not None:
+        x, y, w, h = logo_box
+        tile = logo.resize((w, h), Image.LANCZOS)
+        img.paste(tile, (x, y), tile)
+    if text_box is not None:
+        x, y, w, h = text_box
+        font = style.font(size)
+        asc, desc = font.getmetrics()
+        block = len(lines) * (asc + desc) + LINE_GAP * (len(lines) - 1)
+        ty = y + (h - block) // 2
+        draw = ImageDraw.Draw(img)
+        draw.fontmode = "L" if style.antialias else "1"
+        for line in lines:
+            draw.text((x + (w - font.getlength(line)) / 2, ty + asc), line, fill=style.color, font=font, anchor="ls")
+            ty += asc + desc + LINE_GAP
+    return img, problem
+
+
 # ── Cache ─────────────────────────────────────────────────────────────────────
 
 class StillCache:
@@ -565,4 +673,6 @@ def draw(item, panel_w: int, panel_h: int, number_style, text_style):
         return draw_schedule_page(item, panel_w, panel_h, number_style, text_style)[0]
     if isinstance(item, MessagePage):
         return draw_message(item, panel_w, panel_h, number_style, text_style)[0]
+    if isinstance(item, ShowPage):
+        return draw_show_page(item, panel_w, panel_h, number_style, text_style)[0]
     return draw_weather_page(item, panel_w, panel_h, number_style, text_style)

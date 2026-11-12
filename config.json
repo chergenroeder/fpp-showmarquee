@@ -5,7 +5,13 @@
         "fpp_host": "localhost",
         "fps": 20,
         "screen_seconds": 5,
-        "page_order": ["countdown", "weather", "social", "showprep", "schedule", "messages"]
+        "page_order": ["show", "countdown", "weather", "social", "showprep", "schedule", "messages"]
+    },
+    "show": {
+        "enabled": false,
+        "name": "",
+        "color": "text",
+        "show_name": true
     },
     "countdown": {
         "enabled": true,
