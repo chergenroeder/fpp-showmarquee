@@ -17,7 +17,7 @@ Pillow, imported only when a screen or logo is drawn.
 import re
 import threading
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 # (key, name shown on the page), in the order screens and logos appear
 SITES: Tuple[Tuple[str, str], ...] = (

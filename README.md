@@ -59,15 +59,15 @@ At the top: the plugin's status (Online, drawing at N fps, or what's wrong) with
 | Tab | What it does |
 |---|---|
 | **Overview** | **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. The preview plays every page in turn, as the matrix does. |
-| **Countdown** | **Countdown on**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
-| **Weather** | **Show weather**; where it comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
-| **Social** | **Show social media**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
-| **Show prep** | **Show prep page**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. |
-| **Schedule** | **Show the schedule**; the show nights; same every night, weeknights + weekends, or each night different, and the times; the week or tonight only; title; 12- or 24-hour clock. |
-| **Messages** | **Show my messages**; **Add message**; for each: on/off, the text, colour, picture, always or between two dates; ▲ ▼ ✕; fill-in buttons; whether each is showing now, and why not. |
+| **Countdown** | **Show on the matrix**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
+| **Weather** | **Show on the matrix**; where it comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
+| **Social** | **Show on the matrix**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
+| **Show prep** | **Show on the matrix**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. |
+| **Schedule** | **Show on the matrix**; the show nights; same every night, weeknights + weekends, or each night different, and the times; the week or tonight only; title; 12- or 24-hour clock. |
+| **Messages** | **Show on the matrix**; **Add message**; for each: on/off, the text, colour, picture, always or between two dates; ▲ ▼ ✕; fill-in buttons; whether each is showing now, and why not. |
 | **Display** | The **Number style** and **Text style** (font, size, colour, smooth edges) that every page uses; the overlay model, **Output enabled**, the player's local time; frame rate under Advanced. |
 
-A small dot on a tab (and on its Overview line) means that page needs something before it can show, such as a weather source or an app for show prep.
+A small dot on a tab (and on its Overview line) means that page needs something before it can show, such as a weather source, an app for show prep or a message. Every page's switch is called **Show on the matrix**; switching one on or off on Overview says **Save to turn it on** (or off) until you save. The tabs also work from the keyboard: Left and Right move between them.
 
 Changes take effect when you click **Save**. The button shows `Save *` while there are unsaved changes.
 
@@ -75,7 +75,7 @@ Changes take effect when you click **Save**. The button shows `Save *` while the
 
 ## Weather
 
-Turn on **Show weather**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
+On the **Weather** tab, turn on **Show on the matrix**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
 
 ```
  calm day                      windy                         calm night
@@ -91,14 +91,14 @@ Turn on **Show weather**, then choose where the weather comes from. Nothing is s
 - **The lines:** the temperature (`72°F`, whole degrees) in the **Number style**; the wind (`Wind 8 mph NW`, or `Wind Calm` under 1 mph; the word "Wind" is the **Label** beside the Wind switch, and can be changed or cleared) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol, which takes the room that's left. On a small panel the page drops the gust line, then the wind direction, then the "Wind" label, rather than use text too small to read.
 - **Temperature or wind off:** the page shows only the other one. With both off there is no weather page.
 - **Old readings** are left off the page; with nothing fresh, the page is skipped and the countdown just shows more often.
-- **Weather only:** turn **Countdown on** off and leave **Show weather** on.
+- **Weather only:** switch the countdown off and leave the weather on (on **Overview**).
 
 ### Open-Meteo (internet)
 
 [Open-Meteo](https://open-meteo.com/) is a free weather service: no account or API key, and it covers the whole world. Its readings are model data for your area, updated every 15 minutes, not a station in your yard.
 
 - **Location:** FPP's own **Latitude** and **Longitude** (FPP **Settings → General**). To use somewhere else, turn on **Use a different location** and type a latitude and longitude. A location typed here is kept on the player in `plugindata/fpp-showmarquee/location.json` (readable by its owner only), not in FPP's settings backup.
-- **What is sent:** only the latitude and longitude, rounded to 2 decimals (about 1 km), to `api.open-meteo.com` over HTTPS, every 15 minutes (just after :00, :15, :30, :45) while Show weather is on with Open-Meteo chosen.
+- **What is sent:** only the latitude and longitude, rounded to 2 decimals (about 1 km), to `api.open-meteo.com` over HTTPS, every 15 minutes (just after :00, :15, :30, :45) while the weather is on with Open-Meteo chosen.
 - **Old readings:** a reading is skipped once 45 minutes old (three missed updates). A failed update is retried after 1, 2, 4 and 8 minutes, and the last reading stays up meanwhile.
 - Weather data by Open-Meteo.com, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
@@ -116,7 +116,7 @@ python3 /home/fpp/media/plugins/fpp-showmarquee/scripts/tempest_listen.py
 
 ## Social media
 
-Turn on **Show social media**, then switch on each site you use and type its handle (with or without the `@`).
+On the **Social** tab, turn on **Show on the matrix**, then switch on each site you use and type its handle (with or without the `@`).
 
 ```
  Same handle on every site:       Different handles: a screen each, one after another
@@ -129,7 +129,7 @@ Turn on **Show social media**, then switch on each site you use and type its han
 - **Logos on top, handle below.** No other words. The logos are as large as the panel allows once the handle fits underneath.
 - **Same handle, one screen.** Sites whose handles match (ignoring upper/lower case and the `@`) share a screen, logos side by side. Different handles get a screen each, in the order Facebook, Instagram, TikTok, YouTube.
 - **A page each.** Each screen shows for **Seconds per page** (default 5), then the next comes on.
-- **Taking turns:** countdown → weather page → each social screen → countdown again. Turn **Countdown on** off for social media only.
+- **Taking turns:** countdown → weather page → each social screen → countdown again. Switch the countdown off (on **Overview**) for social media only.
 - **Style:** the handle uses the **Text style**'s font and colour. It starts at that size and shrinks if it's too wide; if it still doesn't fit at the smallest size the preview warns you and its ends are cut off, so pick a narrower font.
 - **Handles:** up to 30 letters, digits, dots, underscores and dashes. A site that's on with no handle is skipped, and the page says so.
 - Nothing is sent anywhere: the plugin only draws what you type. Facebook, Instagram, TikTok and YouTube logos are trademarks of their owners, shown only to point people to your own profiles.
@@ -180,13 +180,13 @@ Your show times on the matrix.
 
 - **Past midnight:** an end at or before the start means the show runs past midnight: 5:00 PM to 12:00 AM reads "5 PM–12 AM".
 - **Grouping:** nights with the same times share one line, even when they aren't next to each other ("Mon, Wed & Fri 6–9 PM"), so a busy week still fits. If it doesn't, the title is left off first, and the preview says so.
-- **Tonight** follows the player's clock and date.
+- **Tonight** follows the player's clock and date, with one exception: while a show that runs past midnight is still on (Friday 5 PM–12:30 AM, at 12:15 AM), it's still that night, for the schedule and for the `{tonight}` fill-in.
 
 ## Custom messages
 
 Your own pages: a greeting, a thank-you, "Please drive slowly", "Only {days} days left!".
 
-1. Turn on **Show my messages** and click **Add message**. Type the text; press Enter to start a new line on the matrix.
+1. On the **Messages** tab, turn on **Show on the matrix** and click **Add message**. Type the text; press Enter to start a new line on the matrix.
 2. Choose, if you like:
    - **Colour:** the Text style's (default), the Number style's, or your own.
    - **Picture:** a star, tree, snowflake, gift, candy cane or heart on the left.
@@ -212,7 +212,7 @@ Use them anywhere FPP runs a command: a playlist **FPP Command** entry, the sche
 
 | Command | Arguments |
 |---|---|
-| **Show Marquee - Countdown** | `On`, `Off` or `Toggle`: turns the countdown page on or off (the **Countdown on** switch). The other pages keep taking turns; with every page off, the matrix goes blank and the overlay model turns off, so sequences show through. Saved. |
+| **Show Marquee - Countdown** | `On`, `Off` or `Toggle`: turns the countdown page on or off (the countdown's **Show on the matrix** switch). The other pages keep taking turns; with every page off, the matrix goes blank and the overlay model turns off, so sequences show through. Saved. |
 | **Show Marquee - Set Target** | `Christmas`, `New Year's Day` or `Custom`, then optional *date* (YYYY-MM-DD), *time* (HH:MM), *event name*, *repeat every year* (true/false). Blank optional arguments keep what's saved. Saved. |
 
 For example, show "Opening Night" until the show, then switch back to Christmas afterwards. That takes two scheduler entries running **Set Target**.
@@ -223,12 +223,12 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 
 | Output says | Fix |
 |---|---|
-| `off` | Nothing to draw: **Countdown on** or **Output enabled** is off, or no model is chosen. |
+| `off` | Nothing to draw: every page is switched off, **Output enabled** is off, or no model is chosen. |
 | `blank` | The target has been reached; the matrix stays blank for the rest of that day (or for good, for a past custom date without yearly repeat). |
 | `permission denied ... not running as root` | The plugin must run as root to draw. Click **Stop** then **Start**, or restart FPP. (**Restart** keeps the same user.) |
 | `overlay model '...' not found` | The model was renamed or deleted. Choose it again under **Matrix**. |
 | `drawing needs the plugin on the same player` | The FPP Host setting points at another player; the plugin can only draw on this one. |
-| Weather: `choose a weather source` | Show weather is on but no source is picked. Choose Open-Meteo or Tempest in the Weather card. |
+| Weather: `choose a weather source` | The weather is on but no source is picked. Choose Open-Meteo or Tempest in the Weather card. |
 | Weather: `no location: set Latitude and Longitude in FPP …` | FPP has no location (Settings → General), or **Use a different location** is on with nothing typed in. |
 | Weather: `no internet: can't look up api.open-meteo.com` | The player has no internet or DNS. Check FPP **Settings → Network** (a show network often has no internet; use the Tempest then). |
 | Weather: `Open-Meteo's certificate couldn't be checked: check this player's date and time` | The player's clock is wrong, so the secure connection fails. Fix the time in FPP **Settings → Time**. |

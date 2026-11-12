@@ -734,3 +734,21 @@ Asked for: a review of the settings page's flow, and tabs if FPP allows them.
 - Checked on the dev server: Overview list and summaries, Edit to a tab, the preview per tab, ▲ reordering the preview's rotation at once, the switches in step, the warning dots, the Countdown tab's own modes, the Display tab, phone width (no sideways scroll; the tabs scroll).
 - [ ] On fpp-matrix.local: TESTING.md section 0b, inside FPP's own page.
 
+---
+
+## Final review before publishing (2026-11-11)
+
+A code and UX review of the whole plugin. Sound: what the user types never reaches the page as HTML (font and model names escaped; messages, handles and links set as plain text or form values); the QR link accepts only http(s); the model name is checked before it's used in a path; the API listens only on 127.0.0.1 and nothing is saved if a check fails; `pluginInfo.json` declares its three packages and its one outside call (Open-Meteo, off by default); install is safe to re-run and uninstall keeps the settings, as documented; older settings load through every version; a fresh install starts clean.
+
+**Fixed**
+1. **A show running past midnight.** Friday 5 PM–12:30 AM with Saturday dark: at 12:15 AM the schedule said "No show tonight", the week page stopped pointing at Friday, and `{tonight}` emptied. `schedule.show_night()` keeps it last night until that show's end; the schedule page and the `{tonight}` fill-in use it. Test added.
+2. **The listing's privacy text** said "draw the countdown" / "countdown frames"; now "your sign's pages".
+3. **Overview after a switch**: the summary comes from the saved settings, so a page switched on still read "off" until Save. It now says **Save to turn it on** (or off) until saved.
+4. **Display tab**: the Matrix card (the overlay model, which the "Choose your matrix" banner points to) now comes before the styles.
+5. **One switch name**: every section's switch is **Show on the matrix** (was "Countdown on", "Show weather", "Show social media", "Show prep page", "Show the schedule", "Show my messages"). README and TESTING follow.
+6. **Messages dot** when Messages is on with no message that can show.
+7. **Tabs and the keyboard**: one tab stop for the tab row, Left/Right/Home/End move between tabs; tabs `aria-controls` their panes, panes are `tabpanel`s labelled by their tabs.
+8. **Housekeeping**: two unused imports removed; `scripts/spike_overlay.py` kept as a hardware diagnostic, its description now says so (its scrolling tests frame timing, not a feature).
+
+Tests: 268, all passing.
+

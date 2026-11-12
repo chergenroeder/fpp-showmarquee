@@ -23,7 +23,7 @@ the show ends after midnight ("5 PM – 12 AM").
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 DAYS = ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -187,8 +187,21 @@ class SchedulePage:
         return "schedule"
 
 
-def _tonight_index(now: datetime) -> int:
-    return (now.weekday() + 1) % 7      # Python: Monday 0; here Sunday 0
+def show_night(cfg: dict, now: datetime) -> int:
+    """Which night "tonight" is (Sunday 0), allowing for a show that runs past midnight.
+
+    Normally today. But just after midnight, while last night's show is still
+    on (it ends after midnight and that end hasn't come yet), it's still last
+    night: Friday 5 PM-12:30 AM is "tonight" at 12:15 AM on Saturday.
+    """
+    today = (now.weekday() + 1) % 7      # Python: Monday 0; here Sunday 0
+    last = (today - 1) % 7
+    times = night_times(cfg)[last]
+    if times is not None:
+        start, end = parse_time(times[0]), parse_time(times[1])
+        if end <= start and (now.hour, now.minute) < end:
+            return last
+    return today
 
 
 def schedule_page(cfg: dict, now: datetime, force: bool = False) -> Optional[SchedulePage]:
@@ -199,7 +212,7 @@ def schedule_page(cfg: dict, now: datetime, force: bool = False) -> Optional[Sch
     times = night_times(cfg)
     if all(t is None for t in times):
         return None
-    today = _tonight_index(now)
+    today = show_night(cfg, now)
     if cfg.get("show") == "tonight":
         if times[today] is not None:
             return SchedulePage("", (ScheduleLine("Tonight", format_range(times[today], clock), True),), "tonight")

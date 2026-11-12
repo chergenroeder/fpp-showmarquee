@@ -39,14 +39,14 @@
   <div class="alert alert-warning py-2 small mc-hidden" id="mc-model-banner">Choose your matrix (its overlay model) on the
     <a href="#display" data-goto="display" class="alert-link mc-inherit-link">Display</a> tab: nothing shows on it until you do.</div>
   <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="mc-tabs" role="tablist">
-    <li class="nav-item"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="showprep" role="tab">Show prep<span class="mc-dot mc-hidden" data-dot="showprep" title="Needs attention"></span></button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="schedule" role="tab">Schedule<span class="mc-dot mc-hidden" data-dot="schedule" title="Needs attention"></span></button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="messages" role="tab">Messages</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" data-tab="display" role="tab">Display<span class="mc-dot mc-hidden" data-dot="display" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="weather" role="tab">Weather<span class="mc-dot mc-hidden" data-dot="weather" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="social" role="tab">Social<span class="mc-dot mc-hidden" data-dot="social" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="showprep" role="tab">Show prep<span class="mc-dot mc-hidden" data-dot="showprep" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="schedule" role="tab">Schedule<span class="mc-dot mc-hidden" data-dot="schedule" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="messages" role="tab">Messages<span class="mc-dot mc-hidden" data-dot="messages" title="Needs attention"></span></button></li>
+    <li class="nav-item" role="presentation"><button type="button" class="nav-link" data-tab="display" role="tab">Display<span class="mc-dot mc-hidden" data-dot="display" title="Needs attention"></span></button></li>
   </ul>
 
   <div class="row g-3">
@@ -74,7 +74,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Count down to</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-enabled" data-path="countdown.enabled">
-            <label class="form-check-label" for="mc-enabled">Countdown on</label></div>
+            <label class="form-check-label" for="mc-enabled">Show on the matrix</label></div>
         </div>
         <div class="card-body">
           <div class="d-flex flex-wrap gap-3 mb-2">
@@ -148,7 +148,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Weather</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-w-on" data-path="weather.enabled">
-            <label class="form-check-label" for="mc-w-on">Show weather</label></div>
+            <label class="form-check-label" for="mc-w-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
           <div class="small text-muted mb-2">One page: a sun, moon or wind symbol beside the temperature and wind. °F and mph.</div>
@@ -163,7 +163,7 @@
             <div class="small mc-warn mt-1 mc-hidden" id="mc-w-src-need">Choose where the weather comes from: nothing is shown or sent until you do.</div>
 
             <div class="mt-2 mc-hidden" id="mc-w-om">
-              <div class="small text-muted mb-1">Sends this player's location, rounded to about 1 km, to <strong>api.open-meteo.com</strong> every 15 minutes while Show weather is on. Nothing else is sent.</div>
+              <div class="small text-muted mb-1">Sends this player's location, rounded to about 1 km, to <strong>api.open-meteo.com</strong> every 15 minutes while the weather is on. Nothing else is sent.</div>
               <div class="small mb-1">Location: <span id="mc-w-loc">–</span></div>
               <div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="mc-w-loc-own" data-path="weather.open_meteo.use_fpp_location" data-invert="1">
                 <label class="form-check-label" for="mc-w-loc-own">Use a different location <span class="mc-example">instead of FPP's (Settings → General)</span></label></div>
@@ -224,7 +224,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Social Media</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-so-on" data-path="social.enabled">
-            <label class="form-check-label" for="mc-so-on">Show social media</label></div>
+            <label class="form-check-label" for="mc-so-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-social-body">
           <div class="small text-muted mb-2">Logos on top, <code>@handle</code> below, held still (never scrolled). Sites with the same handle share one screen; different handles get a screen each, shown one after another. Each screen is a page of its own, shown for the seconds per page.</div>
@@ -241,7 +241,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Show Prep</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-sp-on" data-path="showprep.enabled">
-            <label class="form-check-label" for="mc-sp-on">Show prep page</label></div>
+            <label class="form-check-label" for="mc-sp-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-showprep-body">
           <div class="small text-muted mb-2">Tells viewers to get your show's audio app before the show: a QR code they scan with their phone's camera, beside your message.</div>
@@ -271,7 +271,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Daily Schedule</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-sc-on" data-path="schedule.enabled">
-            <label class="form-check-label" for="mc-sc-on">Show the schedule</label></div>
+            <label class="form-check-label" for="mc-sc-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-schedule-body">
           <div class="mc-lbl">Show nights</div>
@@ -347,7 +347,7 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <strong>Custom Messages</strong>
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-ms-on" data-path="messages.enabled">
-            <label class="form-check-label" for="mc-ms-on">Show my messages</label></div>
+            <label class="form-check-label" for="mc-ms-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-messages-body">
           <div class="small text-muted mb-2">Your own pages, shown in this order. Press Enter in a message to start a new line on the matrix.</div>
@@ -363,12 +363,6 @@
       </div>
       </div>
       <div class="mc-pane mc-hidden" data-pane="display">
-      <!-- Styles -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-6" data-style="number_style"></div>
-        <div class="col-md-6" data-style="text_style"></div>
-      </div>
-
       <!-- Display -->
       <div class="card mb-3">
         <div class="card-header"><strong>Matrix</strong></div>
@@ -392,6 +386,12 @@
             <div class="small text-muted mt-1">FPP shows overlay frames at its own output rate (20 per second when idle); higher values only help while a faster sequence plays.</div>
           </details>
         </div>
+      </div>
+
+      <!-- Styles -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6" data-style="number_style"></div>
+        <div class="col-md-6" data-style="text_style"></div>
       </div>
       </div>
     </div>
@@ -797,7 +797,12 @@
   function showTab(t, keepScroll) {
     if (!TABS.includes(t)) t = 'overview';
     tab = t;
-    $$('#mc-tabs [data-tab]').forEach(b => { b.classList.toggle('active', b.dataset.tab === t); b.setAttribute('aria-selected', b.dataset.tab === t); });
+    $$('#mc-tabs [data-tab]').forEach(b => {
+      const on = b.dataset.tab === t;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on);
+      b.tabIndex = on ? 0 : -1;               // one tab stop; the arrow keys move between tabs
+    });
     $$('.mc-pane').forEach(p => p.classList.toggle('mc-hidden', p.dataset.pane !== t));
     $('#mc-cd-modes').classList.toggle('mc-hidden', t !== 'countdown');
     $('#mc-preview-title').textContent = SEC[t] ? 'Preview: ' + SEC[t][1] : 'Preview: every page in turn';
@@ -817,6 +822,8 @@
     dot('social', !!S.enabled && (so.problems.length > 0 || !so.screens.length));
     dot('showprep', !!P.enabled && !APPS[P.app]);
     dot('schedule', !!C.enabled && !!$('#mc-sc-warn').textContent);
+    const M = cfg.messages || {};
+    dot('messages', !!M.enabled && !(Array.isArray(M.items) ? M.items : []).some(m => m && m.enabled !== false && String(m.text || '').trim()));
     dot('display', !cfg.countdown.model);
     $('#mc-model-banner').classList.toggle('mc-hidden', !!cfg.countdown.model || tab === 'display');
   }
@@ -939,6 +946,7 @@
     refreshShowPrep();
     refreshSchedule();
     refreshMessages();
+    overviewPending();
     updateDots();
     modelWarnings();
     const dirty = JSON.stringify(cfg) !== saved;
@@ -1211,7 +1219,32 @@
     $$('[id^="mc-s-"]').forEach(el => {
       if (el.closest('#mc-ov-list')) { el.title = el.textContent; el.classList.add('small', 'text-truncate'); }
     });
+    overviewPending();
     updateDots();
+  }
+  // A section switched on or off but not saved yet: its summary (from the saved
+  // settings) would still say the old state, so say what Save will do instead
+  function overviewPending() {
+    if (!cfg || !lastStatus) return;
+    const s = lastStatus;
+    const saved = { countdown: s.enabled, weather: (s.weather || {}).enabled, social: (s.social || {}).enabled,
+                    showprep: (s.showprep || {}).enabled, schedule: (s.schedule || {}).enabled,
+                    messages: (s.messages || {}).enabled };
+    SECTIONS.forEach(([k, , path]) => {
+      const el = $('#mc-s-' + k);
+      if (!el) return;
+      const want = !!getPath(cfg, path), was = !!saved[k];
+      if (want !== was) {
+        if (!el.dataset.pending) el.dataset.savedText = el.textContent;
+        el.dataset.pending = '1';
+        el.textContent = want ? 'Save to turn it on' : 'Save to turn it off';
+        el.className = 'small text-truncate mc-warn';
+      } else if (el.dataset.pending) {
+        delete el.dataset.pending;
+        el.textContent = el.dataset.savedText || el.textContent;
+        el.className = 'small text-truncate';
+      }
+    });
   }
 
   // ── start ──
@@ -1239,6 +1272,21 @@
   $('#mc-root').addEventListener('change', onInput);
   $$('input[name="mc-as"]').forEach(el => el.addEventListener('change', () => schedulePreview(0)));
   $('#mc-tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
+  // Tab panes are labelled by their tabs; Left/Right/Home/End move between tabs
+  $$('#mc-tabs [data-tab]').forEach(b => {
+    b.id = 'mc-tab-' + b.dataset.tab;
+    b.setAttribute('aria-controls', 'mc-pane-' + b.dataset.tab);
+    const pane = $(`.mc-pane[data-pane="${b.dataset.tab}"]`);
+    if (pane) { pane.id = 'mc-pane-' + b.dataset.tab; pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', b.id); }
+  });
+  $('#mc-tabs').addEventListener('keydown', e => {
+    const i = TABS.indexOf(tab);
+    const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    showTab(TABS[(to + TABS.length) % TABS.length], true);
+    $(`#mc-tabs [data-tab="${tab}"]`).focus();
+  });
   $('#mc-root').addEventListener('click', onOverviewClick);
   renderOverview();      // the default order until the settings load
   let startTab = (location.hash || '').slice(1);

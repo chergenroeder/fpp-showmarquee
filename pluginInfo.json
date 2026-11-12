@@ -15,7 +15,7 @@
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",
 				"what": "requests for the list of overlay models and to turn the chosen model on and off",
-				"why": "to draw the countdown on a matrix attached to that player",
+				"why": "to draw your sign's pages on a matrix attached to that player",
 				"alwaysOn": false
 			},
 			{
@@ -31,7 +31,7 @@
 		"systemChanges": [
 			{
 				"kind": "service",
-				"what": "runs a background program whenever FPP is running, which draws the countdown frames"
+				"what": "runs a background program whenever FPP is running, which draws your sign's pages"
 			},
 			{
 				"kind": "network",

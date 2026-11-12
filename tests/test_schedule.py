@@ -111,6 +111,20 @@ class Pages(unittest.TestCase):
         cfg = same(show="tonight", nights=[True] * 5 + [False, True])
         self.assertEqual(schedule_page(cfg, FRIDAY).lines[1].days, "Next: Tomorrow")
 
+    def test_a_show_running_past_midnight_is_still_tonight(self):
+        from countdown.schedule import show_night
+        # Friday 5 PM-12:30 AM; Saturday dark
+        cfg = weekend(nights=[True] * 6 + [False], weekend=t("17:00", "00:30"))
+        sat_0015, sat_0030 = datetime(2026, 12, 19, 0, 15), datetime(2026, 12, 19, 0, 30)
+        self.assertEqual(show_night(cfg, sat_0015), 5)                        # still Friday night
+        self.assertEqual(show_night(cfg, sat_0030), 6)                        # the show is over: Saturday
+        page = schedule_page({**cfg, "show": "tonight"}, sat_0015)
+        self.assertEqual([(ln.days, ln.times) for ln in page.lines], [("Tonight", "5 PM–12:30 AM")])
+        week = schedule_page(cfg, sat_0015)
+        self.assertEqual([ln.days for ln in week.lines if ln.today], ["Fri"])
+        # an ordinary night is unaffected after midnight
+        self.assertEqual(show_night(weekend(), sat_0015), 6)
+
     def test_none_when_off_or_nothing_set(self):
         self.assertIsNone(schedule_page(same(enabled=False), FRIDAY))
         self.assertIsNotNone(schedule_page(same(enabled=False), FRIDAY, force=True))

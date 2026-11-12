@@ -26,7 +26,8 @@ curl -s $API/config > /tmp/mc-before.json
 
 - [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
 - [ ] **Edit** opens that page's tab; the preview shows just that page. Reloading the page comes back to the same tab.
-- [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round).
+- [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round), and its line says **Save to turn it on** until you Save.
+- [ ] Click a tab, then use the Left and Right keys: they move between the tabs.
 - [ ] Move Schedule up with ▲ and **Save**: the matrix shows the schedule right after the countdown.
 - [ ] A section that needs something (Weather on with no source) has a dot on its tab and its Overview line.
 - [ ] With no overlay model chosen, a banner on every tab points to **Display**.
@@ -119,7 +120,7 @@ set '{"global":{"screen_seconds":3},"social":{"sites":{"instagram":{"handle":"sm
 ```
 
 - [ ] The countdown, then **two screens**, 3 s each: Facebook + YouTube `@SmithFamilyLights`, then Instagram + TikTok `@smith_lights` (case and `@` ignored when matching).
-- [ ] Turn **Countdown on** off: only the social screens take turns.
+- [ ] Switch the countdown off (Overview): only the social screens take turns.
 - [ ] The page's **Social media** status line names the screens; switching a site on with an empty handle shows a warning there and in the card.
 
 ## 8. Show prep
@@ -136,7 +137,7 @@ set '{"global":{"screen_seconds":5},"showprep":{"enabled":true,"app":"pulsemesh"
 
 ## 9. Daily schedule
 
-Turn on **Show the schedule** on the settings page, then for each, check the card's "On the matrix" line, the preview and the matrix:
+On the **Schedule** tab, turn on **Show on the matrix**, then for each, check the card's "On the matrix" line, the preview and the matrix:
 
 - [ ] **Same every night**, 5:30 PM–10:00 PM: "Show Times" / "Nightly 5:30–10 PM" (one line, so no pointer).
 - [ ] **Weeknights + weekends**: the weeknight times carry over from Same every night. Set weekends to end at 11:00 PM: "Sun–Thu 5:30–10 PM" / "Fri & Sat 5:30–11 PM", every row's nights in the Text style and times in the Number style, and a small ▸ in front of tonight's line.
@@ -145,11 +146,12 @@ Turn on **Show the schedule** on the settings page, then for each, check the car
 - [ ] Turn Monday off: Monday's row greys out and Monday leaves the matrix.
 - [ ] An end of 12:00 AM reads "… PM–12 AM".
 - [ ] **Tonight only**: "Tonight 5:30–10 PM"; with tonight off, "No show tonight" and the next show.
+- [ ] A late show: end Friday at 12:30 AM. Just after midnight it still says "Tonight" with Friday's times (and the week page still points at Friday); after 12:30 AM it moves to Saturday.
 - [ ] **Clock** 24-hour: "17:30–22:00".
 
 ## 10. Custom messages
 
-On the settings page, turn on **Show my messages**:
+On the **Messages** tab, turn on **Show on the matrix**:
 
 - [ ] **Add message** "Merry Christmas!" (Enter) "from the Smiths", picture Tree: the tree on the left, two centered lines on the right, in the Text style's colour.
 - [ ] Add "Only {days} days left!" using the `{days}` button, Colour: Number style, picture Star: the number is filled in.

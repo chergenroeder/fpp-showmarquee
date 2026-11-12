@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
-Phase 0 hardware test: can this plugin draw its own frames on an FPP overlay model?
+Hardware check: can this plugin draw its own frames on an FPP overlay model?
+
+Written for the first hardware test (Phase 0) and kept as a diagnostic: when a
+matrix shows nothing, this checks the overlay buffer, colour order, orientation
+and frame rate without the rest of the plugin. The moving bar and scrolling
+text below test frame timing; the plugin's own pages don't scroll.
 
 Run it ON the FPP player, as root, against a pixel-overlay model you can see:
 

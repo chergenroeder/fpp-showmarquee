@@ -33,7 +33,8 @@ from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
 from countdown.messages import MessagePage, item_page, message_pages, messages_status
 from countdown.messages import settings_problems as messages_settings_problems
-from countdown.schedule import SchedulePage, format_range, night_times, schedule_page, schedule_status
+from countdown.schedule import (SchedulePage, format_range, night_times, schedule_page, schedule_status,
+                                show_night)
 from countdown.schedule import settings_problems as schedule_settings_problems
 from countdown.showprep import (APPS, MESSAGE_MAX, ShowPrepPage, link_problem, show_prep_page,
                                 show_prep_status)
@@ -908,7 +909,7 @@ class CountdownDaemon:
         target = resolve_target(cd.get("target") or {}, now)
         days = (target.when.date() - now.date()).days if target is not None else None
         sc = cfg.get("schedule") or {}
-        tonight = night_times(sc)[(now.weekday() + 1) % 7]
+        tonight = night_times(sc)[show_night(sc, now)]      # last night's, while a late show is still on
         temp = None
         w = cfg.get("weather") or {}
         if w.get("enabled"):
