@@ -2,7 +2,7 @@
 	"name": "Show Marquee",
 	"repoName": "fpp-showmarquee",
 	"author": "Chuck Hergenroeder",
-	"description": "A sign for your light show on an LED matrix: pages that take turns, each held still for the seconds you choose. Your show's name and logo; a countdown to Christmas, New Year's Day or a date you choose (its number and text each with their own font, size and colour; under a day an HH:MM:SS timer or hours); a weather page with a symbol for the weather (sun, moon, clouds, rain, snow, a storm, fog or wind) beside the temperature and wind; your Facebook, Instagram, TikTok and YouTube handles with each site's logo; a show prep page with a QR code viewers scan to get the PulseMesh or Tune2 audio app; your show times; and your own messages, with a colour, a holiday picture and dates for each. Weather comes from the internet weather service Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km) or from your own WeatherFlow Tempest station on the local network. You choose; weather is off until you turn it on.",
+	"description": "Turns an LED matrix into a sign for your light show: your show's name and logo, a Christmas countdown, your show times, the weather, your social media handles, a QR code for your show's audio app (PulseMesh or Tune2) and your own messages, taking turns. Weather is off until you turn it on, then comes from your own Tempest station or Open-Meteo (api.open-meteo.com, which receives this player's location rounded to about 1 km).",
 	"homeURL": "https://github.com/chergenroeder/fpp-showmarquee",
 	"srcURL": "https://github.com/chergenroeder/fpp-showmarquee.git",
 	"bugURL": "https://github.com/chergenroeder/fpp-showmarquee/issues",
