@@ -3,33 +3,39 @@
 A sign for your light show, on an LED matrix. **Show Marquee** shows pages that take turns, each held still and centered for the number of seconds you choose (5 by default): a **countdown** to Christmas Day, New Year's Day or a date you choose; the **temperature and wind** beside a sun, moon or wind symbol, from the free **Open-Meteo** internet service or your own **WeatherFlow Tempest** station; your **Facebook, Instagram, TikTok and YouTube** handles with each site's logo; a **show prep** page with a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**); your **show times**; and **your own messages**, each with an optional colour, holiday picture and dates. The countdown's number and text each have their own font, size and colour, and the other pages use the same two styles.
 
 ```
-8 Days to Christmas          Christmas in 8 Days
-08:14:32 to Christmas        Christmas in 9 Hours
+ Countdown             Weather               Social media
+ 44 Days to Christmas  (sun) 72°F            [f] [◎] [♪] [▶]
+                             Wind 8 mph NW   @SmithFamilyLights
+
+ Show prep             Schedule              Your messages
+ [QR] Scan to get the  Show Times            (tree) Merry Christmas!
+      PulseMesh app    ▸ Sun–Thu 5–10 PM            from the Smiths
+                         Fri & Sat 5–11 PM
 ```
 
 ## Features
 
-- **Three targets, one at a time:** Christmas (Dec 25), New Year's Day (Jan 1), or a custom date and time with an optional **Repeat every year** (birthdays, anniversaries; Feb 29 falls on Feb 28 in other years).
-- **Local time.** Counts by the player's own clock and time zone, daylight saving included. Days are calendar days, so Dec 17 reads "8 Days" all day.
-- **Under a day:** a ticking **HH:MM:SS** timer, or **hours** (rounded up) that switch to **minutes** in the last hour.
-- **At zero the matrix goes blank** for the rest of that day. Christmas and New Year's then count to next year; a custom date without yearly repeat stays blank.
-- **Number first or last:** "8 Days to Christmas" or "Christmas in 8 Days". The event name, joining words ("to" / "in") and unit words ("Day", "Days", ...) can all be changed.
-- **Two styles:** font, size, colour and smooth edges for the number ("8 Days") and, separately, for the text ("to Christmas"). Digits keep a fixed width, so a ticking timer doesn't jiggle.
-- **Show prep** (optional): a QR code to the **PulseMesh** or **Tune2** app beside a message such as "Scan to get the PulseMesh app before the show".
-- **Daily schedule** (optional): your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", a ▸ pointing to tonight) or just tonight's. Set them as the same every night, weeknights + weekends, or each night different.
-- **Custom messages** (optional): up to 10 of your own pages ("Merry Christmas from the Smiths"), each with its own colour, an optional holiday picture (star, tree, snowflake, gift, candy cane, heart), fill-ins that keep it current (`{days}`, `{tonight}`, `{temp}`, `{date}`) and optional dates it shows between, every year.
-- **Pages, not scrolling:** the countdown, the weather page, each social media screen, the show prep page and the schedule show one after another, held still, each for **Seconds per page** (default 5). A countdown wider than the panel goes on two lines.
-- **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly. Preview it as now, 8 days out, or under a day.
-- **Weather** (optional): one still page with a **sun**, **moon** or **wind** symbol beside the temperature and wind (speed, direction, gusts), in °F and mph, from **Open-Meteo** over the internet (no account or key) or from a **Tempest** hub's broadcast on your network (no internet). You pick the source.
-- **Social media** (optional): each site's logo above your `@handle`, Sites with the same handle share one screen; different handles get a screen each, shown one after another.
-- **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, or change the target.
-- **REST API** for Home Assistant and scripts ([API.md](API.md)).
-- **Settings download and upload** as a JSON file.
+**Six kinds of page**, each optional, taking turns on the matrix in the order you choose, each held still for **Seconds per page** (5 by default):
+
+- **Countdown** to Christmas, New Year's Day or a date you choose (with **Repeat every year** for birthdays and anniversaries). "8 Days to Christmas" or "Christmas in 8 Days"; under a day, a ticking **HH:MM:SS** timer or hours, then minutes. Counts by the player's own clock, daylight saving included. At zero the matrix goes blank for the rest of that day, then Christmas and New Year's count to next year.
+- **Weather**: a **sun**, **moon** or **wind** symbol beside the temperature and wind, in **°F and mph** or **°C and km/h**, from **Open-Meteo** over the internet (no account or key) or your own **WeatherFlow Tempest** station on your network (no internet). You pick the source.
+- **Social media**: each site's logo above your `@handle`, for Facebook, Instagram, TikTok and YouTube. Sites with the same handle share one screen; different handles get a screen each.
+- **Show prep**: a QR code viewers scan to get your show's audio app (**PulseMesh** or **Tune2**), beside a message such as "Scan to get the PulseMesh app before the show".
+- **Schedule**: your show times for the week ("Sun–Thu 5–10 PM" / "Fri & Sat 5–11 PM", a ▸ pointing to tonight) or just tonight's. Same every night, weeknights + weekends, or each night different; shows that run past midnight are handled.
+- **Your messages**: up to 10 of your own pages, each with an optional colour, holiday picture (star, tree, snowflake, gift, candy cane, heart), fill-ins that keep it current (`{days}`, `{tonight}`, `{temp}`, `{date}`) and dates it shows between, every year.
+
+**And:**
+
+- **Two styles** colour every page: a **Number style** (the countdown's number, temperatures, show times) and a **Text style** (the words), each with its own font, size and colour. The first time you choose a matrix, the text size is set to suit it.
+- **Nothing scrolls**: each page is centered and still; a countdown wider than the matrix goes on two lines, and text shrinks to fit.
+- **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly: the whole rotation on Overview, or one page on its own tab.
+- **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, change its target, or start the plugin.
+- **REST API** for Home Assistant and scripts ([API.md](API.md)), and **settings download and upload** as a JSON file.
 
 ## Requirements
 
 - FPP 10 or later (tested on FPP 10.3), with Python 3 (included in FPP).
-- A **Pixel Overlay model** for the matrix (FPP **Input/Output Setup → Pixel Overlay Models**). Use a model that no other plugin draws on. If Matrix Scroller uses the same model, the page warns you.
+- A **Pixel Overlay model** for the matrix (FPP **Input/Output Setup → Pixel Overlay Models**: if your matrix doesn't have one yet, add one there covering its channels). Use a model that no other plugin draws on. If Matrix Scroller uses the same model, the page warns you.
 - The matrix must be on the same player as the plugin.
 - Pillow, the DejaVu fonts and the QR code library. The plugin declares the `python3-pil`, `fonts-dejavu-core` and `python3-qrcode` packages as dependencies, so FPP installs them with it (internet access needed the first time) and removes them on uninstall if nothing else uses them.
 
@@ -40,7 +46,7 @@ A sign for your light show, on an LED matrix. **Show Marquee** shows pages that 
    ```
    https://raw.githubusercontent.com/chergenroeder/fpp-showmarquee/master/pluginInfo.json
    ```
-3. Open **Content Setup → Show Marquee**, choose your overlay model under **Matrix**, and click **Save**.
+3. Open **Content Setup → Show Marquee**. **Getting started** on the Overview tab walks you through the rest: choose your matrix (its overlay model) on the **Display** tab, turn on the pages you want, set each one up, and click **Save**.
 
 The plugin starts with FPP and stops with it. To get new FPP commands after an update, use **Reinstall**, not just Update: only an install registers commands with FPP.
 
@@ -56,12 +62,12 @@ At the top: the plugin's status (Online, drawing at N fps, or what's wrong), **H
 |---|---|
 | **Overview** | Until the setup is done once, **Getting started**: four steps (choose your matrix, turn on the pages you want, set up each page, Save) that tick themselves off, then hide for good (or click Hide). **What's on the matrix**: every kind of page, in the order they take turns, each with its on/off switch, a one-line summary of what it shows now (or what it still needs), ▲ ▼ to change the order, and **Edit** to open its tab. **Seconds per page** (default 5), and what the matrix is showing right now. A folded **How it works** sums up how pages take turns, get skipped and get saved. The preview plays every page in turn, as the matrix does. |
 | **Countdown** | **Show on the matrix**; Christmas Day, New Year's Day or Custom date (a date, a time, **Repeat every year**); event name; number first / last; Countdown timer / Hours only; (folded) the joining and unit words. The preview shows the countdown Now, 8 days out or Under a day. |
-| **Weather** | **Show on the matrix**; where it comes from (Open-Meteo or Tempest); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
+| **Weather** | **Show on the matrix**; where it comes from (Open-Meteo or Tempest); units (°F and mph, or °C and km/h); for Open-Meteo, FPP's location or one of your own; Temperature and Wind on/off, the Wind label, direction and gusts. More options: when to show the wind symbol, calm-wind text, gust label and threshold; for the Tempest, how old a reading may be, one sensor only, UDP port. A live line shows the last reading and which symbol is up. |
 | **Social** | **Show on the matrix**, and for each of Facebook, Instagram, TikTok and YouTube an on/off switch and the handle. A line says which screens the matrix will show. |
 | **Show prep** | **Show on the matrix**; the app viewers should get (PulseMesh or Tune2); the message; optionally your own link for the QR code. |
 | **Schedule** | **Show on the matrix**; the show nights; same every night, weeknights + weekends, or each night different, and the times; the week or tonight only; title; 12- or 24-hour clock. |
 | **Messages** | **Show on the matrix**; **Add message**; for each: on/off, the text, colour, picture, always or between two dates; ▲ ▼ ✕; fill-in buttons; whether each is showing now, and why not. |
-| **Display** | The **Number style** and **Text style** (font, size, colour, smooth edges) that every page uses; the overlay model, **Output enabled**, the player's local time; frame rate under Advanced. |
+| **Display** | The overlay model, **Output enabled**, the player's local time and (under Advanced) the frame rate; then the **Number style** and **Text style** (font, size, colour, smooth edges) that every page uses, with a note on what each one colours. |
 
 A small dot on a tab (and on its Overview line) means that page needs something before it can show, such as a weather source, an app for show prep or a message. Every page's switch is called **Show on the matrix**; switching one on or off on Overview says **Save to turn it on** (or off) until you save. The tabs also work from the keyboard: Left and Right move between them.
 
@@ -84,7 +90,8 @@ On the **Weather** tab, turn on **Show on the matrix**, then choose where the we
 
 - **One page.** It shows for **Seconds per page** (default 5), taking turns with the countdown and social media: countdown → weather → social screens → countdown again.
 - **The symbol:** the **wind** when the wind is at least 15 mph or the gusts at least 25 mph (both under "More wind, symbol and source options"); otherwise the **sun** by day and the **moon** at night. Open-Meteo says whether it's day at your location; a Tempest goes by its light sensor (day above 5 W/m² of sunlight). Until either says, 7:00–19:00 on the player's clock counts as day.
-- **The lines:** the temperature (`72°F`, whole degrees) in the **Number style**; the wind (`Wind 8 mph NW`, or `Wind Calm` under 1 mph; the word "Wind" is the **Label** beside the Wind switch, and can be changed or cleared) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol, which takes the room that's left. On a small panel the page drops the gust line, then the wind direction, then the "Wind" label, rather than use text too small to read.
+- **Units:** °F and mph (the default) or °C and km/h, on the Weather tab. The limits under "More wind, symbol and source options" stay in mph; with °C and km/h chosen, the page shows each one in km/h beside it.
+- **The lines:** the temperature (`72°F` or `22°C`, whole degrees) in the **Number style**; the wind (`Wind 8 mph NW`, or `Wind Calm` under 1 mph; the word "Wind" is the **Label** beside the Wind switch, and can be changed or cleared) and gusts (`gusts 15`, when at least 5 mph above the wind) in the **Text style**. Each style starts at its size and shrinks to fit beside the symbol, which takes the room that's left. On a small panel the page drops the gust line, then the wind direction, then the "Wind" label, rather than use text too small to read.
 - **Temperature or wind off:** the page shows only the other one. With both off there is no weather page.
 - **Old readings** are left off the page; with nothing fresh, the page is skipped and the countdown just shows more often.
 - **Weather only:** switch the countdown off and leave the weather on (on **Overview**).

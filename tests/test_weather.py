@@ -142,6 +142,17 @@ class Page(unittest.TestCase):
         cfg = {"wind": {"gust_min_diff_mph": 0, "gust_label": ""}}
         self.assertEqual(self.page(reading(mph=8, deg=0, gust=9), cfg).lines, ("Wind 8 mph N", "9"))
 
+    def test_metric_units(self):
+        metric = {"units": "metric"}
+        p = self.page(reading(temp_f=72.4, mph=8.2, deg=315, gust=15), metric)
+        self.assertEqual(p.lines, ("22°C", "Wind 13 km/h NW", "gusts 24"))
+        self.assertEqual(self.page(reading(temp_f=26.6), metric).temp, "-3°C")
+        self.assertEqual(self.page(reading(mph=0.6), metric).lines, ("Wind Calm",))        # calm is still under 1 mph
+        # the gust rule and the wind symbol's limits stay in mph
+        self.assertEqual(self.page(reading(mph=8, gust=12.9), metric).gust, "")
+        self.assertEqual(self.page(reading(temp_f=50, mph=15), metric).symbol, "wind")
+        self.assertEqual(self.page(reading(temp_f=50), {}).temp, "50°F")                   # imperial by default
+
     def test_wind_label(self):
         self.assertEqual(self.page(reading(mph=8, deg=0), {"wind": {"label": "Breeze"}}).lines, ("Breeze 8 mph N",))
         page = self.page(reading(mph=8, deg=0), {"wind": {"label": ""}})
@@ -364,6 +375,15 @@ class PreviewSequence(unittest.TestCase):
         self.assertTrue(self.d.update_config({"weather": {"symbol": {"wind_mph": -1}}}))
         self.assertTrue(self.d.update_config({"weather": {"symbol": {"gust_mph": "lots"}}}))
         self.assertEqual(self.d.update_config({"global": {"screen_seconds": 8}, "weather": {"symbol": {"wind_mph": 10}}}), [])
+
+    def test_units_setting(self):
+        self.assertTrue(self.d.update_config({"weather": {"units": "kelvin"}}))
+        self.assertEqual(self.d.update_config({"weather": {"units": "metric"}}), [])
+        self.assertEqual(self.mc.load_defaults()["weather"]["units"], "imperial")
+        r = self.d.preview({"config": {"weather": {"enabled": True, "units": "metric"}}, "width": 192, "height": 96,
+                            "as": "weather"})
+        self.assertIn("°C", r["strips"][0]["message"])
+        self.assertIn("km/h", r["strips"][0]["message"])
 
     def test_weather_mode_with_both_off_says_so(self):
         r = self.d.preview({"config": {"weather": {"temperature": {"enabled": False}, "wind": {"enabled": False}}},

@@ -135,6 +135,7 @@ The full settings:
   "weather": {
     "enabled": false,
     "source": "",
+    "units": "imperial",
     "open_meteo": { "use_fpp_location": true, "latitude": null, "longitude": null },
     "port": 50222,
     "device": "",
@@ -195,6 +196,7 @@ The full settings:
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
 | `weather.stale_minutes` | 0.5–1440: skip Tempest readings older than this (Open-Meteo readings: 45 min, fixed) |
 | `weather.wind.gust_min_diff_mph` | show gusts when at least this far above the wind |
+| `weather.units` | `imperial` (°F, mph; the default) or `metric` (°C, km/h). The limits (`wind.gust_min_diff_mph`, `symbol.wind_mph`, `symbol.gust_mph`, calm under 1 mph) stay in mph either way. |
 | `weather.wind.label` | the word before the wind speed on the weather page (`Wind 8 mph NW`); `""` for none. Default `Wind` |
 | `weather.symbol.wind_mph` / `gust_mph` | 0–200: show the wind symbol when the wind (or the gusts) is at least this; otherwise the sun by day, the moon at night |
 | `social.enabled` | show the social media screens |

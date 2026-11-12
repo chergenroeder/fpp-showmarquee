@@ -438,6 +438,8 @@ def validate_config(cfg: dict) -> List[str]:
     errors += schedule_settings_problems(cfg.get("schedule") or {})
     errors += messages_settings_problems(cfg.get("messages") or {})
     errors += page_order_problems(cfg)
+    if (cfg.get("weather") or {}).get("units", "imperial") not in ("imperial", "metric"):
+        errors.append("weather.units must be \"imperial\" (°F, mph) or \"metric\" (°C, km/h)")
     return errors
 
 

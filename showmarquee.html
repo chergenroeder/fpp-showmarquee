@@ -52,7 +52,7 @@
   </ul>
 
   <div class="row g-3">
-    <div class="col-lg-7">
+    <div class="col-md-7">
 
       <div class="mc-pane" data-pane="overview">
       <!-- Getting started: shown until the setup is done once -->
@@ -173,7 +173,7 @@
             <label class="form-check-label" for="mc-w-on">Show on the matrix</label></div>
         </div>
         <div class="card-body" id="mc-weather-body">
-          <div class="small text-muted mb-2">One page: a sun, moon or wind symbol beside the temperature and wind. °F and mph.</div>
+          <div class="small text-muted mb-2">One page: a sun, moon or wind symbol beside the temperature and wind.</div>
           <fieldset class="mb-3 p-2 rounded border" id="mc-w-src">
             <legend class="form-label small fw-bold float-none w-auto mb-1 px-1">Where the weather comes from</legend>
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-w-source" id="mc-w-src-om" value="open-meteo" data-path="weather.source">
@@ -199,6 +199,11 @@
               <div class="small text-muted mt-1">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).</div>
             </div>
           </fieldset>
+          <div class="row g-2 mb-2">
+            <div class="col-8 col-sm-5"><label class="form-label form-label-sm mb-0" for="mc-w-units">Units</label>
+              <select class="form-select form-select-sm" id="mc-w-units" data-path="weather.units">
+                <option value="imperial">°F and mph</option><option value="metric">°C and km/h</option></select></div>
+          </div>
           <div class="row g-2 align-items-end">
             <div class="col-auto"><div class="form-check"><input class="form-check-input" type="checkbox" id="mc-w-t-on" data-path="weather.temperature.enabled">
               <label class="form-check-label" for="mc-w-t-on">Temperature <span class="mc-example" id="mc-ex-temp"></span></label></div></div>
@@ -217,15 +222,18 @@
             <summary class="small">More wind, symbol and source options</summary>
             <div class="row g-2 mt-1">
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Wind symbol when wind is at least (mph)</label>
-                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.wind_mph" data-type="number"></div>
+                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.wind_mph" data-type="number">
+                <span class="small text-muted mc-kmh" data-mph="weather.symbol.wind_mph"></span></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">… or gusts are at least (mph)</label>
-                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.gust_mph" data-type="number"></div>
+                <input type="number" class="form-control form-control-sm" min="0" max="200" step="1" data-path="weather.symbol.gust_mph" data-type="number">
+                <span class="small text-muted mc-kmh" data-mph="weather.symbol.gust_mph"></span></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Calm wind (under 1 mph)</label>
                 <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.calm_text"></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Gust label</label>
                 <input type="text" class="form-control form-control-sm" maxlength="20" data-path="weather.wind.gust_label"></div>
               <div class="col-6 col-md-3"><label class="form-label form-label-sm mb-0">Show gusts when above wind by (mph)</label>
-                <input type="number" class="form-control form-control-sm" min="0" max="100" step="1" data-path="weather.wind.gust_min_diff_mph" data-type="number"></div>
+                <input type="number" class="form-control form-control-sm" min="0" max="100" step="1" data-path="weather.wind.gust_min_diff_mph" data-type="number">
+                <span class="small text-muted mc-kmh" data-mph="weather.wind.gust_min_diff_mph"></span></div>
               <div class="col-6 col-md-3 mc-w-tempest"><label class="form-label form-label-sm mb-0">Hide Tempest readings older than (min)</label>
                 <input type="number" class="form-control form-control-sm" min="0.5" max="1440" step="0.5" data-path="weather.stale_minutes" data-type="number"></div>
               <div class="col-6 col-md-3 mc-w-tempest"><label class="form-label form-label-sm mb-0">Only this sensor (ST-…)</label>
@@ -398,6 +406,7 @@
             </div>
           </div>
           <div class="small mc-warn mt-2" id="mc-model-warn"></div>
+          <div class="small text-success mt-1 mc-hidden" id="mc-autosize-note"></div>
           <div class="small mt-2">FPP local time: <span id="mc-s-time">–</span></div>
           <details class="mt-2">
             <summary class="small">Advanced</summary>
@@ -411,15 +420,16 @@
       </div>
 
       <!-- Styles -->
-      <div class="row g-3 mb-3">
+      <div class="row g-3 mb-2">
         <div class="col-md-6" data-style="number_style"></div>
         <div class="col-md-6" data-style="text_style"></div>
       </div>
+      <div class="small text-muted mb-3">These two styles colour every page. <strong>Number style</strong>: the countdown's number, the temperature, the show times and the show prep app's name. <strong>Text style</strong>: the words around them, the wind, the @handles, the show prep message and your messages (unless you give a message its own colour).</div>
       </div>
     </div>
 
     <!-- Preview -->
-    <div class="col-lg-5">
+    <div class="col-md-5">
       <div class="card mb-3" style="position: sticky; top: .5rem;">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <strong id="mc-preview-title">Preview</strong>
@@ -561,7 +571,6 @@
   }
   function refreshSocial() {
     const S = cfg.social || {};
-    $('#mc-social-body').style.opacity = S.enabled ? '' : '.55';
     const { screens, problems } = socialScreens(S);
     const desc = sc => sc.sites.join(' + ') + ' @' + sc.handle;
     $('#mc-so-plan').textContent = !screens.length ? 'Turn on a site and enter its handle.'
@@ -575,7 +584,6 @@
                  tune2: { name: 'Tune2', link: 'https://www.tune2.app/downloads' } };
   function refreshShowPrep() {
     const P = cfg.showprep || {};
-    $('#mc-showprep-body').style.opacity = P.enabled ? '' : '.55';
     const app = APPS[P.app];
     const needApp = !!P.enabled && !app;
     $('#mc-sp-app-need').classList.toggle('mc-hidden', !needApp);
@@ -638,7 +646,6 @@
   }
   function refreshSchedule() {
     const S = cfg.schedule || {};
-    $('#mc-schedule-body').style.opacity = S.enabled ? '' : '.55';
     const mode = ['same', 'weekend', 'custom'].includes(S.mode) ? S.mode : 'same';
     $$('.mc-sc-panel').forEach(el => el.classList.toggle('mc-hidden', el.dataset.mode !== mode));
     $$('.mc-sc-week-only').forEach(el => el.classList.toggle('mc-hidden', S.show === 'tonight'));
@@ -774,7 +781,6 @@
   }
   function refreshMessages() {
     const M = cfg.messages || {};
-    $('#mc-messages-body').style.opacity = M.enabled ? '' : '.55';
     fillMessageControls();
   }
 
@@ -831,7 +837,7 @@
     try { localStorage.setItem('showmarquee.tab', t); } catch (e) {}
     try { history.replaceState(null, '', '#' + t); } catch (e) {}
     if (!keepScroll) { const tabs = $('#mc-tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView(); }
-    if (cfg) schedulePreview(0);
+    if (cfg) { schedulePreview(0); updateDots(); }
   }
   // A small dot on a tab (and its overview row) when that page needs attention
   function updateDots() {
@@ -852,6 +858,40 @@
     $('#mc-model-banner').classList.toggle('mc-hidden', !!cfg.countdown.model || tab === 'display');
     updateStart();
   }
+  // The default text size (10) suits a 64×32 matrix. The first time a matrix is
+  // chosen, if neither style's size has been changed, size them to the matrix.
+  function autoSize(model) {
+    const m = models.find(x => x.name === model);
+    const N = cfg.countdown.number_style, T = cfg.countdown.text_style;
+    if (!m || !m.height || Number(N.size) !== 10 || Number(T.size) !== 10) return;
+    const size = Math.max(10, Math.min(64, Math.round(m.height * 0.25)));
+    if (size === 10) return;
+    N.size = size; T.size = size;
+    $$('[data-path="countdown.number_style.size"], [data-path="countdown.text_style.size"]').forEach(el => { el.value = size; });
+    const note = $('#mc-autosize-note');
+    note.textContent = `Text size set to ${size} to suit a ${m.height}-LED-tall matrix. Change it in the styles below.`;
+    note.classList.remove('mc-hidden');
+  }
+
+  // A section that's off says so at the top, rather than being faded (which made
+  // its controls look unusable): it can be set up first and switched on after.
+  function offNotes() {
+    [['#mc-weather-body', 'weather.enabled'], ['#mc-social-body', 'social.enabled'],
+     ['#mc-showprep-body', 'showprep.enabled'], ['#mc-schedule-body', 'schedule.enabled'],
+     ['#mc-messages-body', 'messages.enabled']].forEach(([sel, path]) => {
+      const body = $(sel);
+      if (!body) return;
+      let note = body.querySelector(':scope > .mc-off-note');
+      if (!note) {
+        note = document.createElement('div');
+        note.className = 'mc-off-note alert alert-secondary py-1 px-2 small mb-2';
+        note.innerHTML = 'This page is off. Set it up here, then turn on <strong>Show on the matrix</strong> above.';
+        body.prepend(note);
+      }
+      note.classList.toggle('mc-hidden', !!getPath(cfg, path));
+    });
+  }
+
   // ── getting started ──
   function startDone() { try { return localStorage.getItem('showmarquee.started') === '1'; } catch (e) { return false; } }
   function updateStart() {
@@ -952,7 +992,9 @@
       }
       else if (el.dataset.type === 'number') { v = el.value === '' ? '' : Number(el.value); }
       else v = el.value;
+      const before = getPath(cfg, el.dataset.path);
       setPath(cfg, el.dataset.path, v);
+      if (el.dataset.path === 'countdown.model' && v && !before) autoSize(v);
       if (el.type === 'checkbox') $$('input[type="checkbox"][data-path]').forEach(o => {
         if (o !== el && o.dataset.path === el.dataset.path) o.checked = el.checked;
       });
@@ -975,7 +1017,6 @@
     $('#mc-ex-hms').textContent = ordered('08:14:32');
     $('#mc-ex-hours').textContent = ordered(join('9', U.hours));
     const W = cfg.weather || {}, WW = W.wind || {};
-    $('#mc-weather-body').style.opacity = W.enabled ? '' : '.55';
     const src = W.source || '', OM = W.open_meteo || {};
     const needSrc = !!W.enabled && !src;
     $('#mc-w-src-need').classList.toggle('mc-hidden', !needSrc);
@@ -985,8 +1026,15 @@
     $$('.mc-w-tempest').forEach(el => el.classList.toggle('mc-hidden', src !== 'tempest'));
     $$('.mc-w-om-only').forEach(el => el.classList.toggle('mc-hidden', src !== 'open-meteo'));
     showLocation();
-    $('#mc-ex-temp').textContent = '72°F';
-    $('#mc-ex-wind').textContent = join(WW.label, '8 mph' + (WW.direction ? ' NW' : ''), WW.gusts ? join(WW.gust_label, '15') : '');
+    const metric = W.units === 'metric';
+    $('#mc-ex-temp').textContent = metric ? '22°C' : '72°F';
+    $('#mc-ex-wind').textContent = join(WW.label, (metric ? '13 km/h' : '8 mph') + (WW.direction ? ' NW' : ''),
+                                        WW.gusts ? join(WW.gust_label, metric ? '24' : '15') : '');
+    // The limits stay in mph; with metric, show what they are in km/h
+    $$('.mc-kmh').forEach(el => {
+      const v = Number(getPath(cfg, el.dataset.mph));
+      el.textContent = metric && isFinite(v) ? `≈ ${Math.round(v * 1.609)} km/h` : '';
+    });
     $$('.mc-style-example').forEach(el => {
       el.textContent = el.closest('[data-style]').dataset.style === 'number_style' ? '“8 Days”' : '“' + join(first ? L.connector_first : '', name, first ? '' : L.connector_last) + '”';
     });
@@ -994,6 +1042,7 @@
     refreshShowPrep();
     refreshSchedule();
     refreshMessages();
+    offNotes();
     overviewPending();
     updateDots();
     modelWarnings();
@@ -1037,6 +1086,8 @@
     if (r.error) {
       $('#mc-preview-text').innerHTML = `<span class="mc-err">${esc(r.error)}</span>`;
       warnEl.textContent = '';
+      strips = [];                                  // a blank panel, not the last tab's picture
+      if (!preview) preview = { width: size.w, height: size.h };
       return;
     }
     preview = r;
@@ -1220,9 +1271,11 @@
     else if (!hasReading) wt = !w.listening ? 'starting' : om ? 'getting the weather from Open-Meteo…' : 'listening for the Tempest hub… no reading yet';
     else {
       const parts = [];
-      if (w.temp_f != null) parts.push(`${Math.round(w.temp_f)}°F`);
-      if (w.wind_mph != null) parts.push(`wind ${w.wind_mph < 1 ? 'calm' : Math.round(w.wind_mph) + ' mph ' + (w.wind_dir || '')}`.trim());
-      if (w.gust_mph != null) parts.push(`gusts ${Math.round(w.gust_mph)} mph`);
+      const metric = cfg && (cfg.weather || {}).units === 'metric';
+      const spd = mph => metric ? Math.round(mph * 1.609) + ' km/h' : Math.round(mph) + ' mph';
+      if (w.temp_f != null) parts.push(metric ? `${Math.round((w.temp_f - 32) * 5 / 9)}°C` : `${Math.round(w.temp_f)}°F`);
+      if (w.wind_mph != null) parts.push(`wind ${w.wind_mph < 1 ? 'calm' : spd(w.wind_mph) + ' ' + (w.wind_dir || '')}`.trim());
+      if (w.gust_mph != null) parts.push(`gusts ${spd(w.gust_mph)}`);
       if (om) {
         const age = w.last_fetch_age_s, mins = age == null ? null : Math.round(age / 60);
         wt = 'Open-Meteo: ' + parts.join(', ') + (mins != null ? ` · updated ${mins < 1 ? 'just now' : mins + ' min ago'}` : '');
@@ -1256,7 +1309,14 @@
     if (cfg) fillMessageControls();
     const o = s.output || {};
     const out = $('#mc-s-output');
-    out.textContent = (o.state || '–') + (o.state === 'drawing' ? ` at ${o.fps} fps` : '') + (o.error ? ': ' + o.error : '');
+    const anyOn = !!s.enabled || ['weather', 'social', 'showprep', 'schedule', 'messages'].some(k => (s[k] || {}).enabled);
+    out.textContent = o.state === 'drawing' ? `drawing at ${o.fps} fps`
+      : o.state === 'off' ? 'not drawing: ' + (!s.model ? 'choose your matrix (Display tab)'
+                                             : s.enable_output === false ? 'output is turned off (Display tab)'
+                                             : !anyOn ? 'every page is switched off' : 'nothing to draw')
+      : o.state === 'blank' ? 'not drawing: no page has anything to show right now'
+      : o.state === 'starting' ? 'starting…'
+      : (o.state || '–') + (o.error ? ': ' + o.error : '');
     out.className = o.state === 'error' ? 'mc-err' : '';
     const clock = s.clock_synced === true ? ' · synced to internet time'
                 : s.clock_synced === false ? ' · NOT synced to internet time: the countdown is only as right as this clock' : '';

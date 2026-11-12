@@ -542,9 +542,16 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
     sym = {**DEFAULTS["symbol"], **(cfg.get("symbol") or {})}
     stale_s = _stale_s(r, cfg)
 
+    # Units: "imperial" (°F, mph; the default) or "metric" (°C, km/h). The
+    # thresholds below (calm, gusts, the wind symbol) stay in mph either way.
+    metric = cfg.get("units") == "metric"
+
+    def speed(ms: float) -> str:
+        return f"{round(ms * 3.6)} km/h" if metric else f"{round(ms_to_mph(ms))} mph"
+
     temp = ""
     if t.get("enabled") and r.temp_c is not None and _fresh(r.temp_at, now, stale_s):
-        temp = f"{round(c_to_f(r.temp_c))}°F"
+        temp = f"{round(r.temp_c)}°C" if metric else f"{round(c_to_f(r.temp_c))}°F"
 
     wind_fresh = r.wind_ms is not None and _fresh(r.wind_at, now, stale_s)
     gust_fresh = r.gust_ms is not None and _fresh(r.gust_at, now, stale_s)
@@ -556,7 +563,7 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
         if mph < 1:
             wind = str(w.get("calm_text") or "Calm").strip() or "Calm"
         else:
-            wind = f"{round(mph)} mph"
+            wind = speed(r.wind_ms)
             if w.get("direction") and r.wind_dir is not None:
                 wind += " " + compass(r.wind_dir)
         # Say what the number is: beside a sun or moon, "8 mph NW" alone doesn't
@@ -564,7 +571,7 @@ def weather_page(r: Reading, cfg: dict, now: Optional[float] = None,
         if (w.get("gusts") and gust_mph is not None and gust_mph >= 1
                 and gust_mph - mph >= float(w.get("gust_min_diff_mph", 5))):
             label = str(w.get("gust_label") or "").strip()
-            gust = f"{label} {round(gust_mph)}".strip()
+            gust = f"{label} {round(r.gust_ms * 3.6) if metric else round(gust_mph)}".strip()
     if not temp and not wind:
         return None
 

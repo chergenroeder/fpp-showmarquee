@@ -26,6 +26,8 @@ curl -s $API/config > /tmp/mc-before.json
 
 - [ ] On a new install the page opens on **Overview** with **Getting started**: choosing the matrix, turning pages on and setting them up tick their steps off; after **Save** all four are ticked and it hides, and stays hidden after a reload.
 - [ ] **How it works** opens and closes; **Help** opens the README on GitHub.
+- [ ] Before a matrix is chosen the header says "not drawing: choose your matrix"; choosing a big matrix (96 tall) sets both style sizes to suit it (24) and says so.
+- [ ] A page that's off says "This page is off" at the top of its tab; its controls are still usable.
 - [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
 - [ ] **Edit** opens that page's tab; the preview shows just that page. Reloading the page comes back to the same tab.
 - [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round), and its line says **Save to turn it on** until you Save.
@@ -99,6 +101,7 @@ set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enable
 
 - [ ] The countdown and **the weather page** take turns, 5 s each, both held still: a symbol on the left, the temperature over the wind (and gusts) on the right.
 - [ ] By day it's the **sun**, after dark the **moon** (the status line says which, and whether Open-Meteo, the Tempest or the clock decided).
+- [ ] **Units** °C and km/h: the page reads "22°C" and "Wind 13 km/h …", and the limits under More options show km/h beside the mph.
 - [ ] Lower the wind symbol limit to see the **wind** symbol on a calm day:
   ```bash
   set '{"weather":{"symbol":{"wind_mph":1,"gust_mph":1}}}'

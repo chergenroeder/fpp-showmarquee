@@ -38,6 +38,7 @@
     "weather": {
         "enabled": false,
         "source": "",
+        "units": "imperial",
         "open_meteo": { "use_fpp_location": true },
         "port": 50222,
         "device": "",

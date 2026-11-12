@@ -780,3 +780,22 @@ Checked against fpp-data's [PLUGINS.md](https://github.com/FalconChristmas/fpp-d
 
 **Left to do at submission**: test on the latest FPP release and the nightly; run the Plugin preview and the Privacy disclosure builder; open the fpp-data issue and answer the automated check.
 
+---
+
+## Review as a new user (2026-11-11)
+
+Walked through as someone who has never seen the plugin: the README's opening, a fresh install, Getting started, then each tab.
+
+**Fixed**
+1. **Units**: `weather.units`, `imperial` (°F, mph; default) or `metric` (°C, km/h), a Units choice on the Weather tab. The page, `{temp}`, the examples and the status line follow it; the limits stay in mph, with their km/h shown beside them when metric. (Open-Meteo is worldwide; many FPP users aren't in the US.) Tests added.
+2. **Text size to suit the matrix**: the default 10 suits 64 × 32; on 192 × 96 the countdown filled under half the width. The first time a matrix is chosen, if neither style size has been changed, both become about a quarter of its height (24 on a 96-tall matrix, never under 10), and a note says so.
+3. **README**: opens with a sketch of all six kinds of page and a Features list grouped by page (it read like a countdown plugin); the install steps point to Getting started and the Display tab (it said "under Matrix"); how to add an overlay model; units; the preview line; a typo.
+4. **The header says why it isn't drawing**: "not drawing: choose your matrix (Display tab)", "… output is turned off", "… every page is switched off", "… no page has anything to show right now", instead of just "off" / "blank".
+5. **An empty preview is blank**: with no messages, the Messages preview kept the previous tab's picture under the error.
+6. The **"Choose your matrix" banner** hides as soon as the Display tab opens (it waited for the next status update).
+7. **What the styles colour**: a note under the two style cards.
+8. **A section that's off isn't faded** (its controls looked unusable); it says "This page is off. Set it up here, then turn on Show on the matrix above."
+9. **The preview stays beside the settings** from tablet width (768 px) up, not only from 992 px.
+
+Tests: 273. Checked again as a new user on the dev server.
+
