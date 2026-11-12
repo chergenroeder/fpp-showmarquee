@@ -386,7 +386,6 @@ class OpenMeteoPoller:
         self.location: Optional[Location] = None
         self.last_fetch_at: Optional[float] = None    # monotonic, last success
         self.next_fetch_at: Optional[float] = None    # monotonic
-        self.fetches = 0
         self.failures = 0
         self._reading = Reading(source="open-meteo", max_age_s=self.MAX_AGE_S)
         self._lock = threading.Lock()
@@ -482,7 +481,6 @@ class OpenMeteoPoller:
         self.apply(data)
         self.error = ""
         self.failures = 0
-        self.fetches += 1
         return True
 
     def apply(self, data: dict, now: Optional[float] = None):

@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 
-from countdown.schedule import (DAYS, day_span, format_range, night_times, schedule_page,  # noqa: E402
+from countdown.schedule import (day_span, format_range, night_times, schedule_page,  # noqa: E402
                                 schedule_problems, settings_problems, week_lines)
 
 try:

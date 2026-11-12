@@ -253,9 +253,8 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
-.venv/bin/python -m unittest discover -s tests        # 100+ tests; without Pillow the drawing tests skip
-.venv/bin/python scripts/dev_server.py                 # settings page at http://127.0.0.1:8765/ against a fake FPP
-.venv/bin/python scripts/render_preview.py --out /tmp/preview --font /path/Font.ttf   # contact sheet + GIFs
+.venv/bin/python -m unittest discover -s tests        # without Pillow the drawing tests skip
+.venv/bin/python tests/dev_server.py                   # settings page at http://127.0.0.1:8765/ against a fake FPP (?theme=dark for dark mode)
 ```
 
 | Path | |
@@ -275,9 +274,10 @@ python3 -m venv .venv && .venv/bin/pip install pillow==11.1.0 qrcode==7.4.2
 | `countdown/social.py` | Social media screens: handles, grouping by handle, the logos (drawn in code) and the screen layout. |
 | `showmarquee.html` | The settings page. |
 | `commands/` | FPP commands. |
-| `scripts/` | Install, start/stop, and the dev tools. |
+| `scripts/` | Install, uninstall, start and stop; `tempest_listen.py` (can this player hear a Tempest hub?) and `make_icon.py` (draws `icon.png`). |
+| `tests/` | The tests, a fake FPP for them, and `dev_server.py` (the settings page on your computer, no player needed). |
 | [TESTING.md](TESTING.md) | Hardware test checklist. |
-| [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) | Design decisions and history. |
+| [CHANGELOG.md](CHANGELOG.md) | What each release added. |
 
 ## Credits
 

@@ -5,7 +5,7 @@ Starts a fake fppd (tests/fake_fpp.py, two models), the real daemon against it,
 and a page server that wraps showmarquee.html in Bootstrap the way FPP does
 and passes /api/plugin/fpp-showmarquee/* through to the daemon.
 
-    .venv/bin/python scripts/dev_server.py
+    .venv/bin/python tests/dev_server.py
     open http://127.0.0.1:8765/            (add ?theme=dark for dark mode)
 
 Needs Pillow (.venv) and network access for the Bootstrap stylesheet.

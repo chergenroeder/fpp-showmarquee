@@ -85,10 +85,6 @@ class OverlayOutput:
         self._on = False
 
     # ── lifecycle ──
-    @property
-    def is_open(self) -> bool:
-        return self._mm is not None
-
     def open(self):
         """Map the model's overlay buffer. Raises OutputError with a reason."""
         self.close(turn_off=False)

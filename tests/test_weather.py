@@ -395,52 +395,17 @@ class PreviewSequence(unittest.TestCase):
         _, slots = self.slots({"countdown": {"enabled": False}, "weather": {"enabled": True}})
         self.assertEqual(slots, ["weather"])
 
-    def test_settings_from_before_the_page_load_with_its_defaults(self):
+    def test_saved_settings_get_new_defaults(self):
         os.makedirs(os.path.dirname(self.mc.CONFIG_PATH), exist_ok=True)
         with open(self.mc.CONFIG_PATH, "w") as f:
-            json.dump({"global": {"schema_version": 3},
-                       "weather": {"enabled": True, "source": "tempest",
-                                   "temperature": {"enabled": True, "label": "Temp"},
-                                   "wind": {"label": "Wind", "gusts": False}}}, f)
+            json.dump({"weather": {"enabled": True, "source": "tempest", "wind": {"gusts": False}}}, f)
         cfg = self.mc.load_config()
         w = cfg["weather"]
-        self.assertNotIn("label", w["temperature"])
-        self.assertEqual(w["wind"]["label"], "Wind")                 # the wind label is kept: the page uses it
         self.assertFalse(w["wind"]["gusts"])                      # kept
+        self.assertEqual(w["wind"]["label"], "Wind")              # filled in
         self.assertEqual(w["symbol"], {"wind_mph": 15, "gust_mph": 25, "conditions": True})
-        self.assertNotIn("screen_seconds", w)
         self.assertEqual(cfg["global"]["screen_seconds"], 5)
         self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
-        with open(self.mc.CONFIG_PATH) as f:
-            self.assertNotIn("label\": \"Temp", f.read())
-
-    def test_settings_from_before_one_seconds_per_page(self):
-        os.makedirs(os.path.dirname(self.mc.CONFIG_PATH), exist_ok=True)
-        cases = [
-            # Static countdown: its hold time wins
-            ({"countdown": {"motion": {"direction": "static", "static_hold": 8}},
-              "weather": {"screen_seconds": 3}, "social": {"screen_seconds": 4}}, 8),
-            # Scrolling countdown: the first section's seconds
-            ({"countdown": {"motion": {"direction": "R2L", "static_hold": 8}},
-              "weather": {"screen_seconds": 3}, "social": {"screen_seconds": 4}}, 3),
-            ({"social": {"screen_seconds": 12}}, 12),
-            ({"countdown": {"motion": {"direction": "R2L"}}}, 5),
-        ]
-        for saved, want in cases:
-            with open(self.mc.CONFIG_PATH, "w") as f:
-                json.dump({"global": {"schema_version": 4}, **saved}, f)
-            cfg = self.mc.load_config()
-            self.assertEqual(cfg["global"]["screen_seconds"], want, saved)
-            self.assertNotIn("motion", cfg["countdown"])
-            self.assertNotIn("screen_seconds", cfg["weather"])
-            self.assertNotIn("screen_seconds", cfg["social"])
-
-    def test_an_old_settings_upload_loses_its_scroll_keys(self):
-        self.assertEqual(self.d.update_config({"countdown": {"motion": {"direction": "R2L"}},
-                                               "weather": {"screen_seconds": 9}}), [])
-        cfg = self.d.get_config()
-        self.assertNotIn("motion", cfg["countdown"])
-        self.assertNotIn("screen_seconds", cfg["weather"])
 
     def test_new_settings_are_checked(self):
         self.assertTrue(self.d.update_config({"global": {"screen_seconds": 0}}))

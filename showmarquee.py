@@ -2,12 +2,11 @@
 """
 fpp-showmarquee daemon
 
-Draws a live countdown (to Christmas, New Year's Day or a custom date) on one
-FPP pixel-overlay model by writing frames into the model's overlay buffer.
-Exposes a REST API on 127.0.0.1:32330 that FPP's web server proxies to.
-
-Phase 1: config, logging and the REST API only. The countdown engine, the
-renderer and the overlay output arrive in Phases 2-4 (DEVELOPMENT_PLAN.md).
+Draws the sign's pages (countdown, weather, social media, show prep, schedule
+and custom messages) on one FPP pixel-overlay model, taking turns, by writing
+frames into the model's overlay buffer. Keeps the settings, runs the weather
+source, and serves a REST API on 127.0.0.1:32330 that FPP's web server
+proxies to (api.php).
 """
 
 import copy
@@ -62,7 +61,7 @@ API_HOST     = os.environ.get("MC_API_HOST", "127.0.0.1")
 API_PORT     = int(os.environ.get("MC_API_PORT", "32330"))
 API_PREFIX   = "/api/plugin/showmarquee"
 
-SCHEMA_VERSION = 5   # 2: weather.source; 3: social media screens; 4: weather page; 5: one seconds per page, no scrolling
+SCHEMA_VERSION = 5   # the settings format at first release; raise it (and add a step to _migrate_config) when a saved setting changes meaning
 
 
 def _get_git_commit() -> str:
@@ -215,50 +214,11 @@ def _migrate_config(cfg: dict) -> bool:
     g = cfg.setdefault("global", {})
     version = int(g.get("schema_version", 0) or 0)
     migrated = False
-    # Future: `if version < 2: ...; g["schema_version"] = 2; migrated = True`
+    # Future: `if version < 6: ...; g["schema_version"] = 6; migrated = True`
     if version < SCHEMA_VERSION:
         g["schema_version"] = SCHEMA_VERSION
         migrated = True
     return migrated
-
-
-def _migrate_user(user: dict) -> bool:
-    """Migrations that need the saved file itself (before defaults fill gaps)."""
-    w = user.get("weather")
-    changed = False
-    if isinstance(w, dict) and "source" not in w:
-        # Before 2.1 the Tempest was the only source. Keep a setup that had
-        # weather on with it, rather than start sending its location; one
-        # with weather off picks a source when it turns weather on.
-        w["source"] = "tempest" if w.get("enabled") else ""
-        changed = True
-    if isinstance(w, dict):
-        # Before 4 the weather scrolled as "Temp 72°F"; the weather page has no
-        # temperature label. (The wind label is kept: the page says "Wind 8 mph".)
-        if isinstance(w.get("temperature"), dict) and "label" in w["temperature"]:
-            del w["temperature"]["label"]
-            changed = True
-    # Before 5 the countdown could scroll (countdown.motion) and each section
-    # had its own seconds. Now nothing scrolls and one global setting holds
-    # every page; it takes the first of the old values that was set.
-    cd, so = user.get("countdown"), user.get("social")
-    old = []
-    for section in (w, so):
-        if isinstance(section, dict) and "screen_seconds" in section:
-            old.append(section.pop("screen_seconds"))
-            changed = True
-    if isinstance(cd, dict) and "motion" in cd:
-        motion = cd.pop("motion")
-        if isinstance(motion, dict) and motion.get("direction") == "static" and "static_hold" in motion:
-            old.insert(0, motion["static_hold"])
-        changed = True
-    g = user.setdefault("global", {}) if old else user.get("global")
-    if old and isinstance(g, dict) and "screen_seconds" not in g:
-        try:
-            g["screen_seconds"] = min(600.0, max(1.0, float(old[0])))
-        except (TypeError, ValueError):
-            pass
-    return changed
 
 
 def load_config() -> dict:
@@ -272,9 +232,8 @@ def load_config() -> dict:
             log.info("Loaded config from %s", CONFIG_PATH)
         except Exception as e:
             log.error("Failed to load %s (%s); using defaults", CONFIG_PATH, e)
-    migrated = _migrate_user(user) if isinstance(user, dict) else False
-    cfg = _deep_merge(defaults, user)
-    if (_migrate_config(cfg) or migrated) and user:
+    cfg = _deep_merge(defaults, user if isinstance(user, dict) else {})
+    if _migrate_config(cfg) and user:
         save_config(cfg)
     return cfg
 
@@ -516,11 +475,6 @@ class CountdownDaemon:
             if isinstance(om_new, dict) else {}
         merged = _deep_merge(_deep_merge(load_defaults(), self.get_config()), new_cfg)
         _migrate_config(merged)
-        # Settings from before 5 (an uploaded file): nothing scrolls now and one
-        # global setting holds every page, so these are dropped
-        (merged.get("countdown") or {}).pop("motion", None)
-        for section in ("weather", "social"):
-            (merged.get(section) or {}).pop("screen_seconds", None)
         check = copy.deepcopy(merged)
         check.setdefault("weather", {}).setdefault("open_meteo", {}).update(coords)
         errors = validate_config(check)

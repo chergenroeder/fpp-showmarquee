@@ -392,17 +392,6 @@ class Daemon(unittest.TestCase):
         st = self.d.weather_status(self.d.get_config())
         self.assertEqual((st["location"], st["error"][:12]), (None, "no location:"))
 
-    def test_settings_from_before_2_1_keep_the_tempest(self):
-        for enabled, source in ((True, "tempest"), (False, "")):
-            os.makedirs(os.path.dirname(self.mc.CONFIG_PATH), exist_ok=True)
-            with open(self.mc.CONFIG_PATH, "w") as f:
-                json.dump({"global": {"schema_version": 1}, "countdown": {},
-                           "weather": {"enabled": enabled, "port": 50222}}, f)
-            cfg = self.mc.load_config()
-            self.assertEqual(cfg["weather"]["source"], source)
-            self.assertEqual(cfg["global"]["schema_version"], self.mc.SCHEMA_VERSION)
-            self.assertEqual(self.saved_file()["weather"]["source"], source)
-
     def test_switching_source_swaps_the_reader(self):
         self.fpp_loc = Location(40.0, -100.0, "fpp")
         self.d.update_config({"weather": {"enabled": True, "source": "tempest", "port": 50299}})

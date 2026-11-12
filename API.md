@@ -220,7 +220,7 @@ The full settings:
 | `*_style.color` | `#rrggbb` |
 | `global.fps` | 1–60 (FPP's own output rate caps it) |
 | `global.page_order` | the sections in the order their pages take turns: any of `countdown`, `weather`, `social`, `showprep`, `schedule`, `messages`, each once. Sections left out follow in that usual order. A section's own pages (each social screen, each message) keep their own order. |
-| `global.screen_seconds` | 1–600, default 5: how long each page (the countdown, the weather page, each social media screen) shows before the next. Nothing scrolls. Settings from before schema 5 take their old Static hold time, else the weather's or social media's seconds. |
+| `global.screen_seconds` | 1–600, default 5: how long each page (the countdown, the weather page, each social media screen) shows before the next. Nothing scrolls. |
 
 ### `POST config`
 

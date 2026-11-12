@@ -4,7 +4,7 @@ import os
 import sys
 import time as _time
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
