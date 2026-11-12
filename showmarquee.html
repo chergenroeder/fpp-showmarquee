@@ -18,6 +18,8 @@
                      background: var(--bs-warning, #ffc107); margin-left: .35rem; vertical-align: middle; }
   #mc-root #mc-tabs .nav-link { white-space: nowrap; padding: .4rem .7rem; }
   #mc-root #mc-ov-list .list-group-item { padding: .45rem .6rem; }
+  /* A link inside a coloured banner takes the banner's own text colour, so it reads in light and dark mode */
+  #mc-root .mc-inherit-link { color: inherit !important; font-weight: 600; text-decoration: underline; }
   #mc-root td.mc-k { color: var(--bs-secondary-color, #6c757d); padding-right: 1rem; white-space: nowrap; vertical-align: top; }
 </style>
 
@@ -35,7 +37,7 @@
     </div>
   </div>
   <div class="alert alert-warning py-2 small mc-hidden" id="mc-model-banner">Choose your matrix (its overlay model) on the
-    <a href="#display" data-goto="display">Display</a> tab: nothing shows on it until you do.</div>
+    <a href="#display" data-goto="display" class="alert-link mc-inherit-link">Display</a> tab: nothing shows on it until you do.</div>
   <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="mc-tabs" role="tablist">
     <li class="nav-item"><button type="button" class="nav-link active" data-tab="overview" role="tab">Overview</button></li>
     <li class="nav-item"><button type="button" class="nav-link" data-tab="countdown" role="tab">Countdown</button></li>
