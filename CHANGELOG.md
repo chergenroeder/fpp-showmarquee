@@ -12,5 +12,5 @@ A sign for your light show on an LED matrix: pages that take turns, each held st
 - **Social media**: each site's logo above your `@handle`, for Facebook, Instagram, TikTok and YouTube; sites with the same handle share a screen.
 - **Show prep**: a QR code viewers scan to get the PulseMesh or Tune2 app, beside your message.
 - **Schedule**: the week's show times or just tonight's, with a ▸ beside tonight.
-- **Your messages**: up to 10, each with an optional colour, holiday picture, fill-ins (`{days}`, `{tonight}`, `{temp}`, `{date}`) and dates.
-- A tabbed settings page with a Getting started checklist and a live preview drawn by the plugin itself; FPP commands; a REST API ([API.md](API.md)); settings download and upload.
+- **Your messages**: up to 10, each with an optional colour, holiday picture, fill-ins (`{days}`, `{tonight}`, `{temp}`, `{date}`; `{temp}` works with the weather page off) and dates.
+- A tabbed settings page with a Getting started checklist and a live preview drawn by the plugin itself; FPP commands (turn the sign on or off for the night, the countdown on or off, its target); a REST API ([API.md](API.md)); settings download and upload.

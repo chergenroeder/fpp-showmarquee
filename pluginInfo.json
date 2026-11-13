@@ -10,7 +10,7 @@
 	"releaseNotesStyle": "gitHistory",
 
 	"privacy": {
-		"summary": "Draws your show's sign pages on a matrix here. With Weather on, it gets weather from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
+		"summary": "Draws your show's sign pages on a matrix here. If you use weather, it gets it from Open-Meteo (sending your location, rounded) or hears your Tempest station on your network.",
 		"sends": [
 			{
 				"to": "http://the FPP player you set as FPP Host (this device by default)",
@@ -21,7 +21,7 @@
 			{
 				"to": "api.open-meteo.com",
 				"what": "this player's latitude and longitude, rounded to about 1 km, every 15 minutes",
-				"why": "for the weather page: temperature, wind and day or night; only with Open-Meteo chosen",
+				"why": "for the weather page or a {temp} message: temperature, wind, sky; only with Open-Meteo chosen",
 				"alwaysOn": false
 			}
 		],
@@ -54,11 +54,11 @@
 			},
 			{
 				"kind": "network",
-				"what": "with Weather on, listens for UDP broadcasts on port 50222 (shared with other listeners) to read a Tempest station; sends nothing"
+				"what": "with the Tempest chosen for the weather page or a {temp} message, listens for UDP broadcasts on port 50222 (shared with others); sends nothing"
 			}
 		],
 		"closedCode": false,
-		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Uninstalling removes its settings (config/plugin.fpp-showmarquee.json) and what it keeps in plugindata/fpp-showmarquee/ (a weather location you type in, the Show page's logo); a Reinstall keeps them on FPP 10.4 and later. The show prep page's QR code holds a link to the app's download page (pulsemesh.io or tune2.app, or a link you type in): viewers' phones open it, the plugin itself never contacts those sites."
+		"other": "Its API is served through FPP's web server, so anyone who can open this player's FPP pages can change its settings and turn its output on or off, the same as FPP itself. Its FPP commands (sign on/off, countdown on/off, set target) do the same from anything that can run FPP commands, including the scheduler, MQTT and other FPP players. It switches the overlay model you choose on and off and writes pixels into that model's overlay buffer. It writes an activity log (logs/plugin-fpp-showmarquee.log). Uninstalling removes its settings (config/plugin.fpp-showmarquee.json) and what it keeps in plugindata/fpp-showmarquee/ (a weather location you type in, the Show page's logo); a Reinstall keeps them on FPP 10.4 and later. The show prep page's QR code holds a link to the app's download page (pulsemesh.io or tune2.app, or a link you type in): viewers' phones open it, the plugin itself never contacts those sites."
 	},
 
 	"dependencies": {

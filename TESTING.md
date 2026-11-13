@@ -14,7 +14,7 @@ set() { curl -s -X POST -H 'Content-Type: application/json' -d "$1" $API/config;
 Save your settings first, to put them back at the end:
 
 ```bash
-curl -s $API/config > /tmp/mc-before.json
+curl -s $API/config > ~/mc-before.json    # in your home folder: a reboot (section 12) empties /tmp
 ```
 
 ## 0. Before you start
@@ -25,10 +25,10 @@ curl -s $API/config > /tmp/mc-before.json
 ## 0b. The settings page
 
 - [ ] On a new install the page opens on **Overview** with **Getting started**: choosing the matrix, turning pages on and setting them up tick their steps off; after **Save** all four are ticked and it hides, and stays hidden after a reload.
-- [ ] **How it works** opens and closes; **Help** opens the README on GitHub.
+- [ ] **How it works** opens and closes (social sites with the same handle share a page); **Help** opens the README on GitHub.
 - [ ] On a player that's already set up, **Getting started** at the top shows the checklist (all ticked) on Overview until **Hide**.
 - [ ] Before a matrix is chosen the header says "not drawing: choose your matrix"; choosing a big matrix (96 tall) sets both style sizes to suit it (24) and says so.
-- [ ] A page that's off says "This page is off" at the top of its tab; its controls are still usable.
+- [ ] A page that's off says "This page is off" at the top of its tab (Countdown too); its controls are still usable.
 - [ ] The page opens on **Overview**: every kind of page with its switch, a summary, ▲ ▼ and **Edit**.
 - [ ] **Edit** opens that page's tab; the preview shows just that page. Reloading the page comes back to the same tab.
 - [ ] Switch a page on in Overview: its own tab's switch is on too (and the other way round), and its line says **Save to turn it on** until you Save.
@@ -62,7 +62,7 @@ set "{\"countdown\":{\"target\":{\"type\":\"custom\",\"custom_date\":\"$D\",\"cu
 ```
 
 - [ ] Shows `00:04:xx to Test`, ticking once a second without the text jiggling.
-- [ ] At the target minute it reads `00:00:00`, then the matrix goes **blank** and the overlay model turns off (a running sequence shows through).
+- [ ] At the target minute it reads `00:00:00`, then the countdown drops out: the other pages that are on keep taking turns, and the Countdown tab's preview is blank. With no other page on, the matrix goes **blank** and the overlay model turns off (a running sequence shows through).
 - [ ] The page shows "(blank)" and the warning that the date has passed.
 
 ## 3. Under a day: hours, then minutes
@@ -87,8 +87,9 @@ set "{\"countdown\":{\"target\":{\"type\":\"custom\",\"custom_date\":\"2020-01-0
 
 ## 5. FPP commands
 
-From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
+From a playlist **FPP Command** entry, **Run Command** on FPP's status page, or the **Scheduler** (an FPP Remote can't run playlists, so use the scheduler there):
 
+- [ ] **Show Marquee - Output**: Off blanks the matrix and turns the overlay model off (Output says `off`, **Output enabled** is unticked on Display); On brings back the same pages; Toggle flips it. It stays that way after a reboot.
 - [ ] **Show Marquee - Countdown**: Off takes the countdown page out of the turns (with no other page on, the matrix goes blank); On brings it back; Toggle flips it.
 - [ ] **Show Marquee - Set Target**: Christmas, New Year's Day, and Custom with a date and name all take effect within a second.
 
@@ -97,13 +98,13 @@ From a playlist **FPP Command** entry, or **Run Command** on FPP's status page:
 - [ ] On the **Show** tab, type the show's name and turn the page on: the preview shows it as large as fits; **Save**: it's the first page on the matrix.
 - [ ] **Upload logo** with a square logo: the preview shows it on the left, the name beside it; **Replace logo** and **Remove** appear. On the matrix it changes without pressing Save.
 - [ ] A wide logo (a banner) goes above the name. Turn off **Show the name with the logo**: the logo fills the matrix on its own.
-- [ ] A logo with a transparent or black border is trimmed so it fills its space. A non-image file says "Logo not saved: …".
+- [ ] A logo with a transparent or black border is trimmed so it fills its space. The file picker lists only images; a file that isn't one is refused: `curl -s -X POST -H 'Content-Type: application/json' -d '{"image":"aGVsbG8="}' $API/logo` says "Logo not saved: …".
 - [ ] **Remove** asks first, then the page shows just the name. With no name and no logo the tab has a dot.
 - [ ] Uninstall removes the logo; on FPP 10.4+ a **Reinstall** keeps it.
 
 ## 6. Weather page
 
-Choose Open-Meteo (or the Tempest) in the Weather card, then:
+Choose Open-Meteo (or the Tempest) on the Weather tab, then:
 
 ```bash
 set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enabled":false}}'
@@ -122,7 +123,7 @@ set '{"global":{"screen_seconds":5},"weather":{"enabled":true},"social":{"enable
   then put it back with `set '{"weather":{"symbol":{"wind_mph":15,"gust_mph":25}}}'`.
 - [ ] The text is readable from across the yard; on the P5 panel nothing is cut off.
 - [ ] The wind line reads "Wind 8 mph NW" (or "Wind Calm"); change the Wind **Label** and it changes.
-- [ ] Turn Wind off: the page shows the temperature only. Turn both off: no weather page.
+- [ ] Turn Wind off: the page shows the temperature only. Turn both off: no weather page, a warning under the switches, and a dot on the Weather tab and its Overview line.
 
 ## 7. Social media
 
@@ -173,9 +174,10 @@ On the **Messages** tab, turn on **Show on the matrix**:
 
 - [ ] **Add message** "Merry Christmas!" (Enter) "from the Smiths", picture Tree: the tree on the left, two centered lines on the right, in the Text style's colour.
 - [ ] Add "Only {days} days left!" using the `{days}` button, Colour: Number style, picture Star: the number is filled in.
-- [ ] Own colour (gold): the text is that colour.
+- [ ] Colour **Own colour**: the colour picker opens at gold; pick a colour and the text is that colour (the swatch beside the list changes it later).
 - [ ] A long message ("Thank you for visiting! Please drive slowly and enjoy the show") wraps and still reads from the street.
-- [ ] "It's {temp} out" with Weather off: it says "not showing now: nothing for {temp} right now", and the matrix skips it.
+- [ ] "It's {temp} out" with the weather page off and no weather source chosen: it says (in amber) "not showing now: nothing for {temp} right now: choose a weather source…", and the matrix skips it.
+- [ ] Choose a source on the Weather tab, leaving its page off: the tab says the weather still comes from there for `{temp}`, and within a minute (Tempest) or 15 (Open-Meteo) the message shows the temperature. The weather page stays out of the turns.
 - [ ] Only between dates: today to today shows it; tomorrow to tomorrow skips it ("outside its dates").
 - [ ] ▲ ▼ reorder the messages on the matrix; ✕ deletes one; Save, then Revert keeps them.
 
@@ -191,10 +193,10 @@ On the **Messages** tab, turn on **Show on the matrix**:
 - [ ] Restart fppd (**Status → Restart FPPD**): the pages come back by themselves within ~5 s.
 - [ ] Reboot the player: the pages start on their own.
 - [ ] **Stop** then **Start** on the plugin page: it comes back (Start runs it as root).
-- [ ] Choose a model that doesn't exist: Output shows the error; choose the real one again and it recovers.
+- [ ] A model that doesn't exist (the list only offers real ones, so set it here): `set '{"countdown":{"model":"Missing"}}'`: Output shows "overlay model 'Missing' not found"; choose the real one again on Display and it recovers.
 
 ## Finish
 
 ```bash
-set "$(cat /tmp/mc-before.json)"
+set "$(cat ~/mc-before.json)"
 ```

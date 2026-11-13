@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 
 from countdown.messages import (MessagePage, fill, in_window, message_pages, messages_status,  # noqa: E402
-                                settings_problems)
+                                settings_problems, wants_temp)
 
 try:
     import PIL  # noqa: F401
@@ -83,6 +83,18 @@ class Pages(unittest.TestCase):
         self.assertEqual([i["why"] for i in st["items"]],
                          ["switched off", "no text", "nothing for {temp} right now", "outside its dates", ""])
         self.assertEqual(st["showing"], 1)
+
+    def test_wants_temp(self):
+        on = {"enabled": True, "items": [{"text": "It's {temp} out"}]}
+        self.assertTrue(wants_temp(on))
+        self.assertFalse(wants_temp({**on, "enabled": False}))
+        self.assertFalse(wants_temp({"enabled": True, "items": [{"text": "It's {temp} out", "enabled": False}]}))
+        self.assertFalse(wants_temp({"enabled": True, "items": [{"text": "Hello"}]}))
+
+    def test_a_hint_says_what_to_do(self):
+        cfg = {"enabled": True, "items": [{"text": "It's {temp} out"}]}
+        why = messages_status(cfg, {"temp": None}, date(2026, 12, 1), hints={"temp": "choose a source"})["items"][0]["why"]
+        self.assertEqual(why, "nothing for {temp} right now: choose a source")
 
     def test_section_off(self):
         self.assertEqual(message_pages({"enabled": False, "items": [msg("x")]}, VALUES, DEC17), [])
@@ -171,6 +183,25 @@ class Daemon(unittest.TestCase):
         self.assertEqual(v, {"days": "8", "tonight": "5:30–10 PM", "temp": None, "date": "Dec 17"})
         cfg["schedule"]["nights"] = [False] * 7
         self.assertIsNone(self.d.fill_values(cfg, now)["tonight"])
+
+    def test_temp_with_the_weather_page_off(self):
+        import time as _time
+        from countdown.weather import Reading
+        now = datetime(2026, 12, 17, 15, 0).astimezone()
+        cfg = self.mc._deep_merge(self.mc.load_defaults(), {
+            "weather": {"enabled": False, "source": "open-meteo", "temperature": {"enabled": False}},
+            "messages": {"enabled": True, "items": [{"text": "It's {temp} out"}]}})
+        self.assertEqual(self.d.weather_source(cfg), "open-meteo")      # runs for the message
+        self.d.weather_reading = lambda: Reading(temp_c=0.0, temp_at=_time.monotonic())
+        self.assertEqual(self.d.fill_values(cfg, now)["temp"], "32°F")  # even with the Temperature line off
+        cfg["messages"]["items"][0]["enabled"] = False
+        self.assertEqual(self.d.weather_source(cfg), "")                # nothing wants it: no weather
+        cfg["messages"]["items"][0]["enabled"] = True
+        cfg["weather"]["source"] = ""
+        self.assertEqual(self.d.weather_status(cfg)["error"], "choose a weather source")
+        self.assertEqual(self.d.update_config({"messages": {"enabled": True, "items": [{"text": "It's {temp} out"}]}}), [])
+        why = self.d.get_status()["messages"]["items"][0]["why"]
+        self.assertIn("choose a weather source on the Weather tab", why)
 
     def test_preview_messages_mode_uses_samples(self):
         r = self.d.preview({"config": {"messages": {"enabled": False, "items": [msg("It's {temp}!", enabled=False)]}},

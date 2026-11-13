@@ -1,5 +1,25 @@
 [
     {
+        "name": "Show Marquee - Output",
+        "description": "Turn the whole sign on or off and save it (the Output enabled switch on the Display tab). Off blanks the matrix and turns the overlay model off, so sequences show through; the pages keep their own switches, so On brings back the same rotation. Use it from the scheduler to turn the sign off for the night.",
+        "script": "output.sh",
+        "args": [
+            {
+                "name": "State",
+                "description": "State",
+                "type": "string",
+                "optional": false,
+                "contents": [
+                    "On",
+                    "Off",
+                    "Toggle"
+                ],
+                "default": "Off",
+                "help": "On shows the pages, Off blanks the sign, Toggle switches to the opposite of the current state."
+            }
+        ]
+    },
+    {
         "name": "Show Marquee - Countdown",
         "description": "Turn the countdown page on or off and save it (its Show on the matrix switch). The other pages keep taking turns; with every page off the matrix goes blank and the overlay model turns off, so sequences show through.",
         "script": "state.sh",

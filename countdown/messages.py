@@ -19,6 +19,8 @@ A message whose fill-in has nothing to show right now (no weather reading for
   fill()               a message's text with its fill-ins, or None
   in_window()          whether a date window includes a day
   message_pages()      the pages to show now
+  wants_temp()         whether a message that's on uses {temp} (so the weather
+                       source runs even with the weather page off)
 """
 
 import re
@@ -108,9 +110,19 @@ def _items(cfg: dict) -> List[dict]:
     return [i for i in items if isinstance(i, dict)] if isinstance(items, list) else []
 
 
+def wants_temp(cfg: dict) -> bool:
+    """Whether the section is on with a message that's on and uses {temp}."""
+    return bool(cfg.get("enabled")) and any(
+        item.get("enabled", True) and "{temp}" in str(item.get("text") or "") for item in _items(cfg)[:MAX_ITEMS])
+
+
 def item_page(i: int, item: dict, values: Dict[str, Optional[str]], today: date,
-              force: bool = False) -> Tuple[Optional[MessagePage], str]:
-    """(page, why not): one message's page now, or None and the reason it's skipped."""
+              force: bool = False, hints: Optional[Dict[str, str]] = None) -> Tuple[Optional[MessagePage], str]:
+    """(page, why not): one message's page now, or None and the reason it's skipped.
+
+    hints: what to do about a fill-in with nothing (e.g. "temp": "choose a
+    weather source on the Weather tab"), added to the reason.
+    """
     if not item.get("enabled", True) and not force:
         return None, "switched off"
     if item.get("when") == "dates" and not force and not in_window(item.get("from"), item.get("to"), today):
@@ -120,8 +132,10 @@ def item_page(i: int, item: dict, values: Dict[str, Optional[str]], today: date,
         return None, "no text"
     filled = fill(text, values)
     if filled is None:
-        names = [n for n in _FILL.findall(text) if n in FILL_INS and not values.get(n)]
-        return None, "nothing for " + ", ".join("{" + n + "}" for n in dict.fromkeys(names)) + " right now"
+        names = list(dict.fromkeys(n for n in _FILL.findall(text) if n in FILL_INS and not values.get(n)))
+        why = "nothing for " + ", ".join("{" + n + "}" for n in names) + " right now"
+        tips = [hints[n] for n in names if hints and hints.get(n)]
+        return None, why + (": " + "; ".join(tips) if tips else "")
     lines = tuple(" ".join(ln.split()) for ln in filled.split("\n") if ln.strip())
     color = str(item.get("color") or "text")
     picture = str(item.get("picture") or "")
@@ -141,11 +155,12 @@ def message_pages(cfg: dict, values: Dict[str, Optional[str]], today: date) -> L
     return pages
 
 
-def messages_status(cfg: dict, values: Dict[str, Optional[str]], today: date) -> dict:
+def messages_status(cfg: dict, values: Dict[str, Optional[str]], today: date,
+                    hints: Optional[Dict[str, str]] = None) -> dict:
     """Each message and whether it shows now (and why not), for the settings page."""
     out = []
     for i, item in enumerate(_items(cfg)[:MAX_ITEMS]):
-        page, why = item_page(i, item, values, today)
+        page, why = item_page(i, item, values, today, hints=hints)
         out.append({"showing": page is not None, "why": why, "plain": page.plain if page else ""})
     return {"enabled": bool(cfg.get("enabled")), "items": out,
             "showing": sum(1 for x in out if x["showing"]) if cfg.get("enabled") else 0}

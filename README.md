@@ -34,7 +34,7 @@ A sign for your light show, on an LED matrix. **Show Marquee** shows pages that 
 - **Two styles** colour every page: a **Number style** (the countdown's number, temperatures, show times) and a **Text style** (the words), each with its own font, size and colour. The first time you choose a matrix, the text size is set to suit it.
 - **Nothing scrolls**: each page is centered and still; a countdown wider than the matrix goes on two lines, and text shrinks to fit.
 - **Live preview** on the settings page, drawn by the plugin itself so it matches the matrix exactly: the whole rotation on Overview, or one page on its own tab.
-- **FPP commands** for playlists, the scheduler and MQTT: turn the countdown on or off, change its target, or start the plugin.
+- **FPP commands** for playlists, the scheduler and MQTT: turn the whole sign off for the night and back on, turn the countdown on or off, change its target, or start the plugin.
 - **REST API** for Home Assistant and scripts ([API.md](API.md)), and **settings download and upload** as a JSON file.
 
 ## Requirements
@@ -95,7 +95,7 @@ A page for your show's name, its logo, or both. It comes first in the rotation u
 
 ## Weather
 
-On the **Weather** tab, turn on **Show on the matrix**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose.
+On the **Weather** tab, turn on **Show on the matrix**, then choose where the weather comes from. Nothing is shown, and nothing is sent, until you choose. A message using `{temp}` needs a source chosen here too, but the weather page itself can stay off: the weather then runs just for the message.
 
 ```
  calm day                      windy                         calm night
@@ -223,7 +223,7 @@ Your own pages: a greeting, a thank-you, "Please drive slowly", "Only {days} day
 |---|---|
 | `{days}` | days until the countdown's date: "8" |
 | `{tonight}` | tonight's show times from the schedule: "5:30–10 PM" |
-| `{temp}` | the temperature from the weather: "38°F" |
+| `{temp}` | the temperature from the weather: "38°F". Needs a weather source chosen on the Weather tab; the weather page itself can stay off. |
 | `{date}` | today's date: "Dec 18" |
 
 A message whose fill-in has nothing to show right now (no weather reading for `{temp}`, no show tonight for `{tonight}`) is skipped until it does, so the matrix never shows a gap. Each message says on the settings page whether it's showing now, and if not, why.
@@ -236,6 +236,7 @@ Use them anywhere FPP runs a command: a playlist **FPP Command** entry, the sche
 
 | Command | Arguments |
 |---|---|
+| **Show Marquee - Output** | `On`, `Off` or `Toggle`: turns the whole sign on or off (the **Output enabled** switch on Display). Off blanks the matrix and turns the overlay model off, so sequences show through; On brings back the same pages. Saved, so it stays that way after a reboot. Schedule Off at the end of the night and On before the show. |
 | **Show Marquee - Countdown** | `On`, `Off` or `Toggle`: turns the countdown page on or off (the countdown's **Show on the matrix** switch). The other pages keep taking turns; with every page off, the matrix goes blank and the overlay model turns off, so sequences show through. Saved. |
 | **Show Marquee - Start** | No arguments. Starts the plugin's background program if it isn't running (it starts with FPP on its own; this is for after a **Stop**). The settings page's **Start** button uses it. |
 | **Show Marquee - Set Target** | `Christmas`, `New Year's Day` or `Custom`, then optional *date* (YYYY-MM-DD), *time* (HH:MM), *event name*, *repeat every year* (true/false). Blank optional arguments keep what's saved. Saved. |
@@ -248,7 +249,7 @@ The **Output** line on the settings page says what's wrong. The log is `/home/fp
 
 | Output says | Fix |
 |---|---|
-| `off` | Nothing to draw: every page is switched off, **Output enabled** is off, or no model is chosen. |
+| `off` | Nothing to draw: every page is switched off, **Output enabled** is off (or the **Show Marquee - Output** command turned it off), or no model is chosen. |
 | `blank` | The target has been reached; the matrix stays blank for the rest of that day (or for good, for a past custom date without yearly repeat). |
 | `permission denied ... not running as root` | The plugin must run as root to draw. Click **Stop** then **Start**, or restart FPP. (**Restart** keeps the same user.) |
 | `overlay model '...' not found` | The model was renamed or deleted. Choose it again on the **Display** tab. |

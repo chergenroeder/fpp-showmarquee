@@ -76,6 +76,14 @@ class Endpoints(CommandsBase):
         self.post("state", {"enabled": False})
         self.assertFalse(self.mc.load_config()["countdown"]["enabled"])
 
+    def test_output_on_off_toggle_and_saved(self):
+        out = lambda: self.mc._daemon.get_config()["global"]["enable_output"]  # noqa: E731
+        self.assertEqual(self.post("output", {"enable_output": False}), (200, {"enable_output": False}))
+        self.assertFalse(self.mc.load_config()["global"]["enable_output"])
+        self.assertEqual(self.post("output", {"enable_output": "toggle"}), (200, {"enable_output": True}))
+        self.assertTrue(out())
+        self.assertEqual(self.post("output", {"enable_output": "maybe"})[0], 400)
+
     def test_partial_config_post_keeps_other_settings(self):
         self.assertEqual(self.post("config", {"countdown": {"model": "P5 Panel"}})[0], 200)
         self.assertEqual(self.post("config", {"countdown": {"layout": {"number_position": "last"}}})[0], 200)
@@ -125,6 +133,13 @@ class Scripts(CommandsBase):
         self.assertFalse(self.cd["enabled"])
         self.run_cmd("state.sh", "Toggle")
         self.assertTrue(self.cd["enabled"])
+
+    def test_output_script(self):
+        r = self.run_cmd("output.sh", "Off")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(self.mc._daemon.get_config()["global"]["enable_output"])
+        self.run_cmd("output.sh", "Toggle")
+        self.assertTrue(self.mc._daemon.get_config()["global"]["enable_output"])
 
     def test_state_script_rejects_bad_value(self):
         r = self.run_cmd("state.sh", "Sideways")

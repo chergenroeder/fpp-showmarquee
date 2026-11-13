@@ -18,6 +18,7 @@ function getEndpointsfppshowmarquee() {
         array('method' => 'POST', 'endpoint' => 'reload',         'callback' => 'fppshowmarqueeReload'),
         array('method' => 'POST', 'endpoint' => 'preview',        'callback' => 'fppshowmarqueePreview'),
         array('method' => 'POST', 'endpoint' => 'state',          'callback' => 'fppshowmarqueeState'),
+        array('method' => 'POST', 'endpoint' => 'output',         'callback' => 'fppshowmarqueeOutput'),
         array('method' => 'POST', 'endpoint' => 'target',         'callback' => 'fppshowmarqueeTarget'),
         array('method' => 'GET',  'endpoint' => 'models',         'callback' => 'fppshowmarqueeModels'),
         array('method' => 'GET',  'endpoint' => 'fonts',          'callback' => 'fppshowmarqueeFonts'),
@@ -65,6 +66,7 @@ function fppshowmarqueePostConfig()    { return fppshowmarqueeDaemonRequest('con
 function fppshowmarqueeReload()        { return fppshowmarqueeDaemonRequest('reload', 'POST'); }
 function fppshowmarqueePreview()       { return fppshowmarqueeDaemonRequest('preview', 'POST'); }
 function fppshowmarqueeState()         { return fppshowmarqueeDaemonRequest('state', 'POST'); }
+function fppshowmarqueeOutput()        { return fppshowmarqueeDaemonRequest('output', 'POST'); }
 function fppshowmarqueeTarget()        { return fppshowmarqueeDaemonRequest('target', 'POST'); }
 function fppshowmarqueeModels()        { return fppshowmarqueeDaemonRequest('models'); }
 function fppshowmarqueeFonts()         { return fppshowmarqueeDaemonRequest('fonts'); }

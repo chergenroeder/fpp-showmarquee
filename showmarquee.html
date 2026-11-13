@@ -80,12 +80,12 @@
             <div class="col-6 col-sm-4"><label class="form-label form-label-sm mb-0" for="mc-secs">Seconds per page</label>
               <input type="number" class="form-control form-control-sm" id="mc-secs" min="1" max="600" step="1" data-path="global.screen_seconds" data-type="number"></div>
           </div>
-          <div class="small text-muted mt-1">Nothing scrolls: each page shows on its own for this many seconds. Each social media screen and each message is a page of its own.</div>
+          <div class="small text-muted mt-1">Nothing scrolls: each page shows on its own for this many seconds. Each message is a page of its own. Social media sites with the same handle share one page; a different handle gets a page of its own.</div>
           <div class="small mt-3">Matrix showing now: <span id="mc-s-message">–</span></div>
           <details class="mt-3 small">
             <summary>How it works</summary>
             <ul class="mt-2 mb-0 ps-3">
-              <li>The pages above take turns on the matrix in this order, each held still for <strong>Seconds per page</strong>. Each social media screen and each message is a page of its own.</li>
+              <li>The pages above take turns on the matrix in this order, each held still for <strong>Seconds per page</strong>. Each message is a page of its own. Social media sites with the same handle share one page; a different handle gets a page of its own.</li>
               <li>A page with nothing to show right now is skipped until it has: the countdown on the day itself, the weather with no reading, a message outside its dates.</li>
               <li>Nothing changes on the matrix until you <strong>Save</strong>. The preview on the right plays the rotation as the matrix will.</li>
               <li>The <strong>Number style</strong> and <strong>Text style</strong> on the Display tab colour every page. A dot on a tab means that page needs something before it can show.</li>
@@ -144,7 +144,7 @@
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-enabled" data-path="countdown.enabled">
             <label class="form-check-label" for="mc-enabled">Show on the matrix</label></div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="mc-countdown-body">
           <div class="d-flex flex-wrap gap-3 mb-2">
             <div class="form-check"><input class="form-check-input" type="radio" name="mc-type" id="mc-type-christmas" value="christmas" data-path="countdown.target.type">
               <label class="form-check-label" for="mc-type-christmas">Christmas Day <span class="mc-example">Dec 25</span></label></div>
@@ -229,6 +229,7 @@
               <label class="form-check-label" for="mc-w-src-tempest">Tempest weather station
                 <span class="mc-example">for Tempest owners whose Tempest hub is on the same network as this player (Pi); no internet needed</span></label></div>
             <div class="small mc-warn mt-1 mc-hidden" id="mc-w-src-need">Choose where the weather comes from: nothing is shown or sent until you do.</div>
+            <div class="small text-muted mt-1 mc-hidden" id="mc-w-for-temp">The weather page is off, but a message uses <code>{temp}</code>, so the weather still comes from here for it.</div>
 
             <div class="mt-2 mc-hidden" id="mc-w-om">
               <div class="small text-muted mb-1">Sends this player's location, rounded to about 1 km, to <strong>api.open-meteo.com</strong> every 15 minutes while the weather is on. Nothing else is sent.</div>
@@ -267,6 +268,7 @@
             <div class="col-auto"><div class="form-check mb-1"><input class="form-check-input" type="checkbox" id="mc-w-gust" data-path="weather.wind.gusts">
               <label class="form-check-label" for="mc-w-gust">Gusts</label></div></div>
           </div>
+          <div class="small mc-warn mt-1 mc-hidden" id="mc-w-lines-need">Temperature and Wind are both off, so there's no weather page. Turn one on.</div>
           <details class="mt-3">
             <summary class="small">More wind, symbol and source options</summary>
             <div class="row g-2 mt-1">
@@ -437,7 +439,7 @@
           </div>
           <div class="small mt-2">Fill-ins <span class="text-muted">(click to add to the message you're typing in)</span>:
             <span class="d-inline-flex flex-wrap gap-1 align-middle" id="mc-ms-fills"></span></div>
-          <div class="small text-muted mt-1">A message whose fill-in has nothing to show right now (no weather for <code>{temp}</code>, no show tonight for <code>{tonight}</code>) is skipped until it does.</div>
+          <div class="small text-muted mt-1">A message whose fill-in has nothing to show right now (no weather for <code>{temp}</code>, no show tonight for <code>{tonight}</code>) is skipped until it does. <code>{temp}</code> needs a weather source chosen on the Weather tab; the weather page itself can stay off.</div>
         </div>
       </div>
       </div>
@@ -732,6 +734,9 @@
 
   // ── custom messages ──
   const MS_MAX = 10;
+  // "Own colour" starts from gold (white looked like no change) and opens the picker at once
+  const OWN_COLOR = '#ffc000';
+  function openPicker(el) { try { if (el && el.showPicker) el.showPicker(); } catch (e) { /* needs a click; the swatch is there */ } }
   const PICTURES = [['', 'None'], ['star', 'Star'], ['tree', 'Tree'], ['snowflake', 'Snowflake'],
                     ['gift', 'Gift'], ['candycane', 'Candy cane'], ['heart', 'Heart']];
   const FILLS = { days: 'days until the countdown date', tonight: "tonight's show times",
@@ -753,13 +758,13 @@
         <div class="d-flex align-items-center gap-2 mb-1">
           <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mc-ms-${i}-on" data-path="messages.items.${i}.enabled">
             <label class="form-check-label small fw-bold" for="mc-ms-${i}-on">Message ${i + 1}</label></div>
-          <span class="small ms-1" data-ms-status="${i}"></span>
           <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="Message ${i + 1}">
             <button type="button" class="btn btn-outline-secondary" data-ms-move="-1" data-i="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>▲</button>
             <button type="button" class="btn btn-outline-secondary" data-ms-move="1" data-i="${i}" aria-label="Move down" ${i === items.length - 1 ? 'disabled' : ''}>▼</button>
             <button type="button" class="btn btn-outline-danger" data-ms-del="${i}" aria-label="Delete message ${i + 1}">✕</button>
           </div>
         </div>
+        <div class="small mb-1" data-ms-status="${i}"></div>
         <textarea class="form-control form-control-sm" rows="2" maxlength="120" placeholder="Merry Christmas from the Smiths!" data-path="messages.items.${i}.text" data-ms-text="${i}" aria-label="Message ${i + 1} text"></textarea>
         <div class="d-flex flex-wrap align-items-end gap-2 mt-1">
           <div><label class="form-label form-label-sm mb-0">Colour</label>
@@ -784,7 +789,7 @@
       const own = m.color && m.color !== 'text' && m.color !== 'number';
       const sel = $(`[data-ms="color"][data-i="${i}"]`), pick = $(`[data-ms="color-own"][data-i="${i}"]`);
       if (sel) sel.value = own ? 'own' : (m.color || 'text');
-      if (pick) { pick.value = own ? m.color : '#ffffff'; pick.classList.toggle('mc-hidden', !own); }
+      if (pick) { pick.value = own ? m.color : OWN_COLOR; pick.classList.toggle('mc-hidden', !own); }
       for (const which of ['from', 'to']) {
         const [mm, dd] = String(m[which] || (which === 'from' ? '12-24' : '12-25')).split('-').map(Number);
         const ms = $(`[data-ms="${which}-m"][data-i="${i}"]`), ds = $(`[data-ms="${which}-d"][data-i="${i}"]`);
@@ -798,7 +803,7 @@
         const s = msStatus[i];
         st.textContent = !String(m.text || '').trim() ? 'type a message'
           : s ? (s.showing ? 'showing' : 'not showing now: ' + s.why) : '';
-        st.className = 'small ms-1 ' + (s && s.showing ? 'text-success' : 'text-muted');
+        st.className = 'small mb-1 ' + (s && s.showing ? 'text-success' : s ? 'text-warning-emphasis fw-semibold' : 'text-muted');
       }
     });
   }
@@ -806,13 +811,14 @@
     const el = e.target, i = Number(el.dataset.i), m = msItems()[i];
     if (!m || !el.dataset.ms) return false;
     const pad = n => String(n).padStart(2, '0');
-    if (el.dataset.ms === 'color') m.color = el.value === 'own' ? ($(`[data-ms="color-own"][data-i="${i}"]`).value || '#ffffff') : el.value;
+    if (el.dataset.ms === 'color') m.color = el.value === 'own' ? ($(`[data-ms="color-own"][data-i="${i}"]`).value || OWN_COLOR) : el.value;
     else if (el.dataset.ms === 'color-own') m.color = el.value;
     else {
       const which = el.dataset.ms.split('-')[0];
       m[which] = pad($(`[data-ms="${which}-m"][data-i="${i}"]`).value) + '-' + pad($(`[data-ms="${which}-d"][data-i="${i}"]`).value);
     }
     refresh();
+    if (el.dataset.ms === 'color' && el.value === 'own') openPicker($(`[data-ms="color-own"][data-i="${i}"]`));
     return true;
   }
   function messageButtons(e) {
@@ -839,14 +845,15 @@
     const S = cfg.show = cfg.show || {};
     const own = S.color && S.color !== 'text' && S.color !== 'number';
     $('#mc-sh-color').value = own ? 'own' : (S.color || 'text');
-    $('#mc-sh-color-own').value = own ? S.color : '#ffffff';
+    $('#mc-sh-color-own').value = own ? S.color : OWN_COLOR;
     $('#mc-sh-color-own').classList.toggle('mc-hidden', !own);
   }
   function onShowControl(el) {
     const S = cfg.show = cfg.show || {};
-    if (el.dataset.show === 'color') S.color = el.value === 'own' ? ($('#mc-sh-color-own').value || '#ffffff') : el.value;
+    if (el.dataset.show === 'color') S.color = el.value === 'own' ? ($('#mc-sh-color-own').value || OWN_COLOR) : el.value;
     else S.color = el.value;
     refresh();
+    if (el.dataset.show === 'color' && el.value === 'own') openPicker($('#mc-sh-color-own'));
   }
   const showName = () => String((cfg.show || {}).name || '').trim();
   function refreshShow() {
@@ -964,6 +971,12 @@
     if (!keepScroll) { const tabs = $('#mc-tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView(); }
     if (cfg) { schedulePreview(0); updateDots(); }
   }
+  // The same rule as countdown/messages.py wants_temp(): the weather runs for {temp} too
+  const msWantsTemp = () => { const M = cfg.messages || {};
+    return !!M.enabled && (Array.isArray(M.items) ? M.items : []).some(m => m && m.enabled !== false && String(m.text || '').includes('{temp}')); };
+  // Temperature and Wind both off: the weather page has nothing to show
+  const weatherLinesOff = () => { const W = cfg.weather || {};
+    return (W.temperature || {}).enabled === false && (W.wind || {}).enabled === false; };
   // A small dot on a tab (and its overview row) when that page needs attention
   function updateDots() {
     if (!cfg) return;
@@ -972,7 +985,7 @@
     const ws = (lastStatus && lastStatus.weather) || {};
     // The daemon's error is about the saved source; a source just picked here clears the dot at once
     const wsErr = !!ws.error && (ws.source || '') === (W.source || '') && ws.temp_f == null && ws.wind_mph == null;
-    dot('weather', !!W.enabled && (!W.source || wsErr));
+    dot('weather', !!W.enabled && (!W.source || wsErr || weatherLinesOff()));
     const so = socialScreens(S);
     dot('social', !!S.enabled && (so.problems.length > 0 || !so.screens.length));
     dot('showprep', !!P.enabled && !APPS[P.app]);
@@ -1002,7 +1015,7 @@
   // A section that's off says so at the top, rather than being faded (which made
   // its controls look unusable): it can be set up first and switched on after.
   function offNotes() {
-    [['#mc-show-body', 'show.enabled'], ['#mc-weather-body', 'weather.enabled'], ['#mc-social-body', 'social.enabled'],
+    [['#mc-show-body', 'show.enabled'], ['#mc-countdown-body', 'countdown.enabled'], ['#mc-weather-body', 'weather.enabled'], ['#mc-social-body', 'social.enabled'],
      ['#mc-showprep-body', 'showprep.enabled'], ['#mc-schedule-body', 'schedule.enabled'],
      ['#mc-messages-body', 'messages.enabled']].forEach(([sel, path]) => {
       const body = $(sel);
@@ -1147,8 +1160,11 @@
     $('#mc-ex-hours').textContent = ordered(join('9', U.hours));
     const W = cfg.weather || {}, WW = W.wind || {};
     const src = W.source || '', OM = W.open_meteo || {};
-    const needSrc = !!W.enabled && !src;
+    const forTemp = !W.enabled && msWantsTemp();
+    const needSrc = (!!W.enabled || forTemp) && !src;
+    $('#mc-w-for-temp').classList.toggle('mc-hidden', !forTemp);
     $('#mc-w-src-need').classList.toggle('mc-hidden', !needSrc);
+    $('#mc-w-lines-need').classList.toggle('mc-hidden', !(W.enabled && weatherLinesOff()));
     $('#mc-w-src').classList.toggle('border-warning', needSrc);
     $('#mc-w-om').classList.toggle('mc-hidden', src !== 'open-meteo');
     $('#mc-w-loc-fields').classList.toggle('mc-hidden', OM.use_fpp_location !== false);
@@ -1399,7 +1415,7 @@
     const om = w.source === 'open-meteo';
     const hasReading = w.temp_f != null || w.wind_mph != null;
     let wt;
-    if (!w.enabled) wt = 'off';
+    if (!w.in_use) wt = 'off';
     else if (w.error && !hasReading) wt = w.error;
     else if (!hasReading) wt = !w.listening ? 'starting' : om ? 'getting the weather from Open-Meteo…' : 'listening for the Tempest hub… no reading yet';
     else {
@@ -1428,9 +1444,12 @@
       }
       if (w.error) wt += ' · last update failed: ' + w.error;
     }
+    const linesOff = w.enabled && weatherLinesOff();
+    if (linesOff) wt = 'no page: Temperature and Wind are both off';
+    else if (!w.enabled && w.in_use) wt = 'page off; for {temp}: ' + wt;
     $('#mc-s-weather').textContent = wt;
-    $('#mc-s-weather').className = w.error ? (hasReading ? 'mc-warn' : 'mc-err') : '';
-    $('#mc-w-live').textContent = w.enabled ? 'Now: ' + wt : '';
+    $('#mc-s-weather').className = linesOff ? 'mc-warn' : w.error ? (hasReading ? 'mc-warn' : 'mc-err') : '';
+    $('#mc-w-live').textContent = w.in_use ? 'Now: ' + wt : '';
     const so = s.social || {}, soEl = $('#mc-s-social');
     const soProblems = Object.values(so.problems || {});
     soEl.textContent = !so.enabled ? 'off'

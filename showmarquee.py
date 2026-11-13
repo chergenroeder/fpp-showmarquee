@@ -30,7 +30,7 @@ from typing import Dict, List, Optional
 from countdown.fonts import FontIndex
 from countdown.message import build_message
 from countdown.output import OutputError, OverlayOutput, model_name_problem
-from countdown.messages import MessagePage, item_page, message_pages, messages_status
+from countdown.messages import MessagePage, item_page, message_pages, messages_status, wants_temp
 from countdown.messages import settings_problems as messages_settings_problems
 from countdown.schedule import (SchedulePage, format_range, night_times, schedule_page, schedule_status,
                                 show_night)
@@ -551,6 +551,24 @@ class CountdownDaemon:
         errors = self.update_config(cfg)
         return {"error": "; ".join(errors)} if errors else {"enabled": new}
 
+    def set_output(self, value) -> dict:
+        """On / off / toggle the whole sign (global.enable_output) and save it.
+
+        FPP command "Show Marquee - Output". Off blanks the matrix and turns the
+        overlay model off; the daemon keeps running, so On brings it straight back.
+        """
+        cfg = self.get_config()
+        cur = bool(cfg["global"].get("enable_output", True))
+        if value == "toggle":
+            new = not cur
+        elif isinstance(value, bool):
+            new = value
+        else:
+            return {"error": "enable_output must be true, false or \"toggle\""}
+        cfg["global"]["enable_output"] = new
+        errors = self.update_config(cfg)
+        return {"error": "; ".join(errors)} if errors else {"enable_output": new}
+
     def set_target(self, body: dict) -> dict:
         """Switch the target and save it (FPP command "Set Target").
 
@@ -832,17 +850,25 @@ class CountdownDaemon:
             "showprep": show_prep_status(cfg.get("showprep") or {}),
             "show": show_status(cfg.get("show") or {}, self.logos.info()),
             "schedule": schedule_status(cfg.get("schedule") or {}, now),
-            "messages": messages_status(cfg.get("messages") or {}, self.fill_values(cfg, now), now.date()),
+            "messages": messages_status(cfg.get("messages") or {}, self.fill_values(cfg, now), now.date(),
+                                        hints=None if self.weather_source(cfg) else
+                                        {"temp": "choose a weather source on the Weather tab "
+                                                 "(the weather page itself can stay off)"}),
         }
 
     # ── Weather ──
 
     @staticmethod
-    def weather_source(cfg: dict) -> str:
-        """The weather source in use: "open-meteo", "tempest" or "" (off/not chosen)."""
+    def weather_in_use(cfg: dict) -> bool:
+        """The weather page is on, or a message that's on uses {temp}."""
+        return bool((cfg.get("weather") or {}).get("enabled")) or wants_temp(cfg.get("messages") or {})
+
+    @classmethod
+    def weather_source(cls, cfg: dict) -> str:
+        """The weather source in use: "open-meteo", "tempest" or "" (not in use or not chosen)."""
         w = cfg.get("weather") or {}
         src = str(w.get("source") or "")
-        return src if w.get("enabled") and src in ("open-meteo", "tempest") else ""
+        return src if cls.weather_in_use(cfg) and src in ("open-meteo", "tempest") else ""
 
     def weather_location(self, cfg: Optional[dict] = None) -> Optional[Location]:
         """Where Open-Meteo's weather is for: FPP's location or the one set here."""
@@ -893,7 +919,9 @@ class CountdownDaemon:
         tonight = night_times(sc)[show_night(sc, now)]      # last night's, while a late show is still on
         temp = None
         w = cfg.get("weather") or {}
-        if w.get("enabled"):
+        if self.weather_source(cfg):
+            # The temperature even with the weather page off, or its Temperature line off
+            w = {**w, "temperature": {**(w.get("temperature") or {}), "enabled": True}}
             reading = self.weather_reading()
             page = weather_page(reading, w, hour=now.hour) if reading is not None else None
             temp = page.temp if page is not None and page.temp else None
@@ -911,9 +939,10 @@ class CountdownDaemon:
         with self._listener_lock:
             lst = self._listener
         src = self.weather_source(cfg)
-        info = {"enabled": bool(w.get("enabled")), "source": src,
+        in_use = self.weather_in_use(cfg)
+        info = {"enabled": bool(w.get("enabled")), "in_use": in_use, "source": src,
                 "listening": bool(lst and lst.running), "error": lst.error if lst else ""}
-        if w.get("enabled") and not src:
+        if in_use and not src:
             info["error"] = "choose a weather source"
         if src == "open-meteo":
             loc = self.weather_location(cfg)
@@ -1244,6 +1273,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 return self._send_json(400, {"error": "Body must be a JSON object"})
             result = _daemon.set_enabled(body.get("enabled"))
+            self._send_json(400 if "error" in result else 200, result)
+        elif route == "output":
+            body = self._read_json()
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Body must be a JSON object"})
+            result = _daemon.set_output(body.get("enable_output"))
             self._send_json(400 if "error" in result else 200, result)
         elif route == "target":
             body = self._read_json()

@@ -95,7 +95,7 @@ Anyone who can open the player's FPP pages can use this API, as with FPP's own. 
 | `message.plain` | What the matrix shows; `""` when blank. |
 | `output.state` | `drawing`, `blank` (nothing to show), `off` (disabled or no model), `error` (see `output.error`), `starting`. |
 | `showing` | What the matrix is drawing now: `slot` is `show`, `countdown`, `weather` (the weather page), `social:<sites>`, `showprep`, `schedule` or `message:<n>` for a social media screen (e.g. `social:facebook+youtube`, whose `message` is `[Facebook] [YouTube] @SmithFamilyLights`). `message` (above) is always the countdown. |
-| `weather` | `source` is the source in use: `open-meteo`, `tempest`, or `""` (Weather off or no source chosen; `error` is then `choose a weather source` when Weather is on). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `page` is what the weather page shows now (`symbol` is `sun`, `moon`, `partly_day`, `partly_night`, `cloud`, `fog`, `wind`, `rain`, `sleet`, `snow` or `storm`; `lines` are the temperature, wind and gust lines that are on and fresh), or `null` when there's nothing to show. `is_day` and `day_from` (`open-meteo`, `tempest` or `clock`) say how the sun or moon was chosen. `condition` is the sky (`clear`, `partly`, `cloudy`, `fog`, `rain`, `sleet`, `snow` or `storm`, or `null` when not known or `symbol.conditions` is off) and `condition_from` where it came from (`open-meteo` or `tempest`). `solar_wm2` and `lux` are the Tempest's light readings (`null` with Open-Meteo). |
+| `weather` | `in_use` is true when the weather page is on or a message that's on uses `{temp}`. `source` is the source in use: `open-meteo`, `tempest`, or `""` (not in use or no source chosen; `error` is then `choose a weather source` when in use). With Open-Meteo there are also `location` (`{"lat", "lon", "from": "fpp" \| "plugin"}`, rounded to 2 decimals, or `null` when there is none), `last_fetch_age_s` and `next_fetch_s`; `hub`, `device`, `hub_ip` and `packets` are Tempest only. With Open-Meteo, `error` can be set while the last reading is still shown (a failed update). Only `enabled`, `source`, `listening` and `error` until the source starts. Values are `null` until a reading arrives; ages are in seconds. `page` is what the weather page shows now (`symbol` is `sun`, `moon`, `partly_day`, `partly_night`, `cloud`, `fog`, `wind`, `rain`, `sleet`, `snow` or `storm`; `lines` are the temperature, wind and gust lines that are on and fresh), or `null` when there's nothing to show. `is_day` and `day_from` (`open-meteo`, `tempest` or `clock`) say how the sun or moon was chosen. `condition` is the sky (`clear`, `partly`, `cloudy`, `fog`, `rain`, `sleet`, `snow` or `storm`, or `null` when not known or `symbol.conditions` is off) and `condition_from` where it came from (`open-meteo` or `tempest`). `solar_wm2` and `lux` are the Tempest's light readings (`null` with Open-Meteo). |
 | `social` | `screens`: the social media screens in the order they show, one per distinct handle (sites with the same handle, ignoring case and `@`, share a screen). `problems`: sites that are on but can't show, by site key. |
 | `messages` | One entry per message, in order: `showing` now or not, and `why` not (`switched off`, `no text`, `outside its dates`, `nothing for {temp} right now`). `showing` at the top counts them. |
 | `schedule` | `summary` is the week as the matrix groups it. `problems` says what's missing (no show nights, a start or end time not set). In `plain`, `*` marks tonight's line. |
@@ -196,7 +196,7 @@ The full settings:
 | `layout.number_position` | `first`, `last` |
 | `layout.under_one_day` | `hms`, `hours` |
 | `weather.enabled` | show weather (from the chosen source) |
-| `weather.source` | `open-meteo`, `tempest`, or `""` (not chosen: nothing is shown or sent). Settings saved before 2.1 with Weather on become `tempest`. |
+| `weather.source` | `open-meteo`, `tempest`, or `""` (not chosen: nothing is shown or sent). The source runs while the weather page is on or a message uses `{temp}`. |
 | `weather.open_meteo.use_fpp_location` | `true`: FPP's Latitude/Longitude (Settings → General); `false`: the location below |
 | `weather.open_meteo.latitude` / `longitude` | −90–90 / −180–180, or `null`. Kept in `plugindata/fpp-showmarquee/location.json` (mode 0600), never in the config file; `GET config` adds them and `POST config` stores them there. Required when `use_fpp_location` is `false`. |
 | `weather.port` / `device` | UDP port (50222) / only this sensor's serial, e.g. `ST-00084993` (`""` = any) |
@@ -256,6 +256,14 @@ These are what the FPP commands use.
 ```
 
 Turns the countdown on or off and saves it. Returns `{"enabled": true}`.
+
+### `POST output`
+
+```json
+{ "enable_output": false }        // or true, or "toggle"
+```
+
+Turns the whole sign on or off (`global.enable_output`) and saves it. Off blanks the matrix and turns the overlay model off; the pages keep their own switches. Returns `{"enable_output": false}`. The **Show Marquee - Output** FPP command calls this.
 
 ### `POST target`
 
